@@ -4,7 +4,7 @@
 
 VoxAssist is now fully implemented with all core features:
 - ✅ Real-time voice processing pipeline (Twilio → Gemini → ElevenLabs)
-- ✅ Complete database schemas with PostgreSQL
+- ✅ Complete database schemas with MySQL
 - ✅ Real-time analytics dashboard with Socket.IO
 - ✅ User authentication and management
 - ✅ AI-powered conversation intelligence
@@ -13,7 +13,7 @@ VoxAssist is now fully implemented with all core features:
 ## 📋 Prerequisites
 
 ### Required Services & API Keys
-1. **PostgreSQL Database** (v12+)
+1. **MySQL Database** (v8.0+)
 2. **Redis Server** (v6+)
 3. **Google Gemini API Key** - [Get here](https://makersuite.google.com/app/apikey)
 4. **ElevenLabs API Key** - [Get here](https://elevenlabs.io/api)
@@ -24,7 +24,7 @@ VoxAssist is now fully implemented with all core features:
 
 ### System Requirements
 - Node.js 18+ 
-- PostgreSQL 12+
+- MySQL 8.0+
 - Redis 6+
 - 2GB+ RAM
 - SSL Certificate (for production webhooks)
@@ -34,8 +34,10 @@ VoxAssist is now fully implemented with all core features:
 ### 1. Database Setup
 
 ```bash
-# Install PostgreSQL and create database
-createdb voxassist
+# Install MySQL and create database
+mysql -u root -p
+CREATE DATABASE voxassist;
+exit
 
 # Initialize database schema
 cd backend
@@ -89,7 +91,11 @@ npm run dev
 ```env
 NODE_ENV=production
 PORT=5000
-DATABASE_URL=postgresql://user:pass@host:5432/dbname
+DB_HOST=your_mysql_host
+DB_PORT=3306
+DB_NAME=voxassist
+DB_USER=your_mysql_user
+DB_PASSWORD=your_mysql_password
 REDIS_URL=redis://user:pass@host:6379
 GEMINI_API_KEY=your_key
 ELEVENLABS_API_KEY=your_key

@@ -1,30 +1,36 @@
-const { Pool } = require('pg');
+const mysql = require('mysql2/promise');
 const redis = require('redis');
 const logger = require('../utils/logger');
 
 class DatabaseConnection {
   constructor() {
-    this.pgPool = null;
+    this.mysqlPool = null;
     this.redisClient = null;
     this.isConnected = false;
   }
 
   async connect() {
     try {
-      // PostgreSQL connection
-      this.pgPool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-        max: 20,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
+      // MySQL connection
+      this.mysqlPool = mysql.createPool({
+        host: process.env.DB_HOST || 'localhost',
+        port: process.env.DB_PORT || 3306,
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: process.env.DB_NAME || 'voxassist',
+        waitForConnections: true,
+        connectionLimit: 20,
+        queueLimit: 0,
+        acquireTimeout: 60000,
+        timeout: 60000,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
       });
 
-      // Test PostgreSQL connection
-      const client = await this.pgPool.connect();
-      await client.query('SELECT NOW()');
-      client.release();
-      logger.info('PostgreSQL connected successfully');
+      // Test MySQL connection
+      const connection = await this.mysqlPool.getConnection();
+      await connection.query('SELECT NOW()');
+      connection.release();
+      logger.info('MySQL connected successfully');
 
       // Redis connection
       this.redisClient = redis.createClient({
@@ -51,9 +57,9 @@ class DatabaseConnection {
 
   async disconnect() {
     try {
-      if (this.pgPool) {
-        await this.pgPool.end();
-        logger.info('PostgreSQL disconnected');
+      if (this.mysqlPool) {
+        await this.mysqlPool.end();
+        logger.info('MySQL disconnected');
       }
       
       if (this.redisClient) {
@@ -68,10 +74,10 @@ class DatabaseConnection {
   }
 
   getPool() {
-    if (!this.pgPool) {
-      throw new Error('PostgreSQL pool not initialized');
+    if (!this.mysqlPool) {
+      throw new Error('MySQL pool not initialized');
     }
-    return this.pgPool;
+    return this.mysqlPool;
   }
 
   getRedis() {
@@ -82,27 +88,27 @@ class DatabaseConnection {
   }
 
   async query(text, params) {
-    if (!this.pgPool) {
+    if (!this.mysqlPool) {
       throw new Error('Database not connected');
     }
     
     const start = Date.now();
     try {
-      const res = await this.pgPool.query(text, params);
+      const [rows, fields] = await this.mysqlPool.execute(text, params);
       const duration = Date.now() - start;
-      logger.debug('Executed query', { text, duration, rows: res.rowCount });
-      return res;
+      logger.debug('Executed query', { text, duration, rows: rows.length });
+      return { rows, fields, rowCount: rows.length };
     } catch (error) {
       logger.error('Query error:', { text, error: error.message });
       throw error;
     }
   }
 
-  async getClient() {
-    if (!this.pgPool) {
+  async getConnection() {
+    if (!this.mysqlPool) {
       throw new Error('Database not connected');
     }
-    return await this.pgPool.connect();
+    return await this.mysqlPool.getConnection();
   }
 
   // Redis helper methods

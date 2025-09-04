@@ -13,11 +13,11 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
     const overviewQuery = `
       SELECT 
         COUNT(*) as total_calls,
-        COUNT(*) FILTER (WHERE status = 'completed') as resolved_calls,
-        COUNT(*) FILTER (WHERE status = 'escalated') as escalated_calls,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as resolved_calls,
+        SUM(CASE WHEN status = 'escalated' THEN 1 ELSE 0 END) as escalated_calls,
         COALESCE(AVG(duration), 0) as avg_call_duration
       FROM calls 
-      WHERE organization_id = $1 AND start_time >= CURRENT_DATE - INTERVAL '30 days'
+      WHERE organization_id = ? AND start_time >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
     `;
     
     const overviewResult = await db.query(overviewQuery, [organizationId]);
@@ -30,13 +30,13 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
     // Get call volume data
     const volumeQuery = `
       SELECT 
-        COUNT(*) FILTER (WHERE DATE(start_time) = CURRENT_DATE) as today,
-        COUNT(*) FILTER (WHERE DATE(start_time) = CURRENT_DATE - 1) as yesterday,
-        COUNT(*) FILTER (WHERE start_time >= DATE_TRUNC('week', CURRENT_DATE)) as this_week,
-        COUNT(*) FILTER (WHERE start_time >= DATE_TRUNC('week', CURRENT_DATE) - INTERVAL '1 week' 
-                         AND start_time < DATE_TRUNC('week', CURRENT_DATE)) as last_week
+        SUM(CASE WHEN DATE(start_time) = CURDATE() THEN 1 ELSE 0 END) as today,
+        SUM(CASE WHEN DATE(start_time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN 1 ELSE 0 END) as yesterday,
+        SUM(CASE WHEN start_time >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) THEN 1 ELSE 0 END) as this_week,
+        SUM(CASE WHEN start_time >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) + 7 DAY) 
+                 AND start_time < DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) THEN 1 ELSE 0 END) as last_week
       FROM calls 
-      WHERE organization_id = $1
+      WHERE organization_id = ?
     `;
     
     const volumeResult = await db.query(volumeQuery, [organizationId]);
@@ -45,11 +45,11 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
     // Get hourly distribution
     const hourlyQuery = `
       SELECT 
-        EXTRACT(hour FROM start_time) as hour,
+        HOUR(start_time) as hour,
         COUNT(*) as calls
       FROM calls 
-      WHERE organization_id = $1 AND DATE(start_time) = CURRENT_DATE
-      GROUP BY EXTRACT(hour FROM start_time)
+      WHERE organization_id = ? AND DATE(start_time) = CURDATE()
+      GROUP BY HOUR(start_time)
       ORDER BY hour
     `;
     
@@ -67,17 +67,21 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
     const sentimentQuery = `
       SELECT 
         sentiment,
-        COUNT(*) * 100.0 / SUM(COUNT(*)) OVER() as percentage
+        COUNT(*) * 100.0 / (SELECT COUNT(*) FROM call_interactions ci2 
+                           WHERE ci2.call_id IN (
+                             SELECT id FROM calls WHERE organization_id = ? 
+                             AND start_time >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                           ) AND ci2.sentiment IS NOT NULL) as percentage
       FROM call_interactions 
       WHERE call_id IN (
-        SELECT id FROM calls WHERE organization_id = $1 
-        AND start_time >= CURRENT_DATE - INTERVAL '7 days'
+        SELECT id FROM calls WHERE organization_id = ? 
+        AND start_time >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
       )
       AND sentiment IS NOT NULL
       GROUP BY sentiment
     `;
     
-    const sentimentResult = await db.query(sentimentQuery, [organizationId]);
+    const sentimentResult = await db.query(sentimentQuery, [organizationId, organizationId]);
     const sentimentAnalysis = { positive: 0, neutral: 0, negative: 0 };
     
     sentimentResult.rows.forEach(row => {

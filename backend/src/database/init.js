@@ -1,16 +1,19 @@
-const { Pool } = require('pg');
+const mysql = require('mysql2/promise');
 const fs = require('fs').promises;
 const path = require('path');
 const logger = require('../utils/logger');
 
 class DatabaseInitializer {
   constructor() {
-    this.pool = new Pool({
-      user: process.env.DB_USER || 'postgres',
+    this.pool = mysql.createPool({
       host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 3306,
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '',
       database: process.env.DB_NAME || 'voxassist',
-      password: process.env.DB_PASSWORD || 'password',
-      port: process.env.DB_PORT || 5432,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0
     });
   }
 
@@ -38,10 +41,10 @@ class DatabaseInitializer {
 
   async testConnection() {
     try {
-      const client = await this.pool.connect();
-      const result = await client.query('SELECT NOW()');
-      client.release();
-      logger.info(`Database connection successful: ${result.rows[0].now}`);
+      const connection = await this.pool.getConnection();
+      const [result] = await connection.query('SELECT NOW() as now');
+      connection.release();
+      logger.info(`Database connection successful: ${result[0].now}`);
     } catch (error) {
       throw new Error(`Database connection failed: ${error.message}`);
     }
@@ -60,10 +63,10 @@ class DatabaseInitializer {
 
       for (const statement of statements) {
         try {
-          await this.pool.query(statement);
+          await this.pool.execute(statement);
         } catch (error) {
           // Ignore "already exists" errors
-          if (!error.message.includes('already exists')) {
+          if (!error.message.includes('already exists') && !error.message.includes('Table') && !error.message.includes('exists')) {
             logger.warn(`Schema statement warning: ${error.message}`);
           }
         }
@@ -89,13 +92,13 @@ class DatabaseInitializer {
     ];
 
     try {
-      const result = await this.pool.query(`
+      const [result] = await this.pool.execute(`
         SELECT table_name 
         FROM information_schema.tables 
-        WHERE table_schema = 'public'
-      `);
+        WHERE table_schema = ?
+      `, [process.env.DB_NAME || 'voxassist']);
       
-      const existingTables = result.rows.map(row => row.table_name);
+      const existingTables = result.map(row => row.table_name || row.TABLE_NAME);
       const missingTables = expectedTables.filter(table => !existingTables.includes(table));
       
       if (missingTables.length > 0) {
@@ -111,46 +114,41 @@ class DatabaseInitializer {
   async seedData() {
     try {
       // Check if data already exists
-      const userCount = await this.pool.query('SELECT COUNT(*) FROM users');
-      if (parseInt(userCount.rows[0].count) > 0) {
+      const [userCount] = await this.pool.execute('SELECT COUNT(*) as count FROM users');
+      if (parseInt(userCount[0].count) > 0) {
         logger.info('Database already contains data, skipping seed');
         return;
       }
 
       // Insert sample data
-      await this.pool.query(`
-        INSERT INTO organizations (name, domain) VALUES 
+      await this.pool.execute(`
+        INSERT IGNORE INTO organizations (name, domain) VALUES 
         ('VoxAssist Demo', 'demo.voxassist.com'),
         ('Acme Corporation', 'acme.com')
-        ON CONFLICT DO NOTHING
       `);
 
-      await this.pool.query(`
-        INSERT INTO users (email, password_hash, name, role) VALUES 
+      await this.pool.execute(`
+        INSERT IGNORE INTO users (email, password_hash, name, role) VALUES 
         ('admin@voxassist.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin User', 'admin'),
         ('demo@voxassist.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Demo User', 'user')
-        ON CONFLICT DO NOTHING
       `);
 
-      await this.pool.query(`
-        INSERT INTO user_organizations (user_id, organization_id, role) VALUES 
+      await this.pool.execute(`
+        INSERT IGNORE INTO user_organizations (user_id, organization_id, role) VALUES 
         (1, 1, 'admin'),
         (2, 1, 'member')
-        ON CONFLICT DO NOTHING
       `);
 
-      await this.pool.query(`
-        INSERT INTO knowledge_base (organization_id, category, question, answer, keywords) VALUES 
-        (1, 'billing', 'How do I view my bill?', 'You can view your bill by logging into your account and navigating to the Billing section. Your current and past bills will be displayed there.', ARRAY['bill', 'billing', 'invoice', 'payment']),
-        (1, 'technical', 'My service is not working', 'I understand you''re experiencing service issues. Let me help you troubleshoot. First, please try restarting your device and checking your internet connection.', ARRAY['not working', 'broken', 'issue', 'problem']),
-        (1, 'account', 'How do I reset my password?', 'To reset your password, go to the login page and click "Forgot Password". Enter your email address and you''ll receive a reset link.', ARRAY['password', 'reset', 'login', 'forgot'])
-        ON CONFLICT DO NOTHING
+      await this.pool.execute(`
+        INSERT IGNORE INTO knowledge_base (organization_id, category, question, answer, keywords) VALUES 
+        (1, 'billing', 'How do I view my bill?', 'You can view your bill by logging into your account and navigating to the Billing section. Your current and past bills will be displayed there.', JSON_ARRAY('bill', 'billing', 'invoice', 'payment')),
+        (1, 'technical', 'My service is not working', 'I understand you''re experiencing service issues. Let me help you troubleshoot. First, please try restarting your device and checking your internet connection.', JSON_ARRAY('not working', 'broken', 'issue', 'problem')),
+        (1, 'account', 'How do I reset my password?', 'To reset your password, go to the login page and click "Forgot Password". Enter your email address and you''ll receive a reset link.', JSON_ARRAY('password', 'reset', 'login', 'forgot'))
       `);
 
-      await this.pool.query(`
-        INSERT INTO voice_settings (organization_id, voice_id, voice_name) VALUES 
+      await this.pool.execute(`
+        INSERT IGNORE INTO voice_settings (organization_id, voice_id, voice_name) VALUES 
         (1, 'pNInz6obpgDQGcFmaJgB', 'Adam - Professional Male Voice')
-        ON CONFLICT DO NOTHING
       `);
 
       logger.info('Sample data seeded successfully');

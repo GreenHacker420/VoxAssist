@@ -20,7 +20,7 @@ router.post('/register', async (req, res) => {
     
     // Check if user already exists
     const existingUserResult = await db.query(
-      'SELECT id FROM users WHERE email = $1',
+      'SELECT id FROM users WHERE email = ?',
       [email]
     );
     
@@ -36,15 +36,23 @@ router.post('/register', async (req, res) => {
     
     // Create new user
     const userResult = await db.query(
-      'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role, created_at',
+      'INSERT INTO users (email, password_hash, name, role) VALUES (?, ?, ?, ?)',
       [email, hashedPassword, name, role]
     );
     
-    const newUser = userResult.rows[0];
+    const newUserId = userResult.insertId || userResult.rows?.insertId;
+    
+    // Get the created user
+    const createdUserResult = await db.query(
+      'SELECT id, email, name, role, created_at FROM users WHERE id = ?',
+      [newUserId]
+    );
+    
+    const newUser = createdUserResult.rows[0];
     
     // Add user to default organization
     await db.query(
-      'INSERT INTO user_organizations (user_id, organization_id, role) VALUES ($1, $2, $3)',
+      'INSERT INTO user_organizations (user_id, organization_id, role) VALUES (?, ?, ?)',
       [newUser.id, 1, role] // Default to demo organization
     );
     
@@ -98,7 +106,7 @@ router.post('/login', async (req, res) => {
              uo.organization_id, uo.role as org_role
       FROM users u
       LEFT JOIN user_organizations uo ON u.id = uo.user_id
-      WHERE u.email = $1
+      WHERE u.email = ?
     `, [email]);
     
     if (userResult.rows.length === 0) {
@@ -153,15 +161,21 @@ router.post('/login', async (req, res) => {
 });
 
 // Get current user profile
-router.get('/profile', authenticateToken, (req, res) => {
+router.get('/profile', authenticateToken, async (req, res) => {
   try {
-    const user = users.find(u => u.id === req.user.userId);
-    if (!user) {
+    const userResult = await db.query(
+      'SELECT id, email, name, role, created_at FROM users WHERE id = ?',
+      [req.user.userId]
+    );
+    
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ 
         success: false, 
         error: 'User not found' 
       });
     }
+    
+    const user = userResult.rows[0];
     
     res.json({
       success: true,
@@ -170,7 +184,7 @@ router.get('/profile', authenticateToken, (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
-        createdAt: user.createdAt
+        createdAt: user.created_at
       }
     });
   } catch (error) {
@@ -183,9 +197,14 @@ router.get('/profile', authenticateToken, (req, res) => {
 router.put('/profile', authenticateToken, async (req, res) => {
   try {
     const { name, email } = req.body;
-    const userIndex = users.findIndex(u => u.id === req.user.userId);
     
-    if (userIndex === -1) {
+    // Check if user exists
+    const userResult = await db.query(
+      'SELECT id FROM users WHERE id = ?',
+      [req.user.userId]
+    );
+    
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ 
         success: false, 
         error: 'User not found' 
@@ -193,19 +212,49 @@ router.put('/profile', authenticateToken, async (req, res) => {
     }
     
     // Update user data
-    if (name) users[userIndex].name = name;
-    if (email) users[userIndex].email = email;
-    users[userIndex].updatedAt = new Date();
+    const updateFields = [];
+    const updateValues = [];
+    
+    if (name) {
+      updateFields.push('name = ?');
+      updateValues.push(name);
+    }
+    if (email) {
+      updateFields.push('email = ?');
+      updateValues.push(email);
+    }
+    
+    if (updateFields.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No fields to update'
+      });
+    }
+    
+    updateValues.push(req.user.userId);
+    
+    await db.query(
+      `UPDATE users SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      updateValues
+    );
+    
+    // Get updated user data
+    const updatedUserResult = await db.query(
+      'SELECT id, email, name, role FROM users WHERE id = ?',
+      [req.user.userId]
+    );
+    
+    const updatedUser = updatedUserResult.rows[0];
     
     logger.info(`Profile updated for user: ${req.user.email}`);
     
     res.json({
       success: true,
       data: {
-        id: users[userIndex].id,
-        email: users[userIndex].email,
-        name: users[userIndex].name,
-        role: users[userIndex].role
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        role: updatedUser.role
       }
     });
   } catch (error) {
@@ -226,16 +275,23 @@ router.post('/change-password', authenticateToken, async (req, res) => {
       });
     }
     
-    const userIndex = users.findIndex(u => u.id === req.user.userId);
-    if (userIndex === -1) {
+    // Get user's current password hash
+    const userResult = await db.query(
+      'SELECT password_hash FROM users WHERE id = ?',
+      [req.user.userId]
+    );
+    
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ 
         success: false, 
         error: 'User not found' 
       });
     }
     
+    const user = userResult.rows[0];
+    
     // Verify current password
-    const isValidPassword = await bcrypt.compare(currentPassword, users[userIndex].password);
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash);
     if (!isValidPassword) {
       return res.status(401).json({ 
         success: false, 
@@ -245,8 +301,12 @@ router.post('/change-password', authenticateToken, async (req, res) => {
     
     // Hash new password
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-    users[userIndex].password = hashedNewPassword;
-    users[userIndex].updatedAt = new Date();
+    
+    // Update password in database
+    await db.query(
+      'UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [hashedNewPassword, req.user.userId]
+    );
     
     logger.info(`Password changed for user: ${req.user.email}`);
     
