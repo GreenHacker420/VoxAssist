@@ -21,7 +21,13 @@ const callRoutes = require('./routes/calls');
 const analyticsRoutes = require('./routes/analytics');
 const webhookRoutes = require('./routes/webhooks');
 const voiceRoutes = require('./routes/voice');
+const i18nRoutes = require('./routes/i18n');
+
+// Functional services
 const voiceProcessingPipeline = require('./services/voiceProcessingPipeline');
+const healthMonitoring = require('./services/healthMonitoring');
+const maximIntegration = require('./services/maximIntegration');
+const { initializeDatabase } = require('./database/connection');
 
 const app = express();
 const server = createServer(app);
@@ -64,6 +70,7 @@ app.use('/api/auth', auditAuth('auth'), authRoutes);
 app.use('/api/calls', auditDataAccess('calls'), callRoutes);
 app.use('/api/analytics', auditDataAccess('analytics'), analyticsRoutes);
 app.use('/api/voice', auditDataAccess('voice'), voiceRoutes);
+app.use('/api/i18n', i18nRoutes);
 app.use('/webhooks', webhookRoutes);
 
 // Socket.io for real-time communication
@@ -85,8 +92,35 @@ io.on('connection', (socket) => {
   });
 });
 
-// Initialize voice processing pipeline with socket.io
-voiceProcessingPipeline.setSocketIO(io);
+// Initialize functional services
+const initializeServices = async () => {
+  try {
+    // Initialize database
+    await initializeDatabase();
+    logger.info('Database initialized successfully');
+
+    // Initialize voice processing pipeline with socket.io
+    voiceProcessingPipeline.setSocketIO(io);
+    logger.info('Voice processing pipeline initialized');
+
+    // Initialize health monitoring
+    await healthMonitoring.startMonitoring();
+    logger.info('Health monitoring started');
+
+    // Initialize Maxim hardware integration
+    try {
+      await maximIntegration.initialize();
+      logger.info('Maxim hardware integration initialized');
+    } catch (error) {
+      logger.warn('Maxim hardware not available:', error.message);
+    }
+
+    logger.info('All functional services initialized successfully');
+  } catch (error) {
+    logger.error('Failed to initialize services:', error);
+    process.exit(1);
+  }
+};
 
 // Make io available to routes and services
 app.set('io', io);
@@ -98,7 +132,20 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
-  logger.info(`VoxAssist Backend Server running on port ${PORT}`);
-  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+// Start server with functional services
+const startServer = async () => {
+  try {
+    await initializeServices();
+    
+    server.listen(PORT, () => {
+      logger.info(`VoxAssist Backend Server running on port ${PORT}`);
+      logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info('All functional services are operational');
+    });
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();

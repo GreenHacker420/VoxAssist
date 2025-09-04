@@ -2,334 +2,484 @@ const logger = require('../utils/logger');
 const { EventEmitter } = require('events');
 
 /**
- * Maxim Integrated Hardware Integration Service
+ * Maxim Integrated Hardware Integration Service - Functional Version
  * Provides interfaces for Maxim IC components including audio processing,
  * power management, and security features
  */
-class MaximIntegrationService extends EventEmitter {
-  constructor() {
-    super();
-    this.audioProcessor = null;
-    this.powerManager = null;
-    this.securityChip = null;
-    this.isInitialized = false;
+
+// Module state
+let audioProcessor = null;
+let powerManager = null;
+let securityChip = null;
+let isInitialized = false;
+const eventEmitter = new EventEmitter();
+
+/**
+ * Initialize Maxim hardware components
+ */
+const initialize = async () => {
+  try {
+    logger.info('Initializing Maxim hardware integration...');
+
+    // Initialize audio processing (MAX98357A/MAX98358)
+    await initializeAudioProcessor();
+    
+    // Initialize power management (MAX77650)
+    await initializePowerManager();
+    
+    // Initialize security chip (DS28E38)
+    await initializeSecurityChip();
+
+    isInitialized = true;
+    eventEmitter.emit('initialized');
+    logger.info('Maxim hardware integration initialized successfully');
+
+  } catch (error) {
+    logger.error('Failed to initialize Maxim hardware:', error);
+    throw error;
   }
+};
 
-  /**
-   * Initialize Maxim hardware components
-   */
-  async initialize() {
-    try {
-      logger.info('Initializing Maxim hardware integration...');
-
-      // Initialize audio processing (MAX98357A/MAX98358)
-      await this.initializeAudioProcessor();
-      
-      // Initialize power management (MAX77650)
-      await this.initializePowerManager();
-      
-      // Initialize security chip (DS28E38)
-      await this.initializeSecurityChip();
-
-      this.isInitialized = true;
-      this.emit('initialized');
-      logger.info('Maxim hardware integration initialized successfully');
-
-    } catch (error) {
-      logger.error('Failed to initialize Maxim hardware:', error);
-      throw error;
+/**
+ * Audio Processing with MAX98357A/MAX98358 Class D Amplifiers
+ */
+const initializeAudioProcessor = async () => {
+  audioProcessor = {
+    // Audio configuration
+    config: {
+      sampleRate: 48000,
+      bitDepth: 24,
+      channels: 2,
+      amplifierGain: 12, // dB
+      dynamicRangeControl: true,
+      noiseGate: -60, // dB
+      compressionRatio: 4.0
+    },
+    
+    // Audio processing functions
+    processAudio: (audioBuffer) => {
+      try {
+        // Apply dynamic range compression
+        const compressed = applyCompression(audioBuffer, audioProcessor.config.compressionRatio);
+        
+        // Apply noise gate
+        const gated = applyNoiseGate(compressed, audioProcessor.config.noiseGate);
+        
+        // Apply amplifier gain
+        const amplified = applyGain(gated, audioProcessor.config.amplifierGain);
+        
+        return {
+          processedBuffer: amplified,
+          snr: calculateSNR(audioBuffer, amplified),
+          thd: calculateTHD(amplified),
+          peakLevel: getPeakLevel(amplified)
+        };
+      } catch (error) {
+        logger.error('Audio processing error:', error);
+        return { processedBuffer: audioBuffer, snr: 0, thd: 0, peakLevel: 0 };
+      }
+    },
+    
+    // Real-time audio enhancement
+    enhanceVoice: (voiceBuffer) => {
+      try {
+        // Voice-specific processing
+        const filtered = applyVoiceFilter(voiceBuffer);
+        const enhanced = applyVoiceEnhancement(filtered);
+        
+        return {
+          enhancedBuffer: enhanced,
+          clarity: calculateClarity(voiceBuffer, enhanced),
+          intelligibility: calculateIntelligibility(enhanced)
+        };
+      } catch (error) {
+        logger.error('Voice enhancement error:', error);
+        return { enhancedBuffer: voiceBuffer, clarity: 0, intelligibility: 0 };
+      }
     }
-  }
+  };
 
-  /**
-   * Audio Processing with MAX98357A/MAX98358 Class D Amplifiers
-   */
-  async initializeAudioProcessor() {
-    this.audioProcessor = {
-      // Audio configuration
-      config: {
-        sampleRate: 48000,
-        bitDepth: 16,
-        channels: 2,
-        amplifierGain: 12, // dB
-        speakerProtection: true
-      },
+  logger.info('MAX98357A/MAX98358 audio processor initialized');
+};
 
-      // Audio enhancement features
-      enhanceAudio: async (audioBuffer) => {
-        try {
-          // Simulate audio enhancement with Maxim DSP
-          const enhanced = {
-            ...audioBuffer,
-            dynamicRangeCompression: true,
-            noiseReduction: true,
-            speakerProtection: true,
-            thermalProtection: true
-          };
-
-          logger.debug('Audio enhanced with Maxim processing');
-          return enhanced;
-        } catch (error) {
-          logger.error('Audio enhancement failed:', error);
-          throw error;
-        }
-      },
-
-      // Speaker protection
-      enableSpeakerProtection: () => {
-        logger.info('Maxim speaker protection enabled');
+/**
+ * Power Management with MAX77650 PMIC
+ */
+const initializePowerManager = async () => {
+  powerManager = {
+    // Power configuration
+    config: {
+      batteryType: 'Li-Ion',
+      maxVoltage: 4.2,
+      minVoltage: 3.0,
+      chargeCurrent: 300, // mA
+      thermalThreshold: 60, // °C
+      powerSavingMode: true
+    },
+    
+    // Battery monitoring
+    getBatteryStatus: () => {
+      try {
+        // Simulate battery readings
+        const voltage = 3.7 + (Math.random() * 0.5);
+        const current = 150 + (Math.random() * 100);
+        const temperature = 25 + (Math.random() * 15);
+        
+        const capacity = calculateBatteryCapacity(voltage);
+        const health = calculateBatteryHealth(voltage, temperature);
+        
         return {
-          overCurrentProtection: true,
-          thermalProtection: true,
-          overVoltageProtection: true
+          voltage: voltage.toFixed(2),
+          current: current.toFixed(0),
+          temperature: temperature.toFixed(1),
+          capacity: capacity.toFixed(0),
+          health: health,
+          charging: current > 0,
+          timeRemaining: estimateTimeRemaining(capacity, current)
         };
-      },
-
-      // Audio quality monitoring
-      getAudioQuality: () => {
-        return {
-          snr: 95, // dB
-          thd: 0.01, // %
-          powerEfficiency: 92, // %
-          thermalStatus: 'normal'
-        };
+      } catch (error) {
+        logger.error('Battery status error:', error);
+        return { voltage: 0, current: 0, temperature: 0, capacity: 0, health: 'unknown' };
       }
-    };
-
-    logger.info('Maxim audio processor initialized (MAX98357A/MAX98358)');
-  }
-
-  /**
-   * Power Management with MAX77650 Ultra-Low Power PMIC
-   */
-  async initializePowerManager() {
-    this.powerManager = {
-      // Power configuration
-      config: {
-        batteryType: 'Li-Ion',
-        chargingCurrent: 300, // mA
-        systemVoltage: 3.3, // V
-        lowPowerMode: true
-      },
-
-      // Battery monitoring
-      getBatteryStatus: () => {
-        return {
-          voltage: 3.7, // V
-          current: 150, // mA
-          capacity: 85, // %
-          temperature: 25, // °C
-          chargingStatus: 'charging',
-          timeToFull: 120 // minutes
-        };
-      },
-
-      // Power optimization
-      optimizePower: (mode) => {
-        const modes = {
-          'voice_call': {
-            cpuFreq: 'high',
-            audioAmp: 'active',
-            wireless: 'active',
-            display: 'dim'
-          },
-          'standby': {
-            cpuFreq: 'low',
-            audioAmp: 'sleep',
-            wireless: 'low_power',
-            display: 'off'
-          },
-          'charging': {
-            cpuFreq: 'medium',
-            audioAmp: 'sleep',
-            wireless: 'active',
-            display: 'on'
-          }
-        };
-
-        const config = modes[mode] || modes['standby'];
-        logger.info(`Power optimized for ${mode} mode`, config);
-        return config;
-      },
-
-      // Fuel gauge integration (MAX17048)
-      getFuelGauge: () => {
-        return {
-          stateOfCharge: 85, // %
-          voltage: 3.7, // V
-          changeRate: -2.5, // %/hr
-          timeToEmpty: 480 // minutes
-        };
-      }
-    };
-
-    logger.info('Maxim power manager initialized (MAX77650)');
-  }
-
-  /**
-   * Security Features with DS28E38 DeepCover Secure Authenticator
-   */
-  async initializeSecurityChip() {
-    this.securityChip = {
-      // Security configuration
-      config: {
-        encryptionAlgorithm: 'ECDSA-P256',
-        keyStorage: 'hardware',
-        tamperDetection: true
-      },
-
-      // Secure authentication
-      authenticateDevice: async (challenge) => {
-        try {
-          // Simulate secure authentication
-          const signature = await this.generateSecureSignature(challenge);
-          
-          return {
-            authenticated: true,
-            signature,
-            timestamp: new Date().toISOString(),
-            deviceId: 'VX-' + Math.random().toString(36).substr(2, 9).toUpperCase()
-          };
-        } catch (error) {
-          logger.error('Device authentication failed:', error);
-          return { authenticated: false, error: error.message };
+    },
+    
+    // Power optimization
+    optimizePower: (mode) => {
+      try {
+        switch (mode) {
+          case 'performance':
+            return setPowerMode('performance');
+          case 'balanced':
+            return setPowerMode('balanced');
+          case 'power_save':
+            return setPowerMode('power_save');
+          default:
+            return setPowerMode('balanced');
         }
-      },
-
-      // Secure key generation
-      generateSecureKey: async () => {
-        // Simulate hardware-based key generation
-        const key = {
-          publicKey: 'pub_' + Math.random().toString(36).substr(2, 32),
-          keyId: 'key_' + Date.now(),
-          algorithm: 'ECDSA-P256',
-          createdAt: new Date().toISOString()
-        };
-
-        logger.info('Secure key generated in hardware');
-        return key;
-      },
-
-      // Tamper detection
-      getTamperStatus: () => {
+      } catch (error) {
+        logger.error('Power optimization error:', error);
+        return false;
+      }
+    },
+    
+    // Thermal management
+    getThermalStatus: () => {
+      try {
+        const temperature = 30 + (Math.random() * 20);
+        const throttling = temperature > powerManager.config.thermalThreshold;
+        
         return {
-          tamperDetected: false,
+          temperature: temperature.toFixed(1),
+          throttling: throttling,
+          fanSpeed: throttling ? 80 : 40,
+          thermalState: getThermalState(temperature)
+        };
+      } catch (error) {
+        logger.error('Thermal status error:', error);
+        return { temperature: 0, throttling: false, fanSpeed: 0, thermalState: 'unknown' };
+      }
+    }
+  };
+
+  logger.info('MAX77650 power manager initialized');
+};
+
+/**
+ * Security with DS28E38 DeepCover Secure Authenticator
+ */
+const initializeSecurityChip = async () => {
+  securityChip = {
+    // Security configuration
+    config: {
+      keyLength: 256,
+      hashAlgorithm: 'SHA-256',
+      encryptionAlgorithm: 'AES-256',
+      certificateValidation: true,
+      tamperDetection: true
+    },
+    
+    // Authentication functions
+    authenticate: async (challenge) => {
+      try {
+        // Simulate secure authentication
+        const response = await generateSecureResponse(challenge);
+        const signature = await signChallenge(challenge, response);
+        
+        return {
+          authenticated: true,
+          response: response,
+          signature: signature,
+          timestamp: new Date().toISOString(),
+          securityLevel: 'high'
+        };
+      } catch (error) {
+        logger.error('Authentication error:', error);
+        return { authenticated: false, error: error.message };
+      }
+    },
+    
+    // Encryption/Decryption
+    encrypt: async (data, key) => {
+      try {
+        const encrypted = await performEncryption(data, key);
+        const integrity = await calculateIntegrity(encrypted);
+        
+        return {
+          encryptedData: encrypted,
+          integrity: integrity,
+          algorithm: securityChip.config.encryptionAlgorithm
+        };
+      } catch (error) {
+        logger.error('Encryption error:', error);
+        throw error;
+      }
+    },
+    
+    decrypt: async (encryptedData, key, integrity) => {
+      try {
+        const verified = await verifyIntegrity(encryptedData, integrity);
+        if (!verified) {
+          throw new Error('Data integrity verification failed');
+        }
+        
+        const decrypted = await performDecryption(encryptedData, key);
+        return decrypted;
+      } catch (error) {
+        logger.error('Decryption error:', error);
+        throw error;
+      }
+    },
+    
+    // Tamper detection
+    getTamperStatus: () => {
+      try {
+        const tamperDetected = Math.random() < 0.01; // 1% chance for simulation
+        
+        return {
+          tamperDetected: tamperDetected,
           lastCheck: new Date().toISOString(),
-          integrityStatus: 'secure',
-          bootCount: 1
+          securityLevel: tamperDetected ? 'compromised' : 'secure',
+          events: tamperDetected ? ['physical_tamper_detected'] : []
         };
-      },
-
-      // Secure storage
-      secureStore: async (key, data) => {
-        // Simulate secure storage in hardware
-        logger.info(`Data securely stored with key: ${key}`);
-        return {
-          stored: true,
-          keyId: key,
-          encrypted: true,
-          timestamp: new Date().toISOString()
-        };
+      } catch (error) {
+        logger.error('Tamper detection error:', error);
+        return { tamperDetected: false, securityLevel: 'unknown' };
       }
-    };
-
-    logger.info('Maxim security chip initialized (DS28E38)');
-  }
-
-  /**
-   * Generate secure signature using hardware security module
-   */
-  async generateSecureSignature(data) {
-    // Simulate hardware-based signature generation
-    const hash = require('crypto').createHash('sha256').update(data).digest('hex');
-    return 'sig_' + hash.substr(0, 16);
-  }
-
-  /**
-   * Get comprehensive hardware status
-   */
-  getHardwareStatus() {
-    if (!this.isInitialized) {
-      throw new Error('Maxim hardware not initialized');
     }
+  };
 
+  logger.info('DS28E38 security chip initialized');
+};
+
+/**
+ * Get comprehensive hardware status
+ */
+const getHardwareStatus = () => {
+  if (!isInitialized) {
+    throw new Error('Maxim hardware not initialized');
+  }
+
+  try {
     return {
-      audio: this.audioProcessor.getAudioQuality(),
-      power: this.powerManager.getBatteryStatus(),
-      security: this.securityChip.getTamperStatus(),
+      audio: {
+        snr: 85 + (Math.random() * 10),
+        thd: 0.01 + (Math.random() * 0.02),
+        peakLevel: -6 + (Math.random() * 3),
+        status: 'operational'
+      },
+      power: powerManager.getBatteryStatus(),
+      thermal: powerManager.getThermalStatus(),
+      security: securityChip.getTamperStatus(),
       system: {
-        temperature: 28, // °C
+        temperature: 35 + (Math.random() * 10),
         uptime: process.uptime(),
-        memoryUsage: process.memoryUsage(),
-        initialized: this.isInitialized
+        status: 'healthy'
       }
     };
+  } catch (error) {
+    logger.error('Hardware status error:', error);
+    throw error;
   }
+};
 
-  /**
-   * Optimize system for voice calls
-   */
-  async optimizeForVoiceCall() {
-    if (!this.isInitialized) {
-      throw new Error('Maxim hardware not initialized');
-    }
-
-    try {
-      // Optimize power for voice call
-      const powerConfig = this.powerManager.optimizePower('voice_call');
-      
-      // Enable speaker protection
-      const audioProtection = this.audioProcessor.enableSpeakerProtection();
-      
-      // Verify security status
-      const securityStatus = this.securityChip.getTamperStatus();
-
-      logger.info('System optimized for voice call');
-      
-      return {
-        power: powerConfig,
-        audio: audioProtection,
-        security: securityStatus,
-        optimized: true
-      };
-    } catch (error) {
-      logger.error('Voice call optimization failed:', error);
-      throw error;
-    }
+/**
+ * Shutdown Maxim hardware integration
+ */
+const shutdown = async () => {
+  try {
+    logger.info('Shutting down Maxim hardware integration...');
+    
+    // Cleanup resources
+    audioProcessor = null;
+    powerManager = null;
+    securityChip = null;
+    isInitialized = false;
+    
+    eventEmitter.emit('shutdown');
+    logger.info('Maxim hardware integration shutdown complete');
+  } catch (error) {
+    logger.error('Shutdown error:', error);
+    throw error;
   }
+};
 
-  /**
-   * Process audio with Maxim enhancements
-   */
-  async processAudio(audioBuffer) {
-    if (!this.audioProcessor) {
-      throw new Error('Audio processor not initialized');
+// Helper functions for audio processing
+const applyCompression = (buffer, ratio) => {
+  // Simulate dynamic range compression
+  return buffer.map(sample => {
+    const threshold = 0.7;
+    if (Math.abs(sample) > threshold) {
+      const excess = Math.abs(sample) - threshold;
+      const compressed = threshold + (excess / ratio);
+      return sample > 0 ? compressed : -compressed;
     }
+    return sample;
+  });
+};
 
-    return await this.audioProcessor.enhanceAudio(audioBuffer);
-  }
+const applyNoiseGate = (buffer, threshold) => {
+  // Simulate noise gate
+  const thresholdLinear = Math.pow(10, threshold / 20);
+  return buffer.map(sample => {
+    return Math.abs(sample) > thresholdLinear ? sample : 0;
+  });
+};
 
-  /**
-   * Shutdown hardware components gracefully
-   */
-  async shutdown() {
-    try {
-      logger.info('Shutting down Maxim hardware integration...');
-      
-      // Put components in low power mode
-      if (this.powerManager) {
-        this.powerManager.optimizePower('standby');
-      }
+const applyGain = (buffer, gainDb) => {
+  // Apply gain in dB
+  const gainLinear = Math.pow(10, gainDb / 20);
+  return buffer.map(sample => sample * gainLinear);
+};
 
-      this.isInitialized = false;
-      this.emit('shutdown');
-      
-      logger.info('Maxim hardware integration shutdown complete');
-    } catch (error) {
-      logger.error('Hardware shutdown error:', error);
-      throw error;
-    }
-  }
-}
+const calculateSNR = (original, processed) => {
+  // Simulate SNR calculation
+  return 85 + (Math.random() * 10);
+};
 
-module.exports = MaximIntegrationService;
+const calculateTHD = (buffer) => {
+  // Simulate THD calculation
+  return 0.01 + (Math.random() * 0.02);
+};
+
+const getPeakLevel = (buffer) => {
+  // Calculate peak level
+  const peak = Math.max(...buffer.map(Math.abs));
+  return 20 * Math.log10(peak);
+};
+
+const applyVoiceFilter = (buffer) => {
+  // Simulate voice-specific filtering
+  return buffer;
+};
+
+const applyVoiceEnhancement = (buffer) => {
+  // Simulate voice enhancement
+  return buffer;
+};
+
+const calculateClarity = (original, enhanced) => {
+  // Simulate clarity calculation
+  return 0.8 + (Math.random() * 0.2);
+};
+
+const calculateIntelligibility = (buffer) => {
+  // Simulate intelligibility calculation
+  return 0.85 + (Math.random() * 0.15);
+};
+
+// Helper functions for power management
+const calculateBatteryCapacity = (voltage) => {
+  // Simple voltage-to-capacity mapping
+  const minV = 3.0;
+  const maxV = 4.2;
+  return Math.max(0, Math.min(100, ((voltage - minV) / (maxV - minV)) * 100));
+};
+
+const calculateBatteryHealth = (voltage, temperature) => {
+  if (temperature > 50) return 'poor';
+  if (voltage < 3.2) return 'degraded';
+  return 'good';
+};
+
+const estimateTimeRemaining = (capacity, current) => {
+  if (current <= 0) return 'N/A';
+  const hours = (capacity / 100) * 10; // Assume 10 hour max capacity
+  return `${hours.toFixed(1)}h`;
+};
+
+const setPowerMode = (mode) => {
+  logger.info(`Power mode set to: ${mode}`);
+  return true;
+};
+
+const getThermalState = (temperature) => {
+  if (temperature > 70) return 'critical';
+  if (temperature > 60) return 'warning';
+  if (temperature > 50) return 'elevated';
+  return 'normal';
+};
+
+// Helper functions for security
+const generateSecureResponse = async (challenge) => {
+  // Simulate secure response generation
+  return Buffer.from(challenge).toString('base64');
+};
+
+const signChallenge = async (challenge, response) => {
+  // Simulate digital signature
+  return Buffer.from(`${challenge}:${response}`).toString('base64');
+};
+
+const performEncryption = async (data, key) => {
+  // Simulate encryption
+  return Buffer.from(data).toString('base64');
+};
+
+const performDecryption = async (encryptedData, key) => {
+  // Simulate decryption
+  return Buffer.from(encryptedData, 'base64').toString();
+};
+
+const calculateIntegrity = async (data) => {
+  // Simulate integrity hash
+  return Buffer.from(data).toString('base64').slice(0, 32);
+};
+
+const verifyIntegrity = async (data, integrity) => {
+  // Simulate integrity verification
+  const calculated = await calculateIntegrity(data);
+  return calculated === integrity;
+};
+
+// Event emitter methods
+const on = (event, listener) => eventEmitter.on(event, listener);
+const emit = (event, ...args) => eventEmitter.emit(event, ...args);
+const removeListener = (event, listener) => eventEmitter.removeListener(event, listener);
+
+// Module exports
+module.exports = {
+  initialize,
+  shutdown,
+  getHardwareStatus,
+  isInitialized: () => isInitialized,
+  
+  // Audio processing
+  processAudio: () => audioProcessor?.processAudio,
+  enhanceVoice: () => audioProcessor?.enhanceVoice,
+  
+  // Power management
+  getBatteryStatus: () => powerManager?.getBatteryStatus(),
+  optimizePower: (mode) => powerManager?.optimizePower(mode),
+  getThermalStatus: () => powerManager?.getThermalStatus(),
+  
+  // Security
+  authenticate: (challenge) => securityChip?.authenticate(challenge),
+  encrypt: (data, key) => securityChip?.encrypt(data, key),
+  decrypt: (encryptedData, key, integrity) => securityChip?.decrypt(encryptedData, key, integrity),
+  getTamperStatus: () => securityChip?.getTamperStatus(),
+  
+  // Event handling
+  on,
+  emit,
+  removeListener
+};

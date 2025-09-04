@@ -1,0 +1,9 @@
+{"0":{"field":"password","message":"Password is required"},"1":{"field":"name","message":"Name is required"},"level":"warn","message":"Validation failed for register:","service":"voxassist-backend","timestamp":"2025-09-04T23:30:00.570Z"}
+{"0":{"field":"password","message":"\"password\" is required"},"level":"warn","message":"Validation failed for login:","service":"voxassist-backend","timestamp":"2025-09-04T23:30:00.584Z"}
+{"level":"info","message":"Gemini AI service initialized","service":"voxassist-backend","timestamp":"2025-09-04T23:30:00.603Z"}
+{"level":"info","message":"ElevenLabs service initialized","service":"voxassist-backend","timestamp":"2025-09-04T23:30:00.631Z"}
+{"0":{"field":"password","message":"Password is required"},"1":{"field":"name","message":"Name is required"},"level":"warn","message":"Validation failed for register:","service":"voxassist-backend","timestamp":"2025-09-04T23:30:53.500Z"}
+{"0":{"field":"password","message":"\"password\" is required"},"level":"warn","message":"Validation failed for login:","service":"voxassist-backend","timestamp":"2025-09-04T23:30:53.508Z"}
+{"level":"info","message":"Gemini AI service initialized","service":"voxassist-backend","timestamp":"2025-09-04T23:31:10.549Z"}
+{"level":"info","message":"ElevenLabs service initialized","service":"voxassist-backend","timestamp":"2025-09-04T23:31:10.585Z"}
+{"level":"info","message":"Twilio service initialized","service":"voxassist-backend","timestamp":"2025-09-04T23:31:10.629Z"}

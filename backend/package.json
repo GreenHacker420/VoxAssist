@@ -4,14 +4,16 @@
   "description": "VoxAssist Backend API - Express.js server for AI voice support",
   "main": "src/server.js",
   "scripts": {
-    "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "NODE_ENV=test jest --testPathPattern=tests/unit --setupFilesAfterEnv=./tests/setup.js",
+    "test:integration": "NODE_ENV=test jest --testPathPattern=tests/integration --setupFilesAfterEnv=./tests/setup.js",
+    "test:all": "NODE_ENV=test jest --setupFilesAfterEnv=./tests/setup.js",
+    "test:watch": "NODE_ENV=test jest --watch --setupFilesAfterEnv=./tests/setup.js",
+    "test:coverage": "NODE_ENV=test jest --coverage --setupFilesAfterEnv=./tests/setup.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
     "build": "echo 'Backend build complete'",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "nyc jest",
-    "test:integration": "jest --testPathPattern=integration",
-    "test:unit": "jest --testPathPattern=unit",
     "test:load": "artillery run tests/load/load-test.yml"
   },
   "dependencies": {
