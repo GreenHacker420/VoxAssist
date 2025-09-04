@@ -13,6 +13,8 @@ const authRoutes = require('./routes/auth');
 const callRoutes = require('./routes/calls');
 const analyticsRoutes = require('./routes/analytics');
 const webhookRoutes = require('./routes/webhooks');
+const voiceRoutes = require('./routes/voice');
+const voiceProcessingPipeline = require('./services/voiceProcessingPipeline');
 
 const app = express();
 const server = createServer(app);
@@ -58,6 +60,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/calls', callRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/voice', voiceRoutes);
 app.use('/webhooks', webhookRoutes);
 
 // Socket.io for real-time communication
@@ -79,8 +82,12 @@ io.on('connection', (socket) => {
   });
 });
 
-// Make io available to routes
+// Initialize voice processing pipeline with socket.io
+voiceProcessingPipeline.setSocketIO(io);
+
+// Make io available to routes and services
 app.set('io', io);
+module.exports = { io };
 
 // Error handling
 app.use(errorHandler);

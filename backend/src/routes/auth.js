@@ -4,17 +4,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { authenticateToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
-
-// Mock user data - replace with actual database
-const users = [
-  {
-    id: 1,
-    email: 'admin@voxassist.com',
-    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
-    role: 'admin',
-    name: 'Admin User'
-  }
-];
+const db = require('../database/connection');
 
 // Register new user
 router.post('/register', async (req, res) => {
@@ -29,8 +19,12 @@ router.post('/register', async (req, res) => {
     }
     
     // Check if user already exists
-    const existingUser = users.find(u => u.email === email);
-    if (existingUser) {
+    const existingUserResult = await db.query(
+      'SELECT id FROM users WHERE email = $1',
+      [email]
+    );
+    
+    if (existingUserResult.rows.length > 0) {
       return res.status(400).json({ 
         success: false, 
         error: 'User already exists' 
@@ -41,23 +35,26 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     // Create new user
-    const newUser = {
-      id: users.length + 1,
-      email,
-      password: hashedPassword,
-      name,
-      role,
-      createdAt: new Date()
-    };
+    const userResult = await db.query(
+      'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role, created_at',
+      [email, hashedPassword, name, role]
+    );
     
-    users.push(newUser);
+    const newUser = userResult.rows[0];
+    
+    // Add user to default organization
+    await db.query(
+      'INSERT INTO user_organizations (user_id, organization_id, role) VALUES ($1, $2, $3)',
+      [newUser.id, 1, role] // Default to demo organization
+    );
     
     // Generate JWT token
     const token = jwt.sign(
       { 
         userId: newUser.id, 
         email: newUser.email, 
-        role: newUser.role 
+        role: newUser.role,
+        organizationId: 1
       },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
@@ -95,17 +92,26 @@ router.post('/login', async (req, res) => {
       });
     }
     
-    // Find user
-    const user = users.find(u => u.email === email);
-    if (!user) {
+    // Find user with organization info
+    const userResult = await db.query(`
+      SELECT u.id, u.email, u.password_hash, u.name, u.role,
+             uo.organization_id, uo.role as org_role
+      FROM users u
+      LEFT JOIN user_organizations uo ON u.id = uo.user_id
+      WHERE u.email = $1
+    `, [email]);
+    
+    if (userResult.rows.length === 0) {
       return res.status(401).json({ 
         success: false, 
         error: 'Invalid credentials' 
       });
     }
     
+    const user = userResult.rows[0];
+    
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
       return res.status(401).json({ 
         success: false, 
@@ -118,7 +124,8 @@ router.post('/login', async (req, res) => {
       { 
         userId: user.id, 
         email: user.email, 
-        role: user.role 
+        role: user.role,
+        organizationId: user.organization_id || 1
       },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
@@ -134,7 +141,8 @@ router.post('/login', async (req, res) => {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role
+          role: user.role,
+          organizationId: user.organization_id
         }
       }
     });
