@@ -15,6 +15,16 @@ import {
   ClockIcon,
 } from '@heroicons/react/24/outline'
 
+interface Call {
+  id: string
+  customerPhone: string
+  status: 'active' | 'ringing' | 'completed' | 'escalated'
+  duration: number
+  sentiment?: 'positive' | 'negative' | 'neutral'
+  confidence?: number
+  currentTopic?: string
+}
+
 interface DashboardData {
   overview: {
     totalCalls: number
@@ -41,7 +51,7 @@ interface DashboardData {
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeCalls, setActiveCalls] = useState([])
+  const [activeCalls, setActiveCalls] = useState<Call[]>([])
   const { socket, connected } = useSocket()
 
   useEffect(() => {
@@ -73,20 +83,20 @@ export default function DashboardPage() {
     }
   }
 
-  const handleCallUpdate = (callData: any) => {
+  const handleCallUpdate = (callData: Call) => {
     setActiveCalls(prev => 
-      prev.map((call: any) => 
+      prev.map(call => 
         call.id === callData.id ? { ...call, ...callData } : call
       )
     )
   }
 
-  const handleNewCall = (callData: any) => {
+  const handleNewCall = (callData: Call) => {
     setActiveCalls(prev => [...prev, callData])
   }
 
   const handleCallEnded = (callId: string) => {
-    setActiveCalls(prev => prev.filter((call: any) => call.id !== callId))
+    setActiveCalls(prev => prev.filter(call => call.id !== callId))
   }
 
   if (loading || !data) {
@@ -109,7 +119,7 @@ export default function DashboardPage() {
       title: 'Total Calls Today',
       value: data.callVolume.today.toString(),
       change: `+${((data.callVolume.today - data.callVolume.yesterday) / data.callVolume.yesterday * 100).toFixed(1)}%`,
-      changeType: data.callVolume.today > data.callVolume.yesterday ? 'positive' : 'negative',
+      changeType: (data.callVolume.today > data.callVolume.yesterday ? 'positive' : 'negative') as 'positive' | 'negative',
       icon: PhoneIcon,
     },
     {
