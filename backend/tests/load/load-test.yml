@@ -1,0 +1,64 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm up"
+    - duration: 120
+      arrivalRate: 10
+      name: "Ramp up load"
+    - duration: 300
+      arrivalRate: 20
+      name: "Sustained load"
+  payload:
+    path: "./test-data.csv"
+    fields:
+      - "email"
+      - "password"
+
+scenarios:
+  - name: "Authentication Load Test"
+    weight: 40
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.data.token"
+              as: "authToken"
+      - get:
+          url: "/api/auth/profile"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+
+  - name: "Analytics Load Test"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "demo@voxassist.com"
+            password: "password"
+          capture:
+            - json: "$.data.token"
+              as: "authToken"
+      - get:
+          url: "/api/analytics/dashboard"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+      - get:
+          url: "/api/analytics/performance"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+
+  - name: "Voice Webhook Load Test"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/voice/incoming"
+          form:
+            CallSid: "CA{{ $randomString() }}"
+            From: "+1{{ $randomInt(1000000000, 9999999999) }}"
+            To: "+1234567890"
