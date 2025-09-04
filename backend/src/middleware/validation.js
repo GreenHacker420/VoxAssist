@@ -76,6 +76,14 @@ const schemas = {
     rating: Joi.number().integer().min(1).max(5).required(),
     feedback: Joi.string().max(1000).optional(),
     category: Joi.string().valid('technical', 'billing', 'general', 'complaint').optional()
+  }),
+
+  // Language switching schema
+  languageSwitch: Joi.object({
+    language: Joi.string().valid('en', 'hi').required().messages({
+      'any.only': 'Language must be either "en" (English) or "hi" (Hindi)',
+      'any.required': 'Language is required'
+    })
   })
 };
 
