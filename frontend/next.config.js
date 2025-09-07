@@ -3,7 +3,7 @@ const nextConfig = {
   output: 'standalone',
   outputFileTracingRoot: require('path').join(__dirname, '../'),
   images: {
-    domains: ['localhost'],
+    domains: ['localhost', 'voxassist.onrender.com'],
   },
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
@@ -12,7 +12,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/:path*`,
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://voxassist.onrender.com'}/api/:path*`,
       },
     ];
   },

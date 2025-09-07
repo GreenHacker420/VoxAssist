@@ -13,11 +13,11 @@
     }
   ],
   "env": {
-    "NEXT_PUBLIC_API_URL": "@api_url"
+    "NEXT_PUBLIC_API_URL": "https://voxassist.onrender.com"
   },
   "build": {
     "env": {
-      "NEXT_PUBLIC_API_URL": "@api_url"
+      "NEXT_PUBLIC_API_URL": "https://voxassist.onrender.com"
     }
   }
 }
