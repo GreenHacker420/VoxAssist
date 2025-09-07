@@ -1,21 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-  trailingSlash: true,
-  distDir: 'out',
+  outputFileTracingRoot: require('path').join(__dirname, '../'),
   images: {
-    unoptimized: true,
     domains: ['localhost', 'voxassist.onrender.com'],
   },
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
-  // Note: rewrites don't work with static export, API calls will be handled client-side
-  // Production optimizations
-  compress: true,
-  poweredByHeader: false,
-  generateEtags: false,
-  // Security headers
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/:path*`,
+      },
+    ];
+  },
   async headers() {
     return [
       {
@@ -37,6 +36,10 @@ const nextConfig = {
       },
     ];
   },
+  // Production optimizations
+  compress: true,
+  poweredByHeader: false,
+  generateEtags: false,
 }
 
 module.exports = nextConfig
