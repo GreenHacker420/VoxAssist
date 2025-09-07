@@ -38,20 +38,38 @@ const connect = async () => {
     connection.release();
     logger.info('MySQL connected successfully');
 
-    // Redis connection
-    redisClient = redis.createClient({
-      url: process.env.REDIS_URL || 'redis://localhost:6379'
-    });
+    // Redis connection (optional)
+    try {
+      redisClient = redis.createClient({
+        url: process.env.REDIS_URL || 'redis://localhost:6379',
+        socket: {
+          connectTimeout: 2000,
+          lazyConnect: true
+        }
+      });
 
-    redisClient.on('error', (err) => {
-      logger.error('Redis Client Error:', err);
-    });
+      redisClient.on('error', (err) => {
+        // Suppress repeated connection errors
+        if (!err.message.includes('ECONNREFUSED')) {
+          logger.warn('Redis Client Error (non-critical):', err.message);
+        }
+      });
 
-    redisClient.on('connect', () => {
-      logger.info('Redis connected successfully');
-    });
+      redisClient.on('connect', () => {
+        logger.info('Redis connected successfully');
+      });
 
-    await redisClient.connect();
+      // Try to connect with timeout
+      const connectPromise = redisClient.connect();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Redis connection timeout')), 3000)
+      );
+      
+      await Promise.race([connectPromise, timeoutPromise]);
+    } catch (error) {
+      logger.warn('Redis connection failed, continuing without cache:', error.message);
+      redisClient = null;
+    }
 
     isConnected = true;
     logger.info('Database connections established');
@@ -136,6 +154,10 @@ const getConnection = async () => {
  * Set cache value
  */
 const setCache = async (key, value, expireInSeconds = 3600) => {
+  if (!redisClient) {
+    logger.debug('Redis not available, skipping cache set');
+    return;
+  }
   try {
     const serializedValue = JSON.stringify(value);
     await redisClient.setEx(key, expireInSeconds, serializedValue);
@@ -148,6 +170,10 @@ const setCache = async (key, value, expireInSeconds = 3600) => {
  * Get cache value
  */
 const getCache = async (key) => {
+  if (!redisClient) {
+    logger.debug('Redis not available, returning null from cache');
+    return null;
+  }
   try {
     const value = await redisClient.get(key);
     return value ? JSON.parse(value) : null;
@@ -161,6 +187,10 @@ const getCache = async (key) => {
  * Delete cache value
  */
 const deleteCache = async (key) => {
+  if (!redisClient) {
+    logger.debug('Redis not available, skipping cache delete');
+    return;
+  }
   try {
     await redisClient.del(key);
   } catch (error) {
@@ -172,6 +202,10 @@ const deleteCache = async (key) => {
  * Set cache pattern
  */
 const setCachePattern = async (pattern, value, expireInSeconds = 3600) => {
+  if (!redisClient) {
+    logger.debug('Redis not available, skipping cache pattern set');
+    return;
+  }
   try {
     const keys = await redisClient.keys(pattern);
     const pipeline = redisClient.multi();

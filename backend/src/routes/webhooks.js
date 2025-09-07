@@ -5,6 +5,22 @@ const geminiService = require('../services/geminiService');
 const elevenlabsService = require('../services/elevenlabsService');
 const logger = require('../utils/logger');
 
+// Webhook validation middleware for Twilio (must be before route definitions)
+router.use(/^\/twilio\/.*/, (req, res, next) => {
+  const signature = req.headers['x-twilio-signature'];
+  const url = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  
+  if (process.env.NODE_ENV === 'production') {
+    const isValid = twilioService.validateWebhook(signature, url, req.body);
+    if (!isValid) {
+      logger.warn(`Invalid Twilio webhook signature for ${url}`);
+      return res.status(403).send('Forbidden');
+    }
+  }
+  
+  next();
+});
+
 // Twilio webhook for incoming calls
 router.post('/twilio/voice', async (req, res) => {
   try {
@@ -140,22 +156,6 @@ router.post('/twilio/recording-status', async (req, res) => {
 router.post('/test', (req, res) => {
   logger.info('Test webhook received:', req.body);
   res.json({ success: true, message: 'Webhook received', data: req.body });
-});
-
-// Webhook validation middleware for Twilio
-router.use('/twilio/*', (req, res, next) => {
-  const signature = req.headers['x-twilio-signature'];
-  const url = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
-  
-  if (process.env.NODE_ENV === 'production') {
-    const isValid = twilioService.validateWebhook(signature, url, req.body);
-    if (!isValid) {
-      logger.warn(`Invalid Twilio webhook signature for ${url}`);
-      return res.status(403).send('Forbidden');
-    }
-  }
-  
-  next();
 });
 
 module.exports = router;

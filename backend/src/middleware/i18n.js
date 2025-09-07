@@ -1,12 +1,9 @@
-const I18nService = require('../services/i18nService');
+const i18nService = require('../services/i18nService');
 const logger = require('../utils/logger');
 
 /**
  * I18n Middleware for Multi-Language Request Handling
  */
-
-// Global i18n service instance
-const i18nService = new I18nService();
 
 /**
  * Language detection and setup middleware

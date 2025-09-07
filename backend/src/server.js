@@ -19,6 +19,9 @@ const { auditAuth, auditDataAccess } = require('./middleware/audit');
 const authRoutes = require('./routes/auth');
 const callRoutes = require('./routes/calls');
 const analyticsRoutes = require('./routes/analytics');
+const advancedAnalyticsRoutes = require('./routes/advancedAnalytics');
+const crmRoutes = require('./routes/crm');
+const mobileRoutes = require('./routes/mobile');
 const webhookRoutes = require('./routes/webhooks');
 const voiceRoutes = require('./routes/voice');
 const i18nRoutes = require('./routes/i18n');
@@ -27,6 +30,7 @@ const i18nRoutes = require('./routes/i18n');
 const voiceProcessingPipeline = require('./services/voiceProcessingPipeline');
 const healthMonitoring = require('./services/healthMonitoring');
 const maximIntegration = require('./services/maximIntegration');
+const callQualityMonitoring = require('./services/callQualityMonitoring');
 const { initializeDatabase } = require('./database/connection');
 
 const app = express();
@@ -69,6 +73,8 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', auditAuth('auth'), authRoutes);
 app.use('/api/calls', auditDataAccess('calls'), callRoutes);
 app.use('/api/analytics', auditDataAccess('analytics'), analyticsRoutes);
+app.use('/api/advanced-analytics', auditDataAccess('advanced-analytics'), advancedAnalyticsRoutes);
+app.use('/api/crm', auditDataAccess('crm'), crmRoutes);
 app.use('/api/voice', auditDataAccess('voice'), voiceRoutes);
 app.use('/api/i18n', i18nRoutes);
 app.use('/webhooks', webhookRoutes);
@@ -106,6 +112,10 @@ const initializeServices = async () => {
     // Initialize health monitoring
     await healthMonitoring.startMonitoring();
     logger.info('Health monitoring started');
+
+    // Initialize call quality monitoring
+    await callQualityMonitoring.startQualityMonitoring();
+    logger.info('Call quality monitoring started');
 
     // Initialize Maxim hardware integration
     try {

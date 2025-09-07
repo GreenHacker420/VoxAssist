@@ -1,0 +1,65 @@
+services:
+  # Backend API Service
+  - type: web
+    name: voxassist-backend
+    env: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DB_HOST
+        fromDatabase:
+          name: voxassist-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: voxassist-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: voxassist-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: voxassist-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: voxassist-db
+          property: password
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: voxassist-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        sync: false
+      - key: WEBHOOK_BASE_URL
+        value: https://voxassist-backend.onrender.com
+
+  # Redis Cache
+  - type: redis
+    name: voxassist-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
+
+databases:
+  # MySQL Database
+  - name: voxassist-db
+    databaseName: voxassist
+    user: voxassist_user
+    plan: starter
