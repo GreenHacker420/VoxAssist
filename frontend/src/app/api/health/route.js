@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-static';
+
 export async function GET() {
   try {
     const healthData = {
@@ -8,8 +10,8 @@ export async function GET() {
       service: 'VoxAssist Frontend',
       version: process.env.npm_package_version || '1.0.0',
       environment: process.env.NODE_ENV || 'development',
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
+      uptime: 0, // Static value for export
+      memory: { rss: 0, heapTotal: 0, heapUsed: 0, external: 0 }, // Static value for export
     };
 
     return NextResponse.json(healthData, { status: 200 });
