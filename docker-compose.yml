@@ -61,8 +61,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./backend/logs:/app/logs
+    volumes: []
 
   # Frontend Dashboard
   frontend:

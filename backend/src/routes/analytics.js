@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
-const db = require('../database/connection');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 // Get dashboard analytics
 router.get('/dashboard', authenticateToken, async (req, res) => {
@@ -10,98 +11,158 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
     const organizationId = req.user.organizationId || 1;
     
     // Get overview statistics
-    const overviewQuery = `
-      SELECT 
-        COUNT(*) as total_calls,
-        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as resolved_calls,
-        SUM(CASE WHEN status = 'escalated' THEN 1 ELSE 0 END) as escalated_calls,
-        COALESCE(AVG(duration), 0) as avg_call_duration
-      FROM calls 
-      WHERE organization_id = ? AND start_time >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-    `;
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     
-    const overviewResult = await db.query(overviewQuery, [organizationId]);
-    const overview = overviewResult.rows[0];
+    const calls = await prisma.call.findMany({
+      where: {
+        organizationId: organizationId,
+        startTime: {
+          gte: thirtyDaysAgo
+        }
+      },
+      select: {
+        status: true,
+        duration: true
+      }
+    });
+    
+    const totalCalls = calls.length;
+    const resolvedCalls = calls.filter(call => call.status === 'completed').length;
+    const escalatedCalls = calls.filter(call => call.status === 'escalated').length;
+    const avgCallDuration = calls.length > 0 
+      ? calls.reduce((sum, call) => sum + (call.duration || 0), 0) / calls.length 
+      : 0;
+    
+    const overview = {
+      total_calls: totalCalls,
+      resolved_calls: resolvedCalls,
+      escalated_calls: escalatedCalls,
+      avg_call_duration: avgCallDuration
+    };
     
     const resolutionRate = overview.total_calls > 0 
       ? (overview.resolved_calls / overview.total_calls * 100).toFixed(1)
       : 0;
     
     // Get call volume data
-    const volumeQuery = `
-      SELECT 
-        SUM(CASE WHEN DATE(start_time) = CURDATE() THEN 1 ELSE 0 END) as today,
-        SUM(CASE WHEN DATE(start_time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN 1 ELSE 0 END) as yesterday,
-        SUM(CASE WHEN start_time >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) THEN 1 ELSE 0 END) as this_week,
-        SUM(CASE WHEN start_time >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) + 7 DAY) 
-                 AND start_time < DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) THEN 1 ELSE 0 END) as last_week
-      FROM calls 
-      WHERE organization_id = ?
-    `;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    const thisWeekStart = new Date(today.getTime() - today.getDay() * 24 * 60 * 60 * 1000);
+    const lastWeekStart = new Date(thisWeekStart.getTime() - 7 * 24 * 60 * 60 * 1000);
     
-    const volumeResult = await db.query(volumeQuery, [organizationId]);
-    const callVolume = volumeResult.rows[0];
+    const [todayCalls, yesterdayCalls, thisWeekCalls, lastWeekCalls] = await Promise.all([
+      prisma.call.count({
+        where: {
+          organizationId: organizationId,
+          startTime: { gte: today }
+        }
+      }),
+      prisma.call.count({
+        where: {
+          organizationId: organizationId,
+          startTime: { gte: yesterday, lt: today }
+        }
+      }),
+      prisma.call.count({
+        where: {
+          organizationId: organizationId,
+          startTime: { gte: thisWeekStart }
+        }
+      }),
+      prisma.call.count({
+        where: {
+          organizationId: organizationId,
+          startTime: { gte: lastWeekStart, lt: thisWeekStart }
+        }
+      })
+    ]);
+    
+    const callVolume = {
+      today: todayCalls,
+      yesterday: yesterdayCalls,
+      this_week: thisWeekCalls,
+      last_week: lastWeekCalls
+    };
     
     // Get hourly distribution
-    const hourlyQuery = `
-      SELECT 
-        HOUR(start_time) as hour,
-        COUNT(*) as calls
-      FROM calls 
-      WHERE organization_id = ? AND DATE(start_time) = CURDATE()
-      GROUP BY HOUR(start_time)
-      ORDER BY hour
-    `;
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
     
-    const hourlyResult = await db.query(hourlyQuery, [organizationId]);
+    const todaysCalls = await prisma.call.findMany({
+      where: {
+        organizationId: organizationId,
+        startTime: {
+          gte: todayStart,
+          lt: todayEnd
+        }
+      },
+      select: {
+        startTime: true
+      }
+    });
+    
     const hourlyDistribution = [];
     for (let hour = 0; hour < 24; hour++) {
-      const hourData = hourlyResult.rows.find(row => parseInt(row.hour) === hour);
+      const callsInHour = todaysCalls.filter(call => 
+        call.startTime.getHours() === hour
+      ).length;
       hourlyDistribution.push({
         hour,
-        calls: hourData ? parseInt(hourData.calls) : 0
+        calls: callsInHour
       });
     }
     
     // Get sentiment analysis
-    const sentimentQuery = `
-      SELECT 
-        sentiment,
-        COUNT(*) * 100.0 / (SELECT COUNT(*) FROM call_interactions ci2 
-                           WHERE ci2.call_id IN (
-                             SELECT id FROM calls WHERE organization_id = ? 
-                             AND start_time >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-                           ) AND ci2.sentiment IS NOT NULL) as percentage
-      FROM call_interactions 
-      WHERE call_id IN (
-        SELECT id FROM calls WHERE organization_id = ? 
-        AND start_time >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-      )
-      AND sentiment IS NOT NULL
-      GROUP BY sentiment
-    `;
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     
-    const sentimentResult = await db.query(sentimentQuery, [organizationId, organizationId]);
-    const sentimentAnalysis = { positive: 0, neutral: 0, negative: 0 };
-    
-    sentimentResult.rows.forEach(row => {
-      sentimentAnalysis[row.sentiment] = parseFloat(row.percentage).toFixed(1);
+    const recentCalls = await prisma.call.findMany({
+      where: {
+        organizationId: organizationId,
+        startTime: { gte: sevenDaysAgo }
+      },
+      select: { id: true }
     });
+    
+    const callIds = recentCalls.map(call => call.id);
+    
+    const interactions = await prisma.callInteraction.findMany({
+      where: {
+        callId: { in: callIds },
+        sentiment: { not: null }
+      },
+      select: { sentiment: true }
+    });
+    
+    const sentimentCounts = { positive: 0, neutral: 0, negative: 0 };
+    interactions.forEach(interaction => {
+      if (sentimentCounts.hasOwnProperty(interaction.sentiment)) {
+        sentimentCounts[interaction.sentiment]++;
+      }
+    });
+    
+    const totalInteractions = interactions.length;
+    const sentimentAnalysis = {
+      positive: totalInteractions > 0 ? ((sentimentCounts.positive / totalInteractions) * 100).toFixed(1) : '0',
+      neutral: totalInteractions > 0 ? ((sentimentCounts.neutral / totalInteractions) * 100).toFixed(1) : '0',
+      negative: totalInteractions > 0 ? ((sentimentCounts.negative / totalInteractions) * 100).toFixed(1) : '0'
+    };
 
     const analytics = {
       overview: {
-        totalCalls: parseInt(overview.total_calls),
-        resolvedCalls: parseInt(overview.resolved_calls),
-        escalatedCalls: parseInt(overview.escalated_calls),
-        avgCallDuration: Math.round(parseFloat(overview.avg_call_duration)),
+        totalCalls: overview.total_calls,
+        resolvedCalls: overview.resolved_calls,
+        escalatedCalls: overview.escalated_calls,
+        avgCallDuration: Math.round(overview.avg_call_duration),
         resolutionRate: parseFloat(resolutionRate),
         customerSatisfaction: 4.2
       },
       callVolume: {
-        today: parseInt(callVolume.today),
-        yesterday: parseInt(callVolume.yesterday),
-        thisWeek: parseInt(callVolume.this_week),
-        lastWeek: parseInt(callVolume.last_week)
+        today: callVolume.today,
+        yesterday: callVolume.yesterday,
+        thisWeek: callVolume.this_week,
+        lastWeek: callVolume.last_week
       },
       hourlyDistribution,
       sentimentAnalysis

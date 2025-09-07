@@ -6,7 +6,8 @@ const { authenticateToken } = require('../middleware/auth');
 const { validate, sanitizeInput } = require('../middleware/validation');
 const { asyncHandler } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
-const db = require('../database/connection');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 // Register new user
 router.post('/register', validate('register'), asyncHandler(async (req, res) => {
@@ -17,12 +18,11 @@ router.post('/register', validate('register'), asyncHandler(async (req, res) => 
   const cleanName = sanitizeInput.cleanString(name);
     
   // Check if user already exists
-  const existingUserResult = await db.query(
-    'SELECT id FROM users WHERE email = ?',
-    [cleanEmail]
-  );
+  const existingUser = await prisma.user.findUnique({
+    where: { email: cleanEmail }
+  });
   
-  if (existingUserResult.rows.length > 0) {
+  if (existingUser) {
     return res.status(409).json({ 
       success: false, 
       error: 'User already exists' 
@@ -32,27 +32,24 @@ router.post('/register', validate('register'), asyncHandler(async (req, res) => 
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
   
-  // Create new user
-  const userResult = await db.query(
-    'INSERT INTO users (email, password_hash, name, role) VALUES (?, ?, ?, ?)',
-    [cleanEmail, hashedPassword, cleanName, role]
-  );
-  
-  const newUserId = userResult.insertId || userResult.rows?.insertId;
-  
-  // Get the created user
-  const createdUserResult = await db.query(
-    'SELECT id, email, name, role, created_at FROM users WHERE id = ?',
-    [newUserId]
-  );
-  
-  const newUser = createdUserResult.rows[0];
-  
-  // Add user to default organization
-  await db.query(
-    'INSERT INTO user_organizations (user_id, organization_id, role) VALUES (?, ?, ?)',
-    [newUser.id, 1, role] // Default to demo organization
-  );
+  // Create new user with organization relationship
+  const newUser = await prisma.user.create({
+    data: {
+      email: cleanEmail,
+      passwordHash: hashedPassword,
+      name: cleanName,
+      role: role,
+      userOrganizations: {
+        create: {
+          organizationId: 1, // Default to demo organization
+          role: role
+        }
+      }
+    },
+    include: {
+      userOrganizations: true
+    }
+  });
   
   // Generate JWT token
   const token = jwt.sign(
@@ -90,25 +87,22 @@ router.post('/login', validate('login'), asyncHandler(async (req, res) => {
   const cleanEmail = sanitizeInput.cleanEmail(email);
     
   // Find user with organization info
-  const userResult = await db.query(`
-    SELECT u.id, u.email, u.password_hash, u.name, u.role,
-           uo.organization_id, uo.role as org_role
-    FROM users u
-    LEFT JOIN user_organizations uo ON u.id = uo.user_id
-    WHERE u.email = ?
-  `, [cleanEmail]);
+  const user = await prisma.user.findUnique({
+    where: { email: cleanEmail },
+    include: {
+      userOrganizations: true
+    }
+  });
   
-  if (userResult.rows.length === 0) {
+  if (!user) {
     return res.status(401).json({ 
       success: false, 
       error: 'Invalid credentials' 
     });
   }
   
-  const user = userResult.rows[0];
-  
   // Verify password
-  const isValidPassword = await bcrypt.compare(password, user.password_hash);
+  const isValidPassword = await bcrypt.compare(password, user.passwordHash);
   if (!isValidPassword) {
     return res.status(401).json({ 
       success: false, 
@@ -117,12 +111,13 @@ router.post('/login', validate('login'), asyncHandler(async (req, res) => {
   }
   
   // Generate JWT token
+  const organizationId = user.userOrganizations[0]?.organizationId || 1;
   const token = jwt.sign(
     { 
       userId: user.id, 
       email: user.email, 
       role: user.role,
-      organizationId: user.organization_id || 1
+      organizationId: organizationId
     },
     process.env.JWT_SECRET,
     { expiresIn: '24h' }
@@ -139,7 +134,7 @@ router.post('/login', validate('login'), asyncHandler(async (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
-        organizationId: user.organization_id
+        organizationId: organizationId
       }
     }
   });
@@ -147,19 +142,23 @@ router.post('/login', validate('login'), asyncHandler(async (req, res) => {
 
 // Get current user profile
 router.get('/profile', authenticateToken, asyncHandler(async (req, res) => {
-  const userResult = await db.query(
-    'SELECT id, email, name, role, created_at FROM users WHERE id = ?',
-    [req.user.userId]
-  );
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.userId },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      createdAt: true
+    }
+  });
   
-  if (userResult.rows.length === 0) {
+  if (!user) {
     return res.status(404).json({ 
       success: false, 
       error: 'User not found' 
     });
   }
-  
-  const user = userResult.rows[0];
   
   res.json({
     success: true,
@@ -168,7 +167,7 @@ router.get('/profile', authenticateToken, asyncHandler(async (req, res) => {
       email: user.email,
       name: user.name,
       role: user.role,
-      createdAt: user.created_at
+      createdAt: user.createdAt
     }
   });
 }));
@@ -182,55 +181,41 @@ router.put('/profile', authenticateToken, validate('updateProfile'), asyncHandle
   const cleanName = name ? sanitizeInput.cleanString(name) : undefined;
   
   // Check if user exists
-  const userResult = await db.query(
-    'SELECT id FROM users WHERE id = ?',
-    [req.user.userId]
-  );
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.userId }
+  });
   
-  if (userResult.rows.length === 0) {
+  if (!user) {
     return res.status(404).json({ 
       success: false, 
       error: 'User not found' 
     });
   }
     
+  
+  
   // Update user data
-  const updateFields = [];
-  const updateValues = [];
+  const updateData = {};
+  if (cleanName) updateData.name = cleanName;
+  if (cleanEmail) updateData.email = cleanEmail;
   
-  if (cleanName) {
-    updateFields.push('name = ?');
-    updateValues.push(cleanName);
-  }
-  if (cleanEmail) {
-    updateFields.push('email = ?');
-    updateValues.push(cleanEmail);
-  }
-  
-  if (updateFields.length === 0) {
+  if (Object.keys(updateData).length === 0) {
     return res.status(400).json({
       success: false,
       error: 'No fields to update'
     });
   }
   
-  updateValues.push(req.user.userId);
-  
-    const setClause = updateFields.length > 0
-      ? `${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP`
-      : 'updated_at = CURRENT_TIMESTAMP';
-    await db.query(
-      `UPDATE users SET ${setClause} WHERE id = ?`,
-      updateValues
-    );
-  
-  // Get updated user data
-  const updatedUserResult = await db.query(
-    'SELECT id, email, name, role FROM users WHERE id = ?',
-    [req.user.userId]
-  );
-  
-  const updatedUser = updatedUserResult.rows[0];
+  const updatedUser = await prisma.user.update({
+    where: { id: req.user.userId },
+    data: updateData,
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true
+    }
+  });
   
   logger.info(`Profile updated for user: ${req.user.email}`);
   
@@ -250,22 +235,20 @@ router.post('/change-password', authenticateToken, validate('changePassword'), a
   const { currentPassword, newPassword } = req.body;
     
   // Get user's current password hash
-  const userResult = await db.query(
-    'SELECT password_hash FROM users WHERE id = ?',
-    [req.user.userId]
-  );
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.userId },
+    select: { passwordHash: true }
+  });
   
-  if (userResult.rows.length === 0) {
+  if (!user) {
     return res.status(404).json({ 
       success: false, 
       error: 'User not found' 
     });
   }
   
-  const user = userResult.rows[0];
-  
   // Verify current password
-  const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash);
+  const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash);
   if (!isValidPassword) {
     return res.status(401).json({ 
       success: false, 
@@ -277,10 +260,10 @@ router.post('/change-password', authenticateToken, validate('changePassword'), a
   const hashedNewPassword = await bcrypt.hash(newPassword, 10);
   
   // Update password in database
-  await db.query(
-    'UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-    [hashedNewPassword, req.user.userId]
-  );
+  await prisma.user.update({
+    where: { id: req.user.userId },
+    data: { passwordHash: hashedNewPassword }
+  });
   
   logger.info(`Password changed for user: ${req.user.email}`);
   

@@ -18,11 +18,12 @@ router.post('/switch', authenticateToken, validate('languageSwitch'), asyncHandl
   }
 
   // Update user's language preference
-  const { db } = require('../database/connection');
-  await db.query(
-    'UPDATE users SET preferred_language = ? WHERE id = ?',
-    [language, req.user.userId]
-  );
+  const { PrismaClient } = require('@prisma/client');
+  const prisma = new PrismaClient();
+  await prisma.user.update({
+    where: { id: req.user.userId },
+    data: { preferredLanguage: language }
+  });
 
   logger.info(`Language switched to ${language} for user ${req.user.userId}`);
 
@@ -67,14 +68,19 @@ router.get('/languages', asyncHandler(async (req, res) => {
 
 // Get user's current language preference
 router.get('/preference', authenticateToken, asyncHandler(async (req, res) => {
-  const { db } = require('../database/connection');
+  const { PrismaClient } = require('@prisma/client');
+  const prisma = new PrismaClient();
   
-  const result = await db.query(
-    'SELECT preferred_language FROM users WHERE id = ?',
-    [req.user.userId]
-  );
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.userId },
+    select: { preferredLanguage: true }
+  });
 
-  const preferredLanguage = result.rows[0]?.preferred_language || 'en';
+  if (!user) {
+    return res.status(404).json({ success: false, error: 'User not found' });
+  }
+
+  const preferredLanguage = user.preferredLanguage || 'en';
 
   res.json({
     success: true,

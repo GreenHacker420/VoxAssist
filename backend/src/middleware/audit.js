@@ -1,5 +1,6 @@
 const logger = require('../utils/logger');
-const { db } = require('../database/connection');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 /**
  * Security Audit and Compliance Middleware
@@ -29,27 +30,23 @@ const EVENT_CATEGORIES = {
  */
 const createAuditLog = async (auditData) => {
   try {
-    await db.query(`
-      INSERT INTO audit_logs (
-        user_id, session_id, event_type, event_category, 
-        event_description, ip_address, user_agent, 
-        resource_accessed, data_before, data_after,
-        risk_level, compliance_flags, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-    `, [
-      auditData.userId || null,
-      auditData.sessionId || null,
-      auditData.eventType,
-      auditData.eventCategory,
-      auditData.eventDescription,
-      auditData.ipAddress,
-      auditData.userAgent,
-      auditData.resourceAccessed || null,
-      auditData.dataBefore ? JSON.stringify(auditData.dataBefore) : null,
-      auditData.dataAfter ? JSON.stringify(auditData.dataAfter) : null,
-      auditData.riskLevel || 'low',
-      auditData.complianceFlags ? JSON.stringify(auditData.complianceFlags) : null
-    ]);
+    await prisma.auditLog.create({
+      data: {
+        userId: auditData.userId || null,
+        action: auditData.eventType,
+        resource: auditData.eventCategory,
+        resourceId: auditData.resourceAccessed,
+        details: {
+          eventDescription: auditData.eventDescription,
+          dataBefore: auditData.dataBefore,
+          dataAfter: auditData.dataAfter,
+          riskLevel: auditData.riskLevel || 'low',
+          complianceFlags: auditData.complianceFlags
+        },
+        ipAddress: auditData.ipAddress,
+        userAgent: auditData.userAgent
+      }
+    });
   } catch (error) {
     logger.error('Failed to create audit log:', error);
   }
@@ -225,22 +222,24 @@ const auditSecurityEvent = (eventType, riskLevel = 'medium') => {
  */
 const generateComplianceReport = async (startDate, endDate, complianceType) => {
   try {
-    const query = `
-      SELECT 
-        event_type,
-        event_category,
-        risk_level,
-        COUNT(*) as event_count,
-        DATE(created_at) as event_date
-      FROM audit_logs 
-      WHERE created_at BETWEEN ? AND ?
-        AND JSON_EXTRACT(compliance_flags, '$.${complianceType}') = true
-      GROUP BY event_type, event_category, risk_level, DATE(created_at)
-      ORDER BY created_at DESC
-    `;
-
-    const result = await db.query(query, [startDate, endDate]);
-    return result.rows;
+    const result = await prisma.auditLog.findMany({
+      where: {
+        createdAt: {
+          gte: new Date(startDate),
+          lte: new Date(endDate)
+        }
+      },
+      select: {
+        action: true,
+        resource: true,
+        details: true,
+        createdAt: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+    return result;
   } catch (error) {
     logger.error('Failed to generate compliance report:', error);
     throw error;
@@ -252,30 +251,59 @@ const generateComplianceReport = async (startDate, endDate, complianceType) => {
  */
 const detectSecurityIncidents = async () => {
   try {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    
     // Detect multiple failed login attempts
-    const failedLogins = await db.query(`
-      SELECT ip_address, COUNT(*) as attempts
-      FROM audit_logs 
-      WHERE event_type LIKE '%login%' 
-        AND event_description LIKE '%FAILED%'
-        AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
-      GROUP BY ip_address
-      HAVING attempts >= 5
-    `);
+    const failedLogins = await prisma.auditLog.groupBy({
+      by: ['ipAddress'],
+      where: {
+        action: {
+          contains: 'login'
+        },
+        details: {
+          path: ['eventDescription'],
+          string_contains: 'FAILED'
+        },
+        createdAt: {
+          gt: oneHourAgo
+        }
+      },
+      _count: {
+        ipAddress: true
+      },
+      having: {
+        ipAddress: {
+          _count: {
+            gte: 5
+          }
+        }
+      }
+    });
 
     // Detect unusual data access patterns
-    const unusualAccess = await db.query(`
-      SELECT user_id, COUNT(*) as access_count
-      FROM audit_logs 
-      WHERE event_category = 'data_access'
-        AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
-      GROUP BY user_id
-      HAVING access_count > 100
-    `);
+    const unusualAccess = await prisma.auditLog.groupBy({
+      by: ['userId'],
+      where: {
+        resource: 'data_access',
+        createdAt: {
+          gt: oneHourAgo
+        }
+      },
+      _count: {
+        userId: true
+      },
+      having: {
+        userId: {
+          _count: {
+            gt: 100
+          }
+        }
+      }
+    });
 
     return {
-      failedLogins: failedLogins.rows,
-      unusualAccess: unusualAccess.rows
+      failedLogins,
+      unusualAccess
     };
   } catch (error) {
     logger.error('Failed to detect security incidents:', error);
@@ -288,13 +316,18 @@ const detectSecurityIncidents = async () => {
  */
 const cleanupOldAuditLogs = async (retentionDays = 2555) => { // 7 years default
   try {
-    const result = await db.query(`
-      DELETE FROM audit_logs 
-      WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY)
-    `, [retentionDays]);
+    const cutoffDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+    
+    const result = await prisma.auditLog.deleteMany({
+      where: {
+        createdAt: {
+          lt: cutoffDate
+        }
+      }
+    });
 
-    logger.info(`Cleaned up ${result.affectedRows} old audit log entries`);
-    return result.affectedRows;
+    logger.info(`Cleaned up ${result.count} old audit log entries`);
+    return result.count;
   } catch (error) {
     logger.error('Failed to cleanup old audit logs:', error);
     throw error;
@@ -306,26 +339,30 @@ const cleanupOldAuditLogs = async (retentionDays = 2555) => { // 7 years default
  */
 const exportAuditLogs = async (startDate, endDate, format = 'json') => {
   try {
-    const query = `
-      SELECT * FROM audit_logs 
-      WHERE created_at BETWEEN ? AND ?
-      ORDER BY created_at DESC
-    `;
-
-    const result = await db.query(query, [startDate, endDate]);
+    const result = await prisma.auditLog.findMany({
+      where: {
+        createdAt: {
+          gte: new Date(startDate),
+          lte: new Date(endDate)
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
     
     if (format === 'csv') {
       // Convert to CSV format for compliance officers
       const csv = require('csv-stringify');
       return new Promise((resolve, reject) => {
-        csv(result.rows, { header: true }, (err, output) => {
+        csv(result, { header: true }, (err, output) => {
           if (err) reject(err);
           else resolve(output);
         });
       });
     }
 
-    return result.rows;
+    return result;
   } catch (error) {
     logger.error('Failed to export audit logs:', error);
     throw error;

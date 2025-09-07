@@ -3,6 +3,8 @@ const router = express.Router();
 const twilioService = require('../services/twilioService');
 const voiceProcessingPipeline = require('../services/voiceProcessingPipeline');
 const logger = require('../utils/logger');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 // Handle incoming calls from Twilio
 router.post('/incoming', async (req, res) => {
@@ -93,11 +95,10 @@ router.post('/recording-status', async (req, res) => {
     
     if (RecordingStatus === 'completed') {
       // Store recording URL in database
-      const db = require('../database/connection');
-      await db.query(
-        'UPDATE calls SET recording_url = $1 WHERE call_sid = $2',
-        [RecordingUrl, CallSid]
-      );
+      await prisma.call.updateMany({
+        where: { callSid: CallSid },
+        data: { recordingUrl: RecordingUrl }
+      });
     }
     
     res.status(200).send('OK');
