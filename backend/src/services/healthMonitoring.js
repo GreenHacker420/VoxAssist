@@ -1,5 +1,5 @@
 const logger = require('../utils/logger');
-const { db } = require('../database/connection');
+const { prisma } = require('../database/connection');
 const { detectSecurityIncidents } = require('../middleware/audit');
 const maximIntegration = require('./maximIntegration');
 
@@ -133,12 +133,16 @@ const collectDatabaseMetrics = async () => {
   try {
     // Check database connection
     const startTime = Date.now();
-    await db.query('SELECT 1');
+    await prisma.$queryRaw`SELECT 1`;
     const dbResponseTime = Date.now() - startTime;
 
-    // Get database status (MySQL syntax)
-    const processListResult = await db.query('SHOW PROCESSLIST');
-    metrics.dbConnections = processListResult.length;
+    // Get database status (PostgreSQL syntax)
+    const processListResult = await prisma.$queryRaw`
+      SELECT COUNT(*) as connection_count 
+      FROM pg_stat_activity 
+      WHERE state = 'active'
+    `;
+    metrics.dbConnections = Number(processListResult[0]?.connection_count) || 0;
 
     // Check thresholds
     if (dbResponseTime > 1000) {
@@ -162,15 +166,17 @@ const collectDatabaseMetrics = async () => {
  */
 const collectApplicationMetrics = async () => {
   try {
-    // Get active user count (MySQL syntax)
-    const activeUsersResult = await db.query(`
-      SELECT COUNT(DISTINCT user_id) as active_users
-      FROM user_sessions 
-      WHERE is_active = TRUE 
-        AND expires_at > NOW()
-    `);
+    // Get active user count (Prisma syntax)
+    const activeUsersCount = await prisma.userSession.count({
+      where: {
+        isActive: true,
+        expiresAt: {
+          gt: new Date()
+        }
+      }
+    });
 
-    metrics.activeUsers = activeUsersResult[0]?.active_users || 0;
+    metrics.activeUsers = activeUsersCount;
 
     // Calculate error rate
     const totalRequests = metrics.requests;
@@ -256,7 +262,7 @@ const performHealthChecks = async () => {
 
   // Database health
   try {
-    await db.query('SELECT 1');
+    await prisma.$queryRaw`SELECT 1`;
     healthStatus.database = 'healthy';
   } catch (error) {
     healthStatus.database = 'unhealthy';
@@ -417,14 +423,17 @@ const createAlert = async (type, severity, message) => {
 
   logger.warn(`ALERT [${severity.toUpperCase()}]: ${message}`, alert);
 
-  // Store in database (MySQL syntax)
+  // Store in database (Prisma syntax)
   try {
-    await db.query(`
-      INSERT INTO security_incidents (
-        incident_type, severity, description, 
-        detection_method, status, created_at
-      ) VALUES (?, ?, ?, ?, ?, NOW())
-    `, [type, severity, message, 'health_monitoring', 'open']);
+    await prisma.securityIncident.create({
+      data: {
+        incidentType: type,
+        severity: severity,
+        description: message,
+        detectionMethod: 'health_monitoring',
+        status: 'open'
+      }
+    });
   } catch (error) {
     logger.error('Failed to store alert in database:', error);
   }

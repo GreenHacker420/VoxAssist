@@ -1,14 +1,13 @@
-const mysql = require('mysql2/promise');
+const { prisma, initializeDatabase: initPrisma, disconnectDatabase } = require('./prisma');
 const redis = require('redis');
 const logger = require('../utils/logger');
 
 /**
  * Database Connection - Functional Version
- * Manages MySQL and Redis connections
+ * Manages PostgreSQL via Prisma and Redis connections
  */
 
 // Module state
-let mysqlPool = null;
 let redisClient = null;
 let isConnected = false;
 
@@ -17,26 +16,9 @@ let isConnected = false;
  */
 const connect = async () => {
   try {
-    // MySQL connection
-    mysqlPool = mysql.createPool({
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 3306,
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'voxassist',
-      waitForConnections: true,
-      connectionLimit: 20,
-      queueLimit: 0,
-      acquireTimeout: 60000,
-      timeout: 60000,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
-
-    // Test MySQL connection
-    const connection = await mysqlPool.getConnection();
-    await connection.query('SELECT NOW()');
-    connection.release();
-    logger.info('MySQL connected successfully');
+    // Initialize Prisma (PostgreSQL)
+    await initPrisma();
+    logger.info('PostgreSQL connected successfully via Prisma');
 
     // Redis connection (optional)
     try {
@@ -84,10 +66,8 @@ const connect = async () => {
  */
 const disconnect = async () => {
   try {
-    if (mysqlPool) {
-      await mysqlPool.end();
-      logger.info('MySQL disconnected');
-    }
+    await disconnectDatabase();
+    logger.info('PostgreSQL disconnected');
     
     if (redisClient) {
       await redisClient.quit();
@@ -101,13 +81,10 @@ const disconnect = async () => {
 };
 
 /**
- * Get MySQL pool
+ * Get Prisma client
  */
-const getPool = () => {
-  if (!mysqlPool) {
-    throw new Error('MySQL pool not initialized');
-  }
-  return mysqlPool;
+const getPrisma = () => {
+  return prisma;
 };
 
 /**
@@ -121,19 +98,15 @@ const getRedis = () => {
 };
 
 /**
- * Execute MySQL query
+ * Execute raw query (for compatibility)
  */
 const query = async (text, params) => {
-  if (!mysqlPool) {
-    throw new Error('Database not connected');
-  }
-  
   const start = Date.now();
   try {
-    const [rows, fields] = await mysqlPool.execute(text, params);
+    const result = await prisma.$queryRawUnsafe(text, ...params);
     const duration = Date.now() - start;
-    logger.debug('Executed query', { text, duration, rows: rows.length });
-    return rows; // Return rows directly for MySQL compatibility
+    logger.debug('Executed query', { text, duration });
+    return result;
   } catch (error) {
     logger.error('Query error:', { text, error: error.message });
     throw error;
@@ -141,13 +114,10 @@ const query = async (text, params) => {
 };
 
 /**
- * Get MySQL connection
+ * Get database instance (Prisma client)
  */
-const getConnection = async () => {
-  if (!mysqlPool) {
-    throw new Error('Database not connected');
-  }
-  return await mysqlPool.getConnection();
+const getConnection = () => {
+  return prisma;
 };
 
 /**
@@ -227,9 +197,10 @@ const initializeDatabase = async () => {
   try {
     await connect();
     return {
+      prisma,
       query,
       getConnection,
-      getPool,
+      getPrisma,
       getRedis,
       setCache,
       getCache,
@@ -263,12 +234,14 @@ module.exports = {
   disconnect,
   query,
   getConnection,
-  getPool,
+  getPrisma,
   getRedis,
   setCache,
   getCache,
   deleteCache,
   setCachePattern,
   initializeDatabase,
-  isConnected: () => isConnected
+  isConnected: () => isConnected,
+  prisma,
+  db: prisma // Alias for backward compatibility
 };
