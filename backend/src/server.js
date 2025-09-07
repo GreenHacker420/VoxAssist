@@ -25,6 +25,8 @@ const mobileRoutes = require('./routes/mobile');
 const webhookRoutes = require('./routes/webhooks');
 const voiceRoutes = require('./routes/voice');
 const i18nRoutes = require('./routes/i18n');
+const adminRoutes = require('./routes/admin');
+const billingRoutes = require('./routes/billing');
 
 // Functional services
 const voiceProcessingPipeline = require('./services/voiceProcessingPipeline');
@@ -76,8 +78,11 @@ app.use('/api/analytics', auditDataAccess('analytics'), analyticsRoutes);
 app.use('/api/advanced-analytics', auditDataAccess('advanced-analytics'), advancedAnalyticsRoutes);
 app.use('/api/crm', auditDataAccess('crm'), crmRoutes);
 app.use('/api/voice', auditDataAccess('voice'), voiceRoutes);
+app.use('/api/admin', auditDataAccess('admin'), adminRoutes);
+app.use('/api/billing', auditDataAccess('billing'), billingRoutes);
 app.use('/api/i18n', i18nRoutes);
 app.use('/webhooks', webhookRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 // Socket.io for real-time communication
 io.on('connection', (socket) => {

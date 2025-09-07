@@ -11,7 +11,11 @@ export const metadata: Metadata = {
   description: "Production-ready AI-powered voice calling agent platform with real-time transcription, analytics, and CRM integration.",
   keywords: "AI, voice calling, transcription, analytics, CRM, customer service",
   authors: [{ name: "VoxAssist Team" }],
-  viewport: "width=device-width, initial-scale=1",
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({

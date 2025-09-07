@@ -16,12 +16,15 @@ model User {
   passwordHash String   @map("password_hash")
   name         String
   role         String   @default("user")
+  isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
   userOrganizations UserOrganization[]
   sessions          UserSession[]
+  calls             Call[]
+  auditLogs         AuditLog[]
 
   @@map("users")
 }
@@ -77,6 +80,7 @@ model Call {
   id             Int       @id @default(autoincrement())
   callSid        String    @unique @map("call_sid")
   organizationId Int?      @map("organization_id")
+  userId         Int?      @map("user_id")
   customerPhone  String    @map("customer_phone")
   twilioPhone    String    @map("twilio_phone")
   status         String    @default("initiated")
@@ -89,9 +93,11 @@ model Call {
 
   // Relations
   organization     Organization?     @relation(fields: [organizationId], references: [id])
+  user             User?             @relation(fields: [userId], references: [id])
   callInteractions CallInteraction[]
 
   @@index([organizationId])
+  @@index([userId])
   @@index([status])
   @@index([startTime])
   @@map("calls")
@@ -220,6 +226,9 @@ model AuditLog {
   ipAddress   String?  @map("ip_address")
   userAgent   String?  @map("user_agent")
   createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([action])

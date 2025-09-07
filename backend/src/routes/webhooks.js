@@ -1,9 +1,14 @@
 const express = require('express');
 const router = express.Router();
+const { PrismaClient } = require('@prisma/client');
+const { authenticateToken } = require('../middleware/auth');
+const { asyncHandler } = require('../middleware/errorHandler');
 const twilioService = require('../services/twilioService');
 const geminiService = require('../services/geminiService');
 const elevenlabsService = require('../services/elevenlabsService');
 const logger = require('../utils/logger');
+
+const prisma = new PrismaClient();
 
 // Webhook validation middleware for Twilio (must be before route definitions)
 router.use(/^\/twilio\/.*/, (req, res, next) => {
@@ -151,6 +156,176 @@ router.post('/twilio/recording-status', async (req, res) => {
     res.status(500).send('Error');
   }
 });
+
+/**
+ * GET /webhooks - Get all configured webhooks (requires auth)
+ */
+router.get('/', authenticateToken, asyncHandler(async (req, res) => {
+  // Mock webhook configurations - in production, this would come from database
+  const webhooks = [
+    {
+      id: 'wh_1',
+      name: 'Call Status Updates',
+      url: `${process.env.WEBHOOK_BASE_URL || 'https://your-domain.com'}/webhooks/twilio/call-status`,
+      events: ['call.started', 'call.completed', 'call.failed'],
+      status: 'active',
+      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      lastTriggered: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: 'wh_2',
+      name: 'Recording Notifications',
+      url: `${process.env.WEBHOOK_BASE_URL || 'https://your-domain.com'}/webhooks/twilio/recording-status`,
+      events: ['recording.completed'],
+      status: 'active',
+      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+      lastTriggered: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: 'wh_3',
+      name: 'Customer Feedback',
+      url: `${process.env.WEBHOOK_BASE_URL || 'https://your-domain.com'}/webhooks/feedback`,
+      events: ['call.feedback'],
+      status: 'inactive',
+      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      lastTriggered: null
+    }
+  ];
+
+  res.json({ webhooks });
+}));
+
+/**
+ * GET /webhooks/events - Get available webhook events
+ */
+router.get('/events', authenticateToken, asyncHandler(async (req, res) => {
+  const availableEvents = [
+    {
+      name: 'call.started',
+      description: 'Triggered when a call is initiated',
+      payload: {
+        callId: 'string',
+        from: 'string',
+        to: 'string',
+        timestamp: 'string'
+      }
+    },
+    {
+      name: 'call.completed',
+      description: 'Triggered when a call is completed successfully',
+      payload: {
+        callId: 'string',
+        duration: 'number',
+        status: 'string',
+        timestamp: 'string'
+      }
+    },
+    {
+      name: 'call.failed',
+      description: 'Triggered when a call fails',
+      payload: {
+        callId: 'string',
+        error: 'string',
+        timestamp: 'string'
+      }
+    },
+    {
+      name: 'recording.completed',
+      description: 'Triggered when call recording is ready',
+      payload: {
+        callId: 'string',
+        recordingUrl: 'string',
+        duration: 'number',
+        timestamp: 'string'
+      }
+    },
+    {
+      name: 'call.feedback',
+      description: 'Triggered when customer provides feedback',
+      payload: {
+        callId: 'string',
+        rating: 'number',
+        comment: 'string',
+        timestamp: 'string'
+      }
+    },
+    {
+      name: 'ai.escalation',
+      description: 'Triggered when AI escalates to human agent',
+      payload: {
+        callId: 'string',
+        reason: 'string',
+        confidence: 'number',
+        timestamp: 'string'
+      }
+    }
+  ];
+
+  res.json({ events: availableEvents });
+}));
+
+/**
+ * POST /webhooks - Create new webhook
+ */
+router.post('/', authenticateToken, asyncHandler(async (req, res) => {
+  const { name, url, events } = req.body;
+
+  if (!name || !url || !events || !Array.isArray(events)) {
+    return res.status(400).json({ error: 'Name, URL, and events array are required' });
+  }
+
+  // Mock webhook creation - in production, this would save to database
+  const webhook = {
+    id: `wh_${Date.now()}`,
+    name,
+    url,
+    events,
+    status: 'active',
+    createdAt: new Date().toISOString(),
+    lastTriggered: null
+  };
+
+  res.status(201).json({ webhook });
+}));
+
+/**
+ * PUT /webhooks/:id - Update webhook
+ */
+router.put('/:id', authenticateToken, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { name, url, events, status } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ error: 'Webhook ID is required' });
+  }
+
+  // Mock webhook update - in production, this would update database
+  const webhook = {
+    id,
+    name: name || 'Updated Webhook',
+    url: url || 'https://example.com/webhook',
+    events: events || ['call.completed'],
+    status: status || 'active',
+    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    lastTriggered: new Date().toISOString()
+  };
+
+  res.json({ webhook });
+}));
+
+/**
+ * DELETE /webhooks/:id - Delete webhook
+ */
+router.delete('/:id', authenticateToken, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ error: 'Webhook ID is required' });
+  }
+
+  // Mock webhook deletion - in production, this would delete from database
+  res.json({ message: 'Webhook deleted successfully' });
+}));
 
 // Generic webhook for testing
 router.post('/test', (req, res) => {

@@ -210,6 +210,40 @@ export interface Usage {
   storageLimit: number;
 }
 
+// Admin Types
+export interface SystemMetrics {
+  totalUsers: number;
+  activeUsers: number;
+  totalCalls: number;
+  callsToday: number;
+  systemHealth: 'healthy' | 'warning' | 'critical';
+  uptime: string;
+  memoryUsage: number;
+  cpuUsage: number;
+}
+
+export interface AdminSettings {
+  id: string;
+  key: string;
+  value: string;
+  description: string;
+  category: string;
+  updatedAt: string;
+}
+
+// Audit Log Types
+export interface AuditLog {
+  id: string;
+  userId: number;
+  action: string;
+  resource: string;
+  resourceId: string;
+  details: Record<string, any>;
+  ipAddress: string;
+  userAgent: string;
+  createdAt: string;
+}
+
 // API Response Types
 export interface ApiResponse<T = unknown> {
   success: boolean;

@@ -1,5 +1,10 @@
 import api from '@/lib/api';
-import { User } from '@/types';
+import type { 
+  User,
+  AuditLog,
+  SystemMetrics,
+  AdminSettings
+} from '@/types';
 
 export interface AdminUser extends User {
   lastLogin?: string;
@@ -15,33 +20,6 @@ export interface AdminUser extends User {
   };
 }
 
-export interface SystemMetrics {
-  totalUsers: number;
-  activeUsers: number;
-  totalCalls: number;
-  callsToday: number;
-  revenue: {
-    thisMonth: number;
-    lastMonth: number;
-    growth: number;
-  };
-  systemHealth: {
-    uptime: string;
-    cpuUsage: number;
-    memoryUsage: number;
-    diskUsage: number;
-  };
-}
-
-export interface AdminSettings {
-  id: string;
-  key: string;
-  value: string;
-  description: string;
-  type: 'string' | 'number' | 'boolean' | 'json';
-  category: string;
-  updatedAt: string;
-}
 
 export class AdminService {
   /**
@@ -53,102 +31,82 @@ export class AdminService {
     page: number;
     totalPages: number;
   }> {
-    const response = await api.get('/admin/users', {
-      params: { page, limit, search }
-    });
-    return response.data as {
+    const response = await api.get<{
       users: AdminUser[];
       total: number;
       page: number;
       totalPages: number;
-    };
+    }>('/admin/users', {
+      params: { page, limit, search }
+    });
+    return response.data!;
   }
 
   /**
    * Get specific user details
    */
   static async getUser(userId: string): Promise<AdminUser> {
-    const response = await api.get(`/admin/users/${userId}`);
-    return response.data as AdminUser;
+    const response = await api.get<AdminUser>(`/admin/users/${userId}`);
+    return response.data!;
   }
 
   /**
    * Update user status
    */
   static async updateUserStatus(userId: string, status: 'active' | 'inactive' | 'suspended'): Promise<AdminUser> {
-    const response = await api.patch(`/admin/users/${userId}/status`, { status });
-    return response.data as AdminUser;
+    const response = await api.patch<AdminUser>(`/admin/users/${userId}/status`, { status });
+    return response.data!;
   }
 
   /**
    * Delete user
    */
   static async deleteUser(userId: string): Promise<void> {
-    await api.delete(`/admin/users/${userId}`);
+    await api.delete<void>(`/admin/users/${userId}`);
   }
 
   /**
    * Get system metrics
    */
   static async getSystemMetrics(): Promise<SystemMetrics> {
-    const response = await api.get('/admin/metrics');
-    return response.data as SystemMetrics;
+    const response = await api.get<SystemMetrics>('/admin/metrics');
+    return response.data!;
   }
 
   /**
    * Get system settings
    */
   static async getSettings(): Promise<AdminSettings[]> {
-    const response = await api.get('/admin/settings');
-    return response.data as AdminSettings[];
+    const response = await api.get<AdminSettings[]>('/admin/settings');
+    return response.data!;
   }
 
   /**
    * Update system setting
    */
   static async updateSetting(settingId: string, value: string): Promise<AdminSettings> {
-    const response = await api.put(`/admin/settings/${settingId}`, { value });
-    return response.data as AdminSettings;
+    const response = await api.put<AdminSettings>(`/admin/settings/${settingId}`, { value });
+    return response.data!;
   }
 
   /**
    * Get audit logs
    */
   static async getAuditLogs(page = 1, limit = 20, userId?: string): Promise<{
-    logs: Array<{
-      id: string;
-      userId: string;
-      userName: string;
-      action: string;
-      resource: string;
-      details: Record<string, unknown>;
-      ipAddress: string;
-      userAgent: string;
-      createdAt: string;
-    }>;
+    logs: AuditLog[];
     total: number;
     page: number;
     totalPages: number;
   }> {
-    const response = await api.get('/admin/audit-logs', {
-      params: { page, limit, userId }
-    });
-    return response.data as {
-      logs: Array<{
-        id: string;
-        userId: string;
-        userName: string;
-        action: string;
-        resource: string;
-        details: Record<string, unknown>;
-        ipAddress: string;
-        userAgent: string;
-        createdAt: string;
-      }>;
+    const response = await api.get<{
+      logs: AuditLog[];
       total: number;
       page: number;
       totalPages: number;
-    };
+    }>('/admin/audit-logs', {
+      params: { page, limit, userId }
+    });
+    return response.data!;
   }
 
   /**
