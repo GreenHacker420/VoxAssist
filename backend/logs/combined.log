@@ -1267,3 +1267,225 @@
 {"level":"info","message":"Environment: development","service":"voxassist-backend","timestamp":"2025-09-07T16:12:55.929Z"}
 {"level":"info","message":"All functional services are operational","service":"voxassist-backend","timestamp":"2025-09-07T16:12:55.929Z"}
 {"level":"info","message":"Database connection test successful","service":"voxassist-backend","timestamp":"2025-09-07T16:12:56.189Z"}
+{"acknowledged":false,"id":"1757261605920","level":"warn","message":"ALERT [WARNING]: Memory usage at 91.6% Memory usage at 91.6%","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:13:25.920Z","type":"high_memory_usage"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:25.921Z"}
+{"acknowledged":false,"id":"1757261605929","level":"warn","message":"ALERT [WARNING]: Memory usage at 92.4% Memory usage at 92.4%","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:13:25.929Z","type":"high_memory_usage"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:25.930Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:26.523Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:26.629Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:26.676Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:26.754Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:26.954Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:27.075Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:55.926Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:55.941Z"}
+{"acknowledged":false,"id":"1757261635940","level":"warn","message":"ALERT [WARNING]: Memory usage at 89.5% Memory usage at 89.5%","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:13:55.940Z","type":"high_memory_usage"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:55.941Z"}
+{"acknowledged":false,"id":"1757261635945","level":"warn","message":"ALERT [WARNING]: Memory usage at 90.2% Memory usage at 90.2%","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:13:55.945Z","type":"high_memory_usage"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:55.946Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:56.244Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:56.283Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:56.347Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:56.398Z"}
+{"acknowledged":false,"id":"1757261636464","level":"warn","message":"ALERT [WARNING]: Redis health check failed Redis health check failed","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:13:56.464Z","type":"redis_health"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:56.465Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:56.481Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:56.512Z"}
+{"database":"healthy","disk_space":"healthy","external_apis":"healthy","level":"info","maxim_hardware":"healthy","message":"Health check completed","redis":"unhealthy","service":"voxassist-backend","timestamp":"2025-09-07T16:13:55.934Z"}
+{"acknowledged":false,"id":"1757261637291","level":"warn","message":"ALERT [WARNING]: Redis health check failed Redis health check failed","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:13:57.291Z","type":"redis_health"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:13:57.291Z"}
+{"database":"healthy","disk_space":"healthy","external_apis":"healthy","level":"info","maxim_hardware":"healthy","message":"Health check completed","redis":"unhealthy","service":"voxassist-backend","timestamp":"2025-09-07T16:13:55.923Z"}
+{"acknowledged":false,"id":"1757261665941","level":"warn","message":"ALERT [WARNING]: Memory usage at 90.7% Memory usage at 90.7%","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:14:25.941Z","type":"high_memory_usage"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:25.942Z"}
+{"acknowledged":false,"id":"1757261665946","level":"warn","message":"ALERT [WARNING]: Memory usage at 92.1% Memory usage at 92.1%","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:14:25.946Z","type":"high_memory_usage"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:25.946Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:27.711Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:27.853Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:27.897Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:27.978Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:28.027Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:28.148Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:55.923Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:55.931Z"}
+{"acknowledged":false,"id":"1757261695942","level":"warn","message":"ALERT [WARNING]: Memory usage at 90.4% Memory usage at 90.4%","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:14:55.942Z","type":"high_memory_usage"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:55.943Z"}
+{"acknowledged":false,"id":"1757261695946","level":"warn","message":"ALERT [WARNING]: Memory usage at 90.2% Memory usage at 90.2%","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:14:55.946Z","type":"high_memory_usage"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:55.947Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:56.223Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:56.344Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:56.474Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:56.935Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:57.123Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:57.255Z"}
+{"acknowledged":false,"id":"1757261697838","level":"warn","message":"ALERT [WARNING]: Redis health check failed Redis health check failed","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:14:57.838Z","type":"redis_health"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:57.838Z"}
+{"database":"healthy","disk_space":"healthy","external_apis":"healthy","level":"info","maxim_hardware":"healthy","message":"Health check completed","redis":"unhealthy","service":"voxassist-backend","timestamp":"2025-09-07T16:14:55.922Z"}
+{"acknowledged":false,"id":"1757261698413","level":"warn","message":"ALERT [WARNING]: Redis health check failed Redis health check failed","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:14:58.413Z","type":"redis_health"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:14:58.413Z"}
+{"database":"healthy","disk_space":"healthy","external_apis":"healthy","level":"info","maxim_hardware":"healthy","message":"Health check completed","redis":"unhealthy","service":"voxassist-backend","timestamp":"2025-09-07T16:14:55.931Z"}
+{"level":"info","message":"Gemini AI service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.181Z"}
+{"level":"info","message":"Gemini AI service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.181Z"}
+{"level":"info","message":"Gemini AI service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.181Z"}
+{"level":"info","message":"ElevenLabs service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.203Z"}
+{"level":"info","message":"Twilio service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.224Z"}
+{"level":"info","message":"I18n translations loaded for languages: en, hi","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.229Z"}
+{"level":"info","message":"PostgreSQL database connected successfully via Prisma","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.232Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:15:11.233Z"}
+{"level":"info","message":"ElevenLabs service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.203Z"}
+{"level":"info","message":"Twilio service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.224Z"}
+{"level":"info","message":"I18n translations loaded for languages: en, hi","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.229Z"}
+{"level":"info","message":"PostgreSQL database connected successfully via Prisma","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.232Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:15:11.233Z"}
+{"level":"info","message":"ElevenLabs service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.203Z"}
+{"level":"info","message":"Twilio service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.224Z"}
+{"level":"info","message":"I18n translations loaded for languages: en, hi","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.229Z"}
+{"level":"info","message":"PostgreSQL database connected successfully via Prisma","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.232Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:15:11.233Z"}
+{"level":"info","message":"Database connection test successful","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.536Z"}
+{"level":"info","message":"PostgreSQL connected successfully via Prisma","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.536Z"}
+{"level":"warn","message":"Redis connection failed, continuing without cache:","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.538Z"}
+{"level":"info","message":"Database connections established","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.538Z"}
+{"level":"info","message":"Database initialized successfully","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.539Z"}
+{"level":"info","message":"Voice processing pipeline initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.539Z"}
+{"level":"info","message":"Health monitoring service started","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.539Z"}
+{"level":"info","message":"Initializing Maxim hardware integration...","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.539Z"}
+{"level":"info","message":"MAX98357A/MAX98358 audio processor initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.539Z"}
+{"level":"info","message":"MAX77650 power manager initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.539Z"}
+{"level":"info","message":"DS28E38 security chip initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.539Z"}
+{"level":"info","message":"Maxim hardware integration initialized successfully","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.539Z"}
+{"level":"info","message":"Health monitoring started","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.540Z"}
+{"level":"info","message":"Call quality monitoring started","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.540Z"}
+{"level":"info","message":"Call quality monitoring started","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.540Z"}
+{"level":"info","message":"Initializing Maxim hardware integration...","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.540Z"}
+{"level":"info","message":"MAX98357A/MAX98358 audio processor initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.540Z"}
+{"level":"info","message":"MAX77650 power manager initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.540Z"}
+{"level":"info","message":"DS28E38 security chip initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.540Z"}
+{"level":"info","message":"Maxim hardware integration initialized successfully","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.540Z"}
+{"level":"info","message":"Maxim hardware integration initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.540Z"}
+{"level":"info","message":"All functional services initialized successfully","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.540Z"}
+{"level":"info","message":"VoxAssist Backend Server running on port 5005","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.541Z"}
+{"level":"info","message":"Environment: development","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.542Z"}
+{"level":"info","message":"All functional services are operational","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.542Z"}
+{"level":"info","message":"Database connection test successful","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.549Z"}
+{"level":"info","message":"PostgreSQL connected successfully via Prisma","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.550Z"}
+{"level":"warn","message":"Redis connection failed, continuing without cache:","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.551Z"}
+{"level":"info","message":"Database connections established","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.551Z"}
+{"level":"info","message":"Database initialized successfully","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.551Z"}
+{"level":"info","message":"Voice processing pipeline initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.551Z"}
+{"level":"info","message":"Health monitoring service started","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.551Z"}
+{"level":"info","message":"Initializing Maxim hardware integration...","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.551Z"}
+{"level":"info","message":"MAX98357A/MAX98358 audio processor initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.551Z"}
+{"level":"info","message":"MAX77650 power manager initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.551Z"}
+{"level":"info","message":"DS28E38 security chip initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.551Z"}
+{"level":"info","message":"Maxim hardware integration initialized successfully","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.551Z"}
+{"level":"info","message":"Health monitoring started","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.552Z"}
+{"level":"info","message":"Call quality monitoring started","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.552Z"}
+{"level":"info","message":"Call quality monitoring started","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.552Z"}
+{"level":"info","message":"Initializing Maxim hardware integration...","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.552Z"}
+{"level":"info","message":"MAX98357A/MAX98358 audio processor initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.552Z"}
+{"level":"info","message":"MAX77650 power manager initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.552Z"}
+{"level":"info","message":"DS28E38 security chip initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.552Z"}
+{"level":"info","message":"Maxim hardware integration initialized successfully","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.552Z"}
+{"level":"info","message":"Maxim hardware integration initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.552Z"}
+{"level":"info","message":"All functional services initialized successfully","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.552Z"}
+{"level":"info","message":"VoxAssist Backend Server running on port 3001","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.553Z"}
+{"level":"info","message":"Environment: development","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.553Z"}
+{"level":"info","message":"All functional services are operational","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.553Z"}
+{"level":"info","message":"Database connection test successful","service":"voxassist-backend","timestamp":"2025-09-07T16:15:11.556Z"}
+{"level":"info","message":"Gemini AI service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.138Z"}
+{"level":"info","message":"ElevenLabs service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.162Z"}
+{"level":"info","message":"Twilio service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.179Z"}
+{"level":"info","message":"I18n translations loaded for languages: en, hi","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.184Z"}
+{"level":"info","message":"PostgreSQL database connected successfully via Prisma","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.187Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:15:22.189Z"}
+{"level":"info","message":"Gemini AI service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.138Z"}
+{"level":"info","message":"ElevenLabs service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.162Z"}
+{"level":"info","message":"Twilio service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.179Z"}
+{"level":"info","message":"I18n translations loaded for languages: en, hi","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.184Z"}
+{"level":"info","message":"PostgreSQL database connected successfully via Prisma","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.187Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:15:22.189Z"}
+{"level":"info","message":"Gemini AI service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.138Z"}
+{"level":"info","message":"ElevenLabs service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.161Z"}
+{"level":"info","message":"Twilio service initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.179Z"}
+{"level":"info","message":"I18n translations loaded for languages: en, hi","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.184Z"}
+{"level":"info","message":"PostgreSQL database connected successfully via Prisma","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.188Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:15:22.189Z"}
+{"level":"info","message":"Database connection test successful","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.505Z"}
+{"level":"info","message":"Database connection test successful","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.505Z"}
+{"level":"info","message":"Database connection test successful","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.506Z"}
+{"level":"info","message":"PostgreSQL connected successfully via Prisma","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.505Z"}
+{"level":"warn","message":"Redis connection failed, continuing without cache:","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.506Z"}
+{"level":"info","message":"Database connections established","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.506Z"}
+{"level":"info","message":"Database initialized successfully","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.507Z"}
+{"level":"info","message":"Voice processing pipeline initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.507Z"}
+{"level":"info","message":"Health monitoring service started","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.507Z"}
+{"level":"info","message":"Initializing Maxim hardware integration...","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.507Z"}
+{"level":"info","message":"MAX98357A/MAX98358 audio processor initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.507Z"}
+{"level":"info","message":"MAX77650 power manager initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.508Z"}
+{"level":"info","message":"DS28E38 security chip initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.508Z"}
+{"level":"info","message":"Maxim hardware integration initialized successfully","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.508Z"}
+{"level":"info","message":"Health monitoring started","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.509Z"}
+{"level":"info","message":"Call quality monitoring started","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.509Z"}
+{"level":"info","message":"Call quality monitoring started","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.509Z"}
+{"level":"info","message":"Initializing Maxim hardware integration...","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.509Z"}
+{"level":"info","message":"MAX98357A/MAX98358 audio processor initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.509Z"}
+{"level":"info","message":"MAX77650 power manager initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.510Z"}
+{"level":"info","message":"DS28E38 security chip initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.510Z"}
+{"level":"info","message":"Maxim hardware integration initialized successfully","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.510Z"}
+{"level":"info","message":"Maxim hardware integration initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.510Z"}
+{"level":"info","message":"All functional services initialized successfully","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.510Z"}
+{"level":"info","message":"VoxAssist Backend Server running on port 5005","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.512Z"}
+{"level":"info","message":"Environment: development","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.512Z"}
+{"level":"info","message":"All functional services are operational","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.512Z"}
+{"level":"info","message":"PostgreSQL connected successfully via Prisma","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.506Z"}
+{"level":"warn","message":"Redis connection failed, continuing without cache:","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.508Z"}
+{"level":"info","message":"Database connections established","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.508Z"}
+{"level":"info","message":"Database initialized successfully","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.508Z"}
+{"level":"info","message":"Voice processing pipeline initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.508Z"}
+{"level":"info","message":"Health monitoring service started","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.508Z"}
+{"level":"info","message":"Initializing Maxim hardware integration...","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.508Z"}
+{"level":"info","message":"MAX98357A/MAX98358 audio processor initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.508Z"}
+{"level":"info","message":"MAX77650 power manager initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.508Z"}
+{"level":"info","message":"DS28E38 security chip initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.508Z"}
+{"level":"info","message":"Maxim hardware integration initialized successfully","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.508Z"}
+{"level":"info","message":"Health monitoring started","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.509Z"}
+{"level":"info","message":"Call quality monitoring started","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.509Z"}
+{"level":"info","message":"Call quality monitoring started","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.509Z"}
+{"level":"info","message":"Initializing Maxim hardware integration...","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.509Z"}
+{"level":"info","message":"MAX98357A/MAX98358 audio processor initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.509Z"}
+{"level":"info","message":"MAX77650 power manager initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.509Z"}
+{"level":"info","message":"DS28E38 security chip initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.509Z"}
+{"level":"info","message":"Maxim hardware integration initialized successfully","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.509Z"}
+{"level":"info","message":"Maxim hardware integration initialized","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.509Z"}
+{"level":"info","message":"All functional services initialized successfully","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.509Z"}
+{"level":"info","message":"VoxAssist Backend Server running on port 3001","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.511Z"}
+{"level":"info","message":"Environment: development","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.511Z"}
+{"level":"info","message":"All functional services are operational","service":"voxassist-backend","timestamp":"2025-09-07T16:15:22.512Z"}
+{"acknowledged":false,"id":"1757261752510","level":"warn","message":"ALERT [WARNING]: Memory usage at 90.8% Memory usage at 90.8%","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:15:52.510Z","type":"high_memory_usage"}
+{"acknowledged":false,"id":"1757261752510","level":"warn","message":"ALERT [WARNING]: Memory usage at 91.6% Memory usage at 91.6%","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:15:52.510Z","type":"high_memory_usage"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:15:52.513Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:15:52.513Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:15:53.197Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:15:53.329Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:15:53.448Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:15:54.516Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:15:54.624Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:15:54.724Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:16:22.513Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:16:22.513Z"}
+{"acknowledged":false,"id":"1757261782516","level":"warn","message":"ALERT [WARNING]: Memory usage at 89.5% Memory usage at 89.5%","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:16:22.516Z","type":"high_memory_usage"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:16:22.517Z"}
+{"acknowledged":false,"id":"1757261782516","level":"warn","message":"ALERT [WARNING]: Memory usage at 88.7% Memory usage at 88.7%","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:16:22.516Z","type":"high_memory_usage"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:16:22.516Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:16:22.845Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:16:22.985Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:16:23.143Z"}
+{"acknowledged":false,"id":"1757261784235","level":"warn","message":"ALERT [WARNING]: Redis health check failed Redis health check failed","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:16:24.235Z","type":"redis_health"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:16:24.236Z"}
+{"database":"healthy","disk_space":"healthy","external_apis":"healthy","level":"info","maxim_hardware":"healthy","message":"Health check completed","redis":"unhealthy","service":"voxassist-backend","timestamp":"2025-09-07T16:16:22.511Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:16:24.712Z"}
+{"acknowledged":false,"id":"1757261784796","level":"warn","message":"ALERT [WARNING]: Redis health check failed Redis health check failed","service":"voxassist-backend","severity":"warning","timestamp":"2025-09-07T16:16:24.796Z","type":"redis_health"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:16:24.797Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:16:24.834Z"}
+{"database":"healthy","disk_space":"healthy","external_apis":"healthy","level":"info","maxim_hardware":"healthy","message":"Health check completed","redis":"unhealthy","service":"voxassist-backend","timestamp":"2025-09-07T16:16:22.511Z"}
+{"level":"info","message":"Prisma Info: Calling https://accelerate.prisma-data.net/6.15.0/5b82cfdc7290487956063b8c945cde6435aea88b53e7645f9337e900039a3fd5/graphql (n=0)","service":"voxassist-backend","target":"","timestamp":"2025-09-07T16:16:25.085Z"}
