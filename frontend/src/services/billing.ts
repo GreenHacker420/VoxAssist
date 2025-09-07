@@ -49,8 +49,8 @@ export class BillingService {
    * Get current subscription
    */
   static async getSubscription(): Promise<Subscription> {
-    const response = await api.get('/billing/subscription');
-    return response.data as Subscription;
+    const response = await api.get<Subscription>('/billing/subscription');
+    return response.data!;
   }
 
   /**
@@ -122,15 +122,15 @@ export class BillingService {
     page: number;
     totalPages: number;
   }> {
-    const response = await api.get('/billing/invoices', {
-      params: { page, limit }
-    });
-    return response.data as {
+    const response = await api.get<{
       invoices: Invoice[];
       total: number;
       page: number;
       totalPages: number;
-    };
+    }>('/billing/invoices', {
+      params: { page, limit }
+    });
+    return response.data!;
   }
 
   /**
@@ -155,16 +155,16 @@ export class BillingService {
    * Get usage statistics
    */
   static async getUsage(): Promise<BillingUsage> {
-    const response = await api.get('/billing/usage');
-    return response.data as BillingUsage;
+    const response = await api.get<BillingUsage>('/billing/usage');
+    return response.data!;
   }
 
   /**
    * Get payment methods
    */
   static async getPaymentMethods(): Promise<PaymentMethod[]> {
-    const response = await api.get('/billing/payment-methods');
-    return response.data as PaymentMethod[];
+    const response = await api.get<{ paymentMethods: PaymentMethod[] }>('/billing/payment-methods');
+    return response.data?.paymentMethods || [];
   }
 
   /**

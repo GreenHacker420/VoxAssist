@@ -1,10 +1,80 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
-const geminiService = require('../services/geminiService');
-const elevenlabsService = require('../services/elevenlabsService');
-const twilioService = require('../services/twilioService');
 const logger = require('../utils/logger');
+
+// Check if real services are available, otherwise use mocks
+let twilioService;
+let geminiService;
+let elevenlabsService;
+
+// Twilio service selection
+if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+  try {
+    twilioService = require('../services/twilioService');
+    logger.info('Using real Twilio service');
+  } catch (error) {
+    logger.warn('Twilio service failed to load, using mock service');
+    twilioService = require('../services/mockTwilioService');
+  }
+} else {
+  logger.warn('Twilio credentials not found, using mock service');
+  twilioService = require('../services/mockTwilioService');
+}
+
+// Gemini service selection
+if (process.env.GEMINI_API_KEY) {
+  try {
+    geminiService = require('../services/geminiService');
+    logger.info('Using real Gemini service');
+  } catch (error) {
+    logger.warn('Gemini service unavailable, using mock responses');
+    geminiService = {
+      processCustomerQuery: async (query, context) => ({
+        response: `Thank you for your inquiry: "${query}". This is a mock AI response for testing purposes.`,
+        intent: 'general_inquiry',
+        confidence: 0.85,
+        shouldEscalate: false
+      })
+    };
+  }
+} else {
+  logger.warn('Gemini API key not found, using mock responses');
+  geminiService = {
+    processCustomerQuery: async (query, context) => ({
+      response: `Thank you for your inquiry: "${query}". This is a mock AI response for testing purposes.`,
+      intent: 'general_inquiry',
+      confidence: 0.85,
+      shouldEscalate: false
+    })
+  };
+}
+
+// ElevenLabs service selection
+if (process.env.ELEVENLABS_API_KEY) {
+  try {
+    elevenlabsService = require('../services/elevenlabsService');
+    logger.info('Using real ElevenLabs service');
+  } catch (error) {
+    logger.warn('ElevenLabs service unavailable, using mock audio');
+    elevenlabsService = {
+      textToSpeech: async (text) => ({
+        size: 1024,
+        audioData: Buffer.from('mock-audio-data'),
+        contentType: 'audio/mpeg'
+      })
+    };
+  }
+} else {
+  logger.warn('ElevenLabs API key not found, using mock audio');
+  elevenlabsService = {
+    textToSpeech: async (text) => ({
+      size: 1024,
+      audioData: Buffer.from('mock-audio-data'),
+      contentType: 'audio/mpeg'
+    })
+  };
+}
 
 // Get all calls
 router.get('/', authenticateToken, async (req, res) => {

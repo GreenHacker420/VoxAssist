@@ -228,8 +228,16 @@ const validateWebhook = (signature, url, params) => {
   );
 };
 
-// Initialize on module load
-initializeTwilio();
+// Initialize on module load only if credentials are available
+try {
+  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+    initializeTwilio();
+  } else {
+    logger.warn('Twilio credentials not found, service will not be initialized');
+  }
+} catch (error) {
+  logger.warn(`Twilio initialization failed: ${error.message}`);
+}
 
 // Export all functions
 module.exports = {

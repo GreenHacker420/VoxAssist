@@ -42,32 +42,32 @@ export class WebhooksService {
    * Get all webhooks for the authenticated user
    */
   static async getWebhooks(): Promise<Webhook[]> {
-    const response = await api.get('/webhooks');
-    return response.data as Webhook[];
+    const response = await api.get<{ webhooks: Webhook[] }>('/webhooks');
+    return response.data?.webhooks || [];
   }
 
   /**
    * Get a specific webhook by ID
    */
   static async getWebhook(webhookId: string): Promise<Webhook> {
-    const response = await api.get(`/webhooks/${webhookId}`);
-    return response.data as Webhook;
+    const response = await api.get<Webhook>(`/webhooks/${webhookId}`);
+    return response.data!;
   }
 
   /**
    * Create a new webhook
    */
   static async createWebhook(webhook: Omit<Webhook, 'id' | 'createdAt' | 'updatedAt'>): Promise<Webhook> {
-    const response = await api.post('/webhooks', webhook);
-    return response.data as Webhook;
+    const response = await api.post<Webhook>('/webhooks', webhook);
+    return response.data!;
   }
 
   /**
    * Update an existing webhook
    */
   static async updateWebhook(webhookId: string, updates: Partial<Webhook>): Promise<Webhook> {
-    const response = await api.patch(`/webhooks/${webhookId}`, updates);
-    return response.data as Webhook;
+    const response = await api.patch<Webhook>(`/webhooks/${webhookId}`, updates);
+    return response.data!;
   }
 
   /**
@@ -161,13 +161,13 @@ export class WebhooksService {
     category: string;
     payloadExample: Record<string, unknown>;
   }>> {
-    const response = await api.get('/webhooks/events');
-    return response.data as Array<{
+    const response = await api.get<{ events: Array<{
       event: string;
       description: string;
       category: string;
       payloadExample: Record<string, unknown>;
-    }>;
+    }> }>('/webhooks/events');
+    return response.data?.events || [];
   }
 
   /**

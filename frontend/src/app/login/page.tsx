@@ -68,6 +68,51 @@ export default function LoginPage() {
             AI-powered voice calling platform
           </p>
         </div>
+
+        {/* Demo Credentials Section */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center mb-2">
+            <svg className="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 className="text-sm font-medium text-blue-800">Demo Credentials</h3>
+          </div>
+          <p className="text-xs text-blue-700 mb-3">Use these credentials to test the platform:</p>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center bg-white rounded px-3 py-2 border border-blue-200">
+              <div>
+                <p className="text-xs font-medium text-gray-700">Admin Account</p>
+                <p className="text-xs text-gray-600">admin@voxassist.com</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('admin@voxassist.com');
+                  setPassword('admin123');
+                }}
+                className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors"
+              >
+                Use
+              </button>
+            </div>
+            <div className="flex justify-between items-center bg-white rounded px-3 py-2 border border-blue-200">
+              <div>
+                <p className="text-xs font-medium text-gray-700">User Account</p>
+                <p className="text-xs text-gray-600">user@voxassist.com</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('user@voxassist.com');
+                  setPassword('user123');
+                }}
+                className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors"
+              >
+                Use
+              </button>
+            </div>
+          </div>
+        </div>
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
