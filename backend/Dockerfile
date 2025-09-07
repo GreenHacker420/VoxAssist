@@ -7,22 +7,25 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies (use npm install instead of npm ci for better compatibility)
+RUN npm install --production --no-optional
+
+# Copy Prisma schema and generate client
+COPY prisma/ ./prisma/
+RUN npx prisma generate
 
 # Copy source code
 COPY src/ ./src/
-COPY logs/ ./logs/
 
-# Create logs directory if it doesn't exist
+# Create logs directory
 RUN mkdir -p logs
 
-# Expose port
-EXPOSE 5000
+# Expose port (updated to match server configuration)
+EXPOSE 5005
 
-# Health check
+# Health check (updated port)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:5000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+  CMD node -e "require('http').get('http://localhost:5005/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 # Start the application
 CMD ["npm", "start"]
