@@ -41,26 +41,35 @@ async function main() {
 
     logger.info('Organizations created');
 
-    // Create users
-    const hashedPassword = await bcrypt.hash('password', 10);
+    // Create users with correct demo credentials
+    const adminPassword = await bcrypt.hash('admin123', 10);
+    const userPassword = await bcrypt.hash('user123', 10);
 
     const adminUser = await prisma.user.upsert({
       where: { email: 'admin@voxassist.com' },
-      update: {},
+      update: {
+        passwordHash: adminPassword,
+        name: 'Admin User',
+        role: 'admin'
+      },
       create: {
         email: 'admin@voxassist.com',
-        passwordHash: hashedPassword,
+        passwordHash: adminPassword,
         name: 'Admin User',
         role: 'admin'
       }
     });
 
     const demoUser = await prisma.user.upsert({
-      where: { email: 'demo@voxassist.com' },
-      update: {},
+      where: { email: 'user@voxassist.com' },
+      update: {
+        passwordHash: userPassword,
+        name: 'Demo User',
+        role: 'user'
+      },
       create: {
-        email: 'demo@voxassist.com',
-        passwordHash: hashedPassword,
+        email: 'user@voxassist.com',
+        passwordHash: userPassword,
         name: 'Demo User',
         role: 'user'
       }

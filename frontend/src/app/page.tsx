@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
 export default function HomePage() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, enableDemoMode } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -38,6 +38,15 @@ export default function HomePage() {
               <span className="text-xl font-bold text-gray-900">VoxAssist</span>
             </div>
             <div className="flex space-x-4">
+              <button
+                onClick={() => {
+                  enableDemoMode();
+                  router.push('/dashboard');
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+              >
+                Try Demo
+              </button>
               <Link
                 href="/login"
                 className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
@@ -71,12 +80,15 @@ export default function HomePage() {
             >
               Start Free Trial
             </Link>
-            <Link
-              href="/demo"
-              className="border border-gray-300 hover:border-gray-400 text-gray-700 px-8 py-3 rounded-lg text-lg font-medium transition-colors"
+            <button
+              onClick={() => {
+                enableDemoMode();
+                router.push('/dashboard');
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg text-lg font-medium transition-colors"
             >
-              Watch Demo
-            </Link>
+              Try Demo Now
+            </button>
           </div>
         </div>
 

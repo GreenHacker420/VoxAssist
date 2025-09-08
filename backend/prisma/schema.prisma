@@ -78,11 +78,11 @@ model UserSession {
 
 model Call {
   id             Int       @id @default(autoincrement())
-  callSid        String    @unique @map("call_sid")
+  callSid        String?   @unique @map("call_sid")
   organizationId Int?      @map("organization_id")
   userId         Int?      @map("user_id")
   customerPhone  String    @map("customer_phone")
-  twilioPhone    String    @map("twilio_phone")
+  twilioPhone    String?   @map("twilio_phone")
   status         String    @default("initiated")
   duration       Int       @default(0)
   startTime      DateTime  @default(now()) @map("start_time")

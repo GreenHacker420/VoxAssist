@@ -1,19 +1,26 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const compression = require('compression');
+const morgan = require('morgan');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
 const logger = require('./utils/logger');
-const { errorHandler, notFound } = require('./middleware/errorHandler');
+const { initializeDatabase } = require('./database/prisma');
+const { errorHandler } = require('./middleware/errorHandler');
+const notFound = require('./middleware/notFound');
+const { rateLimitConfig } = require('./middleware/security');
+const { initializeWebSocketServer } = require('./websocket/callMonitoring');
 const { 
-  generalLimiter, 
-  authLimiter, 
   securityHeaders, 
   securityLogger, 
   corsOptions, 
-  sanitizeInput 
+  sanitizeInput,
+  generalLimiter,
+  authLimiter
 } = require('./middleware/security');
 const { auditAuth, auditDataAccess } = require('./middleware/audit');
 const authRoutes = require('./routes/auth');
@@ -33,7 +40,6 @@ const voiceProcessingPipeline = require('./services/voiceProcessingPipeline');
 const healthMonitoring = require('./services/healthMonitoring');
 const maximIntegration = require('./services/maximIntegration');
 const callQualityMonitoring = require('./services/callQualityMonitoring');
-const { initializeDatabase } = require('./database/connection');
 
 const app = express();
 const server = createServer(app);
@@ -159,9 +165,13 @@ const startServer = async () => {
   try {
     await initializeServices();
     
+    // Initialize WebSocket server for real-time call monitoring
+    const wss = initializeWebSocketServer(server);
+    logger.info('WebSocket server initialized for call monitoring');
+    
     server.listen(PORT, () => {
       logger.info(`VoxAssist Backend Server running on port ${PORT}`);
-      logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`Environment: ${process.env.NODE_ENV}`);
       logger.info('All functional services are operational');
     });
   } catch (error) {

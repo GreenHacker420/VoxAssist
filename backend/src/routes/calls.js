@@ -254,48 +254,95 @@ router.post('/:callId/transcript', authenticateToken, async (req, res) => {
 // Initiate a new call
 router.post('/initiate', authenticateToken, async (req, res) => {
   try {
-    const { phoneNumber, callbackUrl } = req.body;
-    
+    const { phoneNumber, callbackUrl, enableAdvancedAnalysis } = req.body;
+    const userId = req.user.userId;
+
     if (!phoneNumber) {
-      return res.status(400).json({ success: false, error: 'Phone number is required' });
+      return res.status(400).json({
+        success: false,
+        error: 'Phone number is required'
+      });
     }
 
-    // Always pass callbackUrl to maintain consistent interface
-    // Mock service will ignore invalid URLs, real service needs valid HTTPS URLs
-    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3001}`;
-    const webhookUrl = callbackUrl || `${baseUrl}/api/webhooks/twilio/voice`;
-    
-    const twilioCall = await twilioService.initiateCall(phoneNumber, webhookUrl);
-    
-    // Save call to database
+    logger.info(`Initiating call to ${phoneNumber} for user ${userId}`);
+
+    // Create call record first
     const call = await prisma.call.create({
       data: {
-        userId: req.user.userId,
         customerPhone: phoneNumber,
-        twilioPhone: process.env.TWILIO_PHONE_NUMBER || '+1234567890',
         status: 'initiated',
-        callSid: twilioCall.callSid,
         startTime: new Date(),
+        organizationId: req.user.organizationId || 1,
+        crmSynced: false,
         metadata: {
-          twilioStatus: twilioCall.status,
-          direction: 'outbound'
+          enableAdvancedAnalysis: enableAdvancedAnalysis || false,
+          initiatedBy: userId,
+          initiatedAt: new Date().toISOString()
         }
       }
     });
-    
-    res.json({ 
-      success: true, 
-      data: {
-        id: call.id,
-        customerPhone: call.customerPhone,
-        status: call.status,
-        startTime: call.startTime,
-        callSid: call.callSid
+
+    try {
+      // Try to initiate Twilio call
+      const twilioCall = await twilioService.initiateCall(
+        phoneNumber,
+        callbackUrl || `${process.env.BASE_URL}/api/webhooks/twilio/voice`
+      );
+
+      // Update call with Twilio SID
+      const updatedCall = await prisma.call.update({
+        where: { id: call.id },
+        data: {
+          callSid: twilioCall.sid,
+          status: 'active'
+        }
+      });
+
+      logger.info(`Call initiated successfully: ${updatedCall.id}`);
+
+      res.json({
+        success: true,
+        data: updatedCall
+      });
+    } catch (twilioError) {
+      // Handle Twilio errors (like unverified numbers in trial accounts)
+      if (twilioError.message.includes('unverified') || twilioError.message.includes('Trial')) {
+        logger.warn(`Twilio trial limitation for ${phoneNumber}, creating mock call instead`);
+        
+        // Create a mock call for demo purposes
+        const mockCall = await prisma.call.update({
+          where: { id: call.id },
+          data: {
+            callSid: `mock-${Date.now()}`,
+            status: 'active',
+            customerName: 'Demo Customer',
+            customerEmail: 'demo@example.com',
+            metadata: {
+              ...call.metadata,
+              isMockCall: true,
+              mockReason: 'Twilio trial account limitation'
+            }
+          }
+        });
+
+        logger.info(`Mock call created successfully: ${mockCall.id}`);
+
+        res.json({
+          success: true,
+          data: mockCall,
+          message: 'Demo call initiated (Twilio trial account)'
+        });
+      } else {
+        throw twilioError;
       }
-    });
+    }
   } catch (error) {
-    logger.error(`Error initiating call: ${error.message}`);
-    res.status(500).json({ success: false, error: 'Failed to initiate call' });
+    logger.error('Error initiating call:', error.message);
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to initiate call'
+    });
   }
 });
 
@@ -476,6 +523,137 @@ router.post('/:callId/sentiment', authenticateToken, async (req, res) => {
   } catch (error) {
     logger.error(`Error updating sentiment: ${error.message}`);
     res.status(500).json({ success: false, error: 'Failed to update sentiment' });
+  }
+});
+
+// Get single call
+router.get('/:callId', authenticateToken, async (req, res) => {
+  try {
+    const { callId } = req.params;
+    
+    const call = await prisma.call.findUnique({
+      where: {
+        id: callId,
+        userId: req.user.userId
+      }
+    });
+
+    if (!call) {
+      return res.status(404).json({ success: false, error: 'Call not found' });
+    }
+
+    res.json({ success: true, data: call });
+  } catch (error) {
+    logger.error('Error fetching call:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch call' });
+  }
+});
+
+// End call
+router.post('/:callId/end', authenticateToken, async (req, res) => {
+  try {
+    const { callId } = req.params;
+    
+    const call = await prisma.call.findUnique({
+      where: {
+        id: callId,
+        userId: req.user.userId
+      }
+    });
+
+    if (!call) {
+      return res.status(404).json({ success: false, error: 'Call not found' });
+    }
+
+    if (call.status !== 'active') {
+      return res.status(400).json({ success: false, error: 'Call is not active' });
+    }
+
+    // End call with Twilio
+    if (call.callSid && !call.callSid.startsWith('mock-')) {
+      await twilioService.endCall(call.callSid);
+    }
+
+    // Update call in database
+    const updatedCall = await prisma.call.update({
+      where: { id: callId },
+      data: {
+        status: 'completed',
+        endTime: new Date(),
+        duration: Math.floor((new Date() - new Date(call.startTime)) / 1000)
+      }
+    });
+
+    // Broadcast call status update via WebSocket
+    const wsClients = global.wsClients || new Map();
+    const callClients = wsClients.get(callId) || [];
+    callClients.forEach(client => {
+      if (client.readyState === 1) { // WebSocket.OPEN
+        client.send(JSON.stringify({
+          type: 'call_status_update',
+          status: 'completed',
+          call: updatedCall
+        }));
+      }
+    });
+
+    res.json({ success: true, data: updatedCall });
+  } catch (error) {
+    logger.error('Error ending call:', error);
+    res.status(500).json({ success: false, error: 'Failed to end call' });
+  }
+});
+
+// Handoff to human
+router.post('/:callId/handoff', authenticateToken, async (req, res) => {
+  try {
+    const { callId } = req.params;
+    
+    const call = await prisma.call.findUnique({
+      where: {
+        id: callId,
+        userId: req.user.userId
+      }
+    });
+
+    if (!call) {
+      return res.status(404).json({ success: false, error: 'Call not found' });
+    }
+
+    if (call.status !== 'active') {
+      return res.status(400).json({ success: false, error: 'Call is not active' });
+    }
+
+    // Update call metadata to indicate human handoff
+    const updatedCall = await prisma.call.update({
+      where: { id: callId },
+      data: {
+        metadata: {
+          ...call.metadata,
+          handedOffToHuman: true,
+          handoffTime: new Date().toISOString(),
+          agentId: req.user.userId
+        }
+      }
+    });
+
+    // Broadcast handoff event via WebSocket
+    const wsClients = global.wsClients || new Map();
+    const callClients = wsClients.get(callId) || [];
+    callClients.forEach(client => {
+      if (client.readyState === 1) {
+        client.send(JSON.stringify({
+          type: 'handoff_completed',
+          call: updatedCall,
+          agentId: req.user.userId
+        }));
+      }
+    });
+
+    res.json({ success: true, data: updatedCall });
+  } catch (error) {
+    logger.error('Error handing off call:', error);
+    res.status(500).json({ success: false, error: 'Failed to handoff call' });
   }
 });
 

@@ -1,21 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/Layout/DashboardLayout';
+import { Call } from '@/types';
+import { CallsService } from '@/services/calls';
+import { formatDistanceToNow } from 'date-fns';
+import toast from 'react-hot-toast';
 import Modal from '@/components/UI/Modal';
 import Button from '@/components/UI/Button';
 import Input from '@/components/UI/Input';
-import { CallsService } from '@/services/calls';
-import { Call } from '@/types';
+import CallControlsPopup from '@/components/CallControls/CallControlsPopup';
+import DashboardLayout from '@/components/Layout/DashboardLayout';
 import { formatDate, formatDuration } from '@/lib/utils';
 import {
   PhoneIcon,
   StopIcon,
   EyeIcon,
   PlusIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
-import { toast } from 'react-hot-toast';
 
 export default function CallsPage() {
   const [calls, setCalls] = useState<Call[]>([]);
@@ -26,7 +29,10 @@ export default function CallsPage() {
   const [selectedCall, setSelectedCall] = useState<Call | null>(null);
   const [countryCode, setCountryCode] = useState('+1');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [enableAdvancedAnalysis, setEnableAdvancedAnalysis] = useState(false);
   const [isInitiating, setIsInitiating] = useState(false);
+  const [activeCallForControls, setActiveCallForControls] = useState<Call | null>(null);
+  const [showCallControls, setShowCallControls] = useState(false);
 
   useEffect(() => {
     refreshCalls();
@@ -62,23 +68,35 @@ export default function CallsPage() {
 
   const handleInitiateCall = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!phoneNumber.trim()) {
       toast.error('Please enter a phone number');
       return;
     }
 
+    setIsInitiating(true);
+    
     try {
-      setIsInitiating(true);
       const fullPhoneNumber = `${countryCode}${phoneNumber}`;
-      const newCall = await CallsService.initiateCall(fullPhoneNumber);
-      setCalls([newCall, ...calls]);
+      const callData = await CallsService.initiateCall(fullPhoneNumber, {
+        enableAdvancedAnalysis
+      });
+      toast.success('Call initiated successfully');
       setIsNewCallModalOpen(false);
       setCountryCode('+1');
       setPhoneNumber('');
-      toast.success('Call initiated successfully');
-    } catch (err) {
-      console.error('Failed to initiate call:', err);
-      toast.error('Failed to initiate call. Please try again.');
+      setEnableAdvancedAnalysis(false);
+      
+      // Show call controls popup for the new active call
+      if (callData && callData.status === 'active') {
+        setActiveCallForControls(callData);
+        setShowCallControls(true);
+      }
+      
+      refreshCalls();
+    } catch (error) {
+      console.error('Failed to initiate call:', error);
+      toast.error('Failed to initiate call');
     } finally {
       setIsInitiating(false);
     }
@@ -99,6 +117,41 @@ export default function CallsPage() {
   const handleViewDetails = (call: Call) => {
     setSelectedCall(call);
     setIsCallDetailsModalOpen(true);
+  };
+
+  const handleHandoffToHuman = async (callId: string) => {
+    try {
+      await CallsService.handoffToHuman(callId);
+      toast.success('Call handed off to human agent');
+      refreshCalls();
+    } catch (error) {
+      console.error('Failed to handoff call:', error);
+      toast.error('Failed to handoff call');
+    }
+  };
+
+  const handleShowCallControls = (call: Call) => {
+    setActiveCallForControls(call);
+    setShowCallControls(true);
+  };
+
+  const handleCloseCallControls = () => {
+    setShowCallControls(false);
+    setActiveCallForControls(null);
+  };
+
+  const handleEndCallFromControls = async () => {
+    if (activeCallForControls) {
+      await handleEndCall(activeCallForControls.id);
+      handleCloseCallControls();
+    }
+  };
+
+  const handleHandoffFromControls = async () => {
+    if (activeCallForControls) {
+      await handleHandoffToHuman(activeCallForControls.id);
+      refreshCalls();
+    }
   };
 
   const handleEndCall = async (callId: string) => {
@@ -221,6 +274,26 @@ export default function CallsPage() {
                             End Call
                           </button>
                         )}
+                        {call.status === 'active' && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleShowCallControls(call)}
+                              className="inline-flex items-center rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-500 mr-2"
+                            >
+                              <Cog6ToothIcon className="h-4 w-4 mr-1" />
+                              Call Controls
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => window.open(`/calls/live/${call.id}`, '_blank')}
+                              className="inline-flex items-center rounded-md bg-green-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-green-500 mr-2"
+                            >
+                              <EyeIcon className="h-4 w-4 mr-1" />
+                              Monitor Live
+                            </button>
+                          </>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleViewDetails(call)}
@@ -294,6 +367,46 @@ export default function CallsPage() {
               helperText={`Enter the phone number without country code. Full number will be: ${countryCode}${phoneNumber}`}
               required
             />
+
+            {/* Advanced Analysis Toggle */}
+            <div className="flex items-center space-x-3">
+              <input
+                id="advanced-analysis"
+                type="checkbox"
+                checked={enableAdvancedAnalysis}
+                onChange={(e) => setEnableAdvancedAnalysis(e.target.checked)}
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              />
+              <label htmlFor="advanced-analysis" className="text-sm font-medium text-gray-700">
+                Enable Advanced Analysis
+              </label>
+            </div>
+            
+            {enableAdvancedAnalysis && (
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-blue-800">
+                      Advanced Analysis Features
+                    </h3>
+                    <div className="mt-2 text-sm text-blue-700">
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>Real-time sentiment analysis and emotion detection</li>
+                        <li>Voice stress level monitoring</li>
+                        <li>Conversation flow analysis</li>
+                        <li>Customer satisfaction prediction</li>
+                        <li>Automated call quality scoring</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="flex gap-3 pt-4">
@@ -453,6 +566,17 @@ export default function CallsPage() {
           </div>
         )}
       </Modal>
+
+      {/* Call Controls Popup */}
+      {activeCallForControls && (
+        <CallControlsPopup
+          call={activeCallForControls}
+          isVisible={showCallControls}
+          onClose={handleCloseCallControls}
+          onEndCall={handleEndCallFromControls}
+          onHandoffToHuman={handleHandoffFromControls}
+        />
+      )}
     </DashboardLayout>
   );
 }

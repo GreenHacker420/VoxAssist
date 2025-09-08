@@ -9,10 +9,13 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isDemoMode: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<Pick<User, 'name' | 'email'>>) => Promise<void>;
+  enableDemoMode: () => void;
+  disableDemoMode: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,11 +23,23 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
       try {
-        if (AuthService.isAuthenticated()) {
+        // Check if demo mode is enabled from localStorage
+        const demoMode = localStorage.getItem('voxassist_demo_mode') === 'true';
+        if (demoMode) {
+          setIsDemoMode(true);
+          setUser({
+            id: 999999,
+            name: 'Demo User',
+            email: 'demo@voxassist.com',
+            role: 'user',
+            createdAt: new Date().toISOString()
+          });
+        } else if (AuthService.isAuthenticated()) {
           const userData = await AuthService.getProfile();
           setUser(userData);
         }
@@ -65,9 +80,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await AuthService.logout();
-      setUser(null);
-      toast.success('Logged out successfully');
+      if (isDemoMode) {
+        setIsDemoMode(false);
+        localStorage.removeItem('voxassist_demo_mode');
+        setUser(null);
+        toast.success('Demo session ended');
+      } else {
+        await AuthService.logout();
+        setUser(null);
+        toast.success('Logged out successfully');
+      }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Logout failed';
       toast.error(errorMessage);
@@ -76,6 +98,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateProfile = async (data: Partial<Pick<User, 'name' | 'email'>>) => {
     try {
+      if (isDemoMode) {
+        // In demo mode, just update the local user state
+        setUser(prev => prev ? { ...prev, ...data } : null);
+        toast.success('Profile updated (demo mode)');
+        return;
+      }
       const updatedUser = await AuthService.updateProfile(data);
       setUser(updatedUser);
       toast.success('Profile updated successfully');
@@ -86,14 +114,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const enableDemoMode = () => {
+    localStorage.setItem('voxassist_demo_mode', 'true');
+    setIsDemoMode(true);
+    setUser({
+      id: 999999,
+      name: 'Demo User',
+      email: 'demo@voxassist.com',
+      role: 'user',
+      createdAt: new Date().toISOString()
+    });
+    toast.success('Demo mode enabled!');
+  };
+
+  const disableDemoMode = () => {
+    localStorage.removeItem('voxassist_demo_mode');
+    setIsDemoMode(false);
+    setUser(null);
+    toast.success('Demo mode disabled');
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
     isAuthenticated: !!user,
+    isDemoMode,
     login,
     register,
     logout,
     updateProfile,
+    enableDemoMode,
+    disableDemoMode,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
