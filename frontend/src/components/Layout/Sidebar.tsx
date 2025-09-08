@@ -94,7 +94,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                     </button>
                   </div>
                 </Transition.Child>
-                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-2">
+                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-r border-white/30 px-6 pb-2">
                   <div className="flex h-16 shrink-0 items-center">
                     <div className="flex items-center space-x-2">
                       <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center">
@@ -115,8 +115,8 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                                 href={item.href}
                                 className={cn(
                                   pathname === item.href
-                                    ? 'bg-gray-50 text-indigo-600'
-                                    : 'text-black hover:text-indigo-600 hover:bg-gray-50',
+                                    ? 'bg-white/60 text-blue-700'
+                                    : 'text-gray-900 hover:text-blue-700 hover:bg-white/50',
                                   'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
                                 )}
                               >
@@ -144,7 +144,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
 
       {/* Static sidebar for desktop */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6">
+        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-white/30 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 px-6">
           <div className="flex h-16 shrink-0 items-center">
             <div className="flex items-center space-x-2">
               <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center">
@@ -165,8 +165,8 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                         href={item.href}
                         className={cn(
                           pathname === item.href
-                            ? 'bg-gray-50 text-indigo-600'
-                            : 'text-black hover:text-indigo-600 hover:bg-gray-50',
+                            ? 'bg-white/60 text-blue-700'
+                            : 'text-gray-900 hover:text-blue-700 hover:bg-white/50',
                           'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
                         )}
                       >
