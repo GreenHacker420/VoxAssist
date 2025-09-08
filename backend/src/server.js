@@ -36,12 +36,17 @@ const adminRoutes = require('./routes/admin');
 const billingRoutes = require('./routes/billing');
 const surveyRoutes = require('./routes/survey');
 const settingsRoutes = require('./routes/settings');
+const widgetRoutes = require('./routes/widgetRoutes');
+const providerRoutes = require('./routes/providerRoutes');
+const gdprRoutes = require('./routes/gdprRoutes');
 
 // Functional services
 const voiceProcessingPipeline = require('./services/voiceProcessingPipeline');
 const healthMonitoring = require('./services/healthMonitoring');
 const maximIntegration = require('./services/maximIntegration');
 const callQualityMonitoring = require('./services/callQualityMonitoring');
+const WidgetWebSocketHandler = require('./services/WidgetWebSocketHandler');
+const GDPRComplianceMiddleware = require('./middleware/gdprCompliance');
 
 const app = express();
 const server = createServer(app);
@@ -77,6 +82,9 @@ app.use('/api/auth', authLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files (widget.js)
+app.use('/static', express.static('src/public'));
+
 // Health check
 app.get('/health', (req, res) => {
   res.status(200).json({ 
@@ -98,8 +106,14 @@ app.use('/api/billing', auditDataAccess('billing'), billingRoutes);
 app.use('/api/survey', surveyRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/i18n', i18nRoutes);
+app.use('/api/widget', widgetRoutes);
+app.use('/api/providers', providerRoutes);
+app.use('/api/gdpr', gdprRoutes);
 app.use('/webhooks', webhookRoutes);
 app.use('/api/webhooks', webhookRoutes);
+
+// Initialize Widget WebSocket Handler
+let widgetWebSocketHandler;
 
 // Socket.io for real-time communication
 io.on('connection', (socket) => {
@@ -119,6 +133,10 @@ io.on('connection', (socket) => {
     logger.info(`Client disconnected: ${socket.id}`);
   });
 });
+
+// Initialize widget WebSocket namespace
+const widgetNamespace = io.of('/widget');
+widgetWebSocketHandler = new WidgetWebSocketHandler(widgetNamespace);
 
 // Initialize functional services
 const initializeServices = async () => {
@@ -146,6 +164,10 @@ const initializeServices = async () => {
     } catch (error) {
       logger.warn('Maxim hardware not available:', error.message);
     }
+
+    // Initialize GDPR compliance
+    GDPRComplianceMiddleware.initialize();
+    logger.info('GDPR compliance middleware initialized');
 
     logger.info('All functional services initialized successfully');
   } catch (error) {

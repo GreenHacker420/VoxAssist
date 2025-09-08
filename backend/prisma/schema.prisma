@@ -45,6 +45,8 @@ model Organization {
   escalationRules   EscalationRule[]
   dailyAnalytics    DailyAnalytics[]
   voiceSettings     VoiceSettings[]
+  widgets           Widget[]
+  providerConfigs   ProviderConfig[]
 
   @@map("organizations")
 }
@@ -98,6 +100,7 @@ model Call {
   user             User?             @relation(fields: [userId], references: [id])
   callInteractions CallInteraction[]
   survey           Survey?
+  providerCalls    ProviderCall[]
 
   @@index([organizationId])
   @@index([userId])
@@ -267,4 +270,149 @@ model Notification {
 
   @@index([userId])
   @@map("notifications")
+}
+
+// Widget Configuration Models
+model Widget {
+  id             String   @id @default(uuid())
+  organizationId Int      @map("organization_id")
+  name           String
+  isActive       Boolean  @default(true) @map("is_active")
+  contextUrl     String?  @map("context_url")
+  appearance     Json     // Colors, position, size, branding
+  behavior       Json     // Auto-open, greeting message, language
+  permissions    Json     // GDPR settings, data collection preferences
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  widgetSessions   WidgetSession[]
+  contextExtracts  ContextExtract[]
+
+  @@index([organizationId])
+  @@map("widgets")
+}
+
+model WidgetSession {
+  id              String   @id @default(uuid())
+  widgetId        String   @map("widget_id")
+  sessionId       String   @unique @map("session_id")
+  visitorId       String?  @map("visitor_id")
+  ipAddress       String?  @map("ip_address")
+  userAgent       String?  @map("user_agent")
+  referrerUrl     String?  @map("referrer_url")
+  status          String   @default("active") // active, ended, escalated
+  startTime       DateTime @default(now()) @map("start_time")
+  endTime         DateTime? @map("end_time")
+  duration        Int      @default(0) // in seconds
+  messageCount    Int      @default(0) @map("message_count")
+  sentiment       String?
+  sentimentScore  Decimal? @map("sentiment_score") @db.Decimal(3, 2)
+  metadata        Json?    // Browser info, device type, etc.
+  
+  // Relations
+  widget              Widget                @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  widgetInteractions  WidgetInteraction[]
+
+  @@index([widgetId])
+  @@index([startTime])
+  @@map("widget_sessions")
+}
+
+model WidgetInteraction {
+  id              Int       @id @default(autoincrement())
+  sessionId       String    @map("session_id")
+  sequenceNumber  Int       @map("sequence_number")
+  speaker         String    // 'visitor' or 'ai'
+  content         String
+  audioUrl        String?   @map("audio_url")
+  timestamp       DateTime  @default(now())
+  aiConfidence    Decimal?  @map("ai_confidence") @db.Decimal(3, 2)
+  intent          String?
+  sentiment       String?
+  sentimentScore  Decimal?  @map("sentiment_score") @db.Decimal(3, 2)
+  processingTime  Int?      @map("processing_time") // milliseconds
+
+  // Relations
+  session WidgetSession @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([timestamp])
+  @@map("widget_interactions")
+}
+
+model ContextExtract {
+  id          String   @id @default(uuid())
+  widgetId    String   @map("widget_id")
+  url         String
+  title       String?
+  description String?
+  content     String   @db.Text
+  keywords    Json?
+  metadata    Json?    // Page structure, forms, etc.
+  extractedAt DateTime @default(now()) @map("extracted_at")
+  isActive    Boolean  @default(true) @map("is_active")
+
+  // Relations
+  widget Widget @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+
+  @@unique([widgetId, url])
+  @@index([widgetId])
+  @@map("context_extracts")
+}
+
+// Provider Configuration Models
+model ProviderConfig {
+  id             String   @id @default(uuid())
+  organizationId Int      @map("organization_id")
+  name           String   // Display name for the configuration
+  type           String   // 'phone' or 'whatsapp'
+  provider       String   // 'twilio', 'plivo', 'ringg', 'sarvam'
+  isActive       Boolean  @default(true) @map("is_active")
+  isPrimary      Boolean  @default(false) @map("is_primary")
+  credentials    Json     // Encrypted API keys and secrets
+  settings       Json     // Provider-specific settings
+  webhookUrl     String?  @map("webhook_url")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  calls        ProviderCall[]
+
+  @@unique([organizationId, type, isPrimary], name: "unique_primary_provider")
+  @@index([organizationId])
+  @@index([type])
+  @@map("provider_configs")
+}
+
+model ProviderCall {
+  id               String        @id @default(uuid())
+  providerConfigId String        @map("provider_config_id")
+  callId           Int?          @map("call_id")
+  externalCallId   String        @map("external_call_id") // Provider's call ID
+  type             String        // 'phone' or 'whatsapp'
+  status           String        @default("initiated")
+  fromNumber       String        @map("from_number")
+  toNumber         String        @map("to_number")
+  duration         Int           @default(0)
+  cost             Decimal?      @db.Decimal(10, 4)
+  currency         String?       @default("USD")
+  startTime        DateTime      @default(now()) @map("start_time")
+  endTime          DateTime?     @map("end_time")
+  recordingUrl     String?       @map("recording_url")
+  errorCode        String?       @map("error_code")
+  errorMessage     String?       @map("error_message")
+  metadata         Json?         // Provider-specific metadata
+  
+  // Relations
+  providerConfig ProviderConfig @relation(fields: [providerConfigId], references: [id], onDelete: Cascade)
+  call           Call?          @relation(fields: [callId], references: [id])
+
+  @@index([providerConfigId])
+  @@index([callId])
+  @@index([externalCallId])
+  @@index([startTime])
+  @@map("provider_calls")
 }
