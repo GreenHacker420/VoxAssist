@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AuthService } from '@/services/auth';
 import { toast } from 'react-hot-toast';
@@ -10,7 +9,6 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,10 +45,10 @@ export default function ForgotPasswordPage() {
               Check Your Email
             </h2>
             <p className="mt-2 text-sm text-gray-600">
-              We've sent a password reset link to {email}
+              We&apos;ve sent a password reset link to {email}
             </p>
             <p className="mt-4 text-sm text-gray-500">
-              Didn't receive the email? Check your spam folder or{' '}
+              Didn&apos;t receive the email? Check your spam folder or{' '}
               <button
                 onClick={() => setIsSubmitted(false)}
                 className="font-medium text-indigo-600 hover:text-indigo-500"
@@ -80,7 +78,7 @@ export default function ForgotPasswordPage() {
             Forgot your password?
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your email address and we&apos;ll send you a link to reset your password.
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>

@@ -74,7 +74,7 @@ export class AuthService {
   // Forgot password - request reset token
   static async forgotPassword(email: string): Promise<{ message: string; resetToken?: string }> {
     try {
-      const response = await apiClient.post('/auth/forgot-password', { email }) as any;
+      const response = await apiClient.post('/auth/forgot-password', { email }) as { success: boolean; message?: string; resetToken?: string; error?: string; };
       
       if (response.success) {
         return {
@@ -111,7 +111,7 @@ export class AuthService {
   static async logout(): Promise<void> {
     try {
       await apiClient.post('/auth/logout');
-    } catch (error) {
+    } catch {
       // Continue with logout even if API call fails
     } finally {
       apiClient.removeAuthToken();

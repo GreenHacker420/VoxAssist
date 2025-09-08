@@ -75,8 +75,8 @@ export default function WebhooksPage() {
       toast.success('Webhook created successfully');
       setShowCreateModal(false);
       loadWebhooks();
-    } catch (error) {
-      toast.error('Failed to create webhook');
+    } catch {
+      toast.error('Failed to load webhooks');
     }
   };
 
@@ -85,7 +85,7 @@ export default function WebhooksPage() {
       await WebhooksService.toggleWebhook(webhookId, isActive);
       toast.success(`Webhook ${isActive ? 'enabled' : 'disabled'} successfully`);
       loadWebhooks();
-    } catch (error) {
+    } catch {
       toast.error(`Failed to ${isActive ? 'enable' : 'disable'} webhook`);
     }
   };
@@ -100,7 +100,7 @@ export default function WebhooksPage() {
       if (selectedWebhook?.id === webhookId) {
         setSelectedWebhook(null);
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete webhook');
     }
   };
@@ -113,7 +113,7 @@ export default function WebhooksPage() {
       } else {
         toast.error(`Webhook test failed: ${result.errorMessage}`);
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to test webhook');
     }
   };
