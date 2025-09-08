@@ -77,16 +77,27 @@ router.use(authorizeRoles('admin', 'super_admin'));
  * GET /admin/users - Get all users with pagination and search
  */
 router.get('/users', asyncHandler(async (req, res) => {
-  const { page = 1, limit = 20, search } = req.query;
+  const { page = 1, limit = 20, search, status } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   // Build where clause for search
-  const whereClause = search ? {
-    OR: [
+    let whereClause = {};
+  if (search) {
+    whereClause.OR = [
       { name: { contains: search, mode: 'insensitive' } },
       { email: { contains: search, mode: 'insensitive' } }
-    ]
-  } : {};
+    ];
+  }
+
+  if (status && status !== 'all') {
+    if (status === 'suspended') {
+      // This is a placeholder, as 'suspended' is not a distinct DB state.
+      // It's treated as 'inactive' for now.
+      whereClause.isActive = false;
+    } else {
+      whereClause.isActive = status === 'active';
+    }
+  }
 
   // Get users with their organizations and call statistics
   const [users, total] = await Promise.all([
@@ -706,6 +717,44 @@ router.get('/users/export', asyncHandler(async (req, res) => {
 /**
  * POST /admin/notifications - Send system notification
  */
+/**
+ * GET /admin/notifications - Get all notifications
+ */
+router.get('/notifications', asyncHandler(async (req, res) => {
+  const { page = 1, limit = 20, status, type } = req.query;
+  const offset = (parseInt(page) - 1) * parseInt(limit);
+
+  const whereClause = {};
+
+  if (status && status !== 'all') {
+    whereClause.read = status === 'read';
+  }
+
+  if (type && type !== 'all') {
+    whereClause.type = type;
+  }
+
+  const [notifications, total] = await Promise.all([
+    prisma.notification.findMany({
+      where: whereClause,
+      skip: offset,
+      take: parseInt(limit),
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.notification.count({ where: whereClause }),
+  ]);
+
+  res.json({
+    notifications,
+    total,
+    page: parseInt(page),
+    totalPages: Math.ceil(total / parseInt(limit)),
+  });
+}));
+
+/**
+ * POST /admin/notifications - Send system notification
+ */
 router.post('/notifications', asyncHandler(async (req, res) => {
   const { title, message, type, userIds, broadcast } = req.body;
 
@@ -731,7 +780,41 @@ router.post('/notifications', asyncHandler(async (req, res) => {
   // In a real implementation, this would send actual notifications
   logger.info(`Notification sent by admin ${req.user.id}: ${title}`);
 
-  res.status(201).json({ message: 'Notification sent successfully' });
+    res.status(201).json({ message: 'Notification sent successfully' });
+}));
+
+/**
+ * PATCH /admin/notifications/:notificationId/read - Mark notification as read
+ */
+router.patch('/notifications/:notificationId/read', asyncHandler(async (req, res) => {
+    const { notificationId } = req.params;
+    const updatedNotification = await prisma.notification.update({
+        where: { id: notificationId },
+        data: { read: true },
+    });
+    res.json(updatedNotification);
+}));
+
+/**
+ * POST /admin/notifications/mark-all-read - Mark all notifications as read
+ */
+router.post('/notifications/mark-all-read', asyncHandler(async (req, res) => {
+    await prisma.notification.updateMany({
+        where: { read: false },
+        data: { read: true },
+    });
+    res.json({ message: 'All notifications marked as read' });
+}));
+
+/**
+ * DELETE /admin/notifications/:notificationId - Delete a notification
+ */
+router.delete('/notifications/:notificationId', asyncHandler(async (req, res) => {
+    const { notificationId } = req.params;
+    await prisma.notification.delete({
+        where: { id: notificationId },
+    });
+    res.status(204).send();
 }));
 
 module.exports = router;

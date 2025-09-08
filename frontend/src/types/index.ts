@@ -232,6 +232,17 @@ export interface SystemMetrics {
   };
 }
 
+export interface Notification {
+  id: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  userId?: string;
+  actionUrl?: string;
+}
+
 export interface AdminSettings {
   id: string;
   key: string;

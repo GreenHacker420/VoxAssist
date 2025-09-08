@@ -273,7 +273,7 @@ router.post('/initiate', authenticateToken, async (req, res) => {
         status: 'initiated',
         startTime: new Date(),
         organizationId: req.user.organizationId || 1,
-        crmSynced: false,
+        userId: userId,
         metadata: {
           enableAdvancedAnalysis: enableAdvancedAnalysis || false,
           initiatedBy: userId,
@@ -346,41 +346,6 @@ router.post('/initiate', authenticateToken, async (req, res) => {
   }
 });
 
-// End a call
-router.post('/:callId/end', authenticateToken, async (req, res) => {
-  try {
-    const { callId } = req.params;
-    
-    // End call with Twilio
-    await twilioService.endCall(callId);
-    
-    // Update call status in database
-    const updatedCall = await prisma.call.update({
-      where: { id: parseInt(callId) },
-      data: {
-        status: 'completed',
-        endTime: new Date(),
-        metadata: {
-          ...await prisma.call.findUnique({ where: { id: parseInt(callId) } }).then(call => call.metadata || {}),
-          endedBy: 'agent',
-          endReason: 'manual'
-        }
-      }
-    });
-    
-    // Calculate and update duration
-    const duration = Math.floor((updatedCall.endTime - updatedCall.startTime) / 1000);
-    await prisma.call.update({
-      where: { id: parseInt(callId) },
-      data: { duration }
-    });
-    
-    res.json({ success: true, message: 'Call ended successfully', data: updatedCall });
-  } catch (error) {
-    logger.error(`Error ending call: ${error.message}`);
-    res.status(500).json({ success: false, error: 'Failed to end call' });
-  }
-});
 
 // Process AI response for a call
 router.post('/:callId/ai-response', authenticateToken, async (req, res) => {
@@ -583,6 +548,18 @@ router.post('/:callId/end', authenticateToken, async (req, res) => {
         duration: Math.floor((new Date() - new Date(call.startTime)) / 1000)
       }
     });
+
+        // Send post-call survey SMS
+    if (updatedCall.customerPhone) {
+      const surveyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/survey/${call.id}`;
+      const message = `Thank you for calling VoxAssist. Please take a moment to rate your experience: ${surveyUrl}`;
+      try {
+        await twilioService.sendSms(updatedCall.customerPhone, message);
+        logger.info(`Survey SMS sent to ${updatedCall.customerPhone}`);
+      } catch (smsError) {
+        logger.error(`Failed to send survey SMS to ${updatedCall.customerPhone}: ${smsError.message}`);
+      }
+    }
 
     // Broadcast call status update via WebSocket
     const wsClients = global.wsClients || new Map();

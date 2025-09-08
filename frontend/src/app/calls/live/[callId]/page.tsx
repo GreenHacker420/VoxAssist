@@ -17,6 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
+import Waveform from '@/components/Call/Waveform';
 
 interface TranscriptMessage {
   id: string;
@@ -49,6 +50,8 @@ export default function LiveCallPage() {
   const [isHandedOff, setIsHandedOff] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
+  const [isCustomerTalking, setIsCustomerTalking] = useState(false);
+  const [isAiTalking, setIsAiTalking] = useState(false);
   
   const transcriptRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -118,6 +121,13 @@ export default function LiveCallPage() {
       switch (data.type) {
         case 'transcript_update':
           setTranscript(prev => [...prev, data.message]);
+          if (data.message.speaker === 'customer') {
+            setIsCustomerTalking(true);
+            setTimeout(() => setIsCustomerTalking(false), 1500);
+          } else {
+            setIsAiTalking(true);
+            setTimeout(() => setIsAiTalking(false), 1500);
+          }
           break;
         case 'sentiment_update':
           setSentiment(data.sentiment);
@@ -179,6 +189,14 @@ export default function LiveCallPage() {
         
         setTranscript(prev => [...prev, message]);
         
+        if (message.speaker === 'customer') {
+          setIsCustomerTalking(true);
+          setTimeout(() => setIsCustomerTalking(false), 2000);
+        } else {
+          setIsAiTalking(true);
+          setTimeout(() => setIsAiTalking(false), 2000);
+        }
+
         // Update sentiment every 2 messages
         if (messageIndex % 2 === 0 && sentimentIndex < sampleSentiments.length) {
           setTimeout(() => {
@@ -418,6 +436,21 @@ export default function LiveCallPage() {
                   <p className="mt-4">Analyzing sentiment...</p>
                 </div>
               )}
+            </div>
+
+            {/* Audio Waveform */}
+            <div className="bg-white shadow rounded-lg p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Audio Activity</h3>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700">Customer</h4>
+                  <Waveform isTalking={isCustomerTalking} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700">AI Assistant</h4>
+                  <Waveform isTalking={isAiTalking} />
+                </div>
+              </div>
             </div>
 
             {/* Call Status */}

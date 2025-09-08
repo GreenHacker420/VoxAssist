@@ -18,7 +18,6 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 export default function AdminDashboard() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
-  // const [statistics, setStatistics] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

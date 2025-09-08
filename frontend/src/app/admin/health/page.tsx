@@ -82,21 +82,8 @@ export default function AdminHealthPage() {
     }
   };
 
-  const mockServices = [
-    { name: 'API Server', status: 'up', responseTime: 45, lastCheck: '2024-01-15T10:30:00Z' },
-    { name: 'Database', status: 'up', responseTime: 12, lastCheck: '2024-01-15T10:30:00Z' },
-    { name: 'Redis Cache', status: 'up', responseTime: 8, lastCheck: '2024-01-15T10:30:00Z' },
-    { name: 'Voice Service', status: 'degraded', responseTime: 156, lastCheck: '2024-01-15T10:29:00Z' },
-    { name: 'WebSocket Server', status: 'up', responseTime: 23, lastCheck: '2024-01-15T10:30:00Z' },
-    { name: 'Email Service', status: 'up', responseTime: 89, lastCheck: '2024-01-15T10:30:00Z' },
-  ];
-
-  const mockAlerts = [
-    { id: '1', level: 'warning', message: 'Voice Service response time above threshold', createdAt: '2024-01-15T10:25:00Z' },
-    { id: '2', level: 'info', message: 'Database backup completed successfully', createdAt: '2024-01-15T09:00:00Z' },
-    { id: '3', level: 'error', message: 'Failed to connect to external API', createdAt: '2024-01-15T08:45:00Z' },
-  ];
-
+  
+  
   if (loading) {
     return (
       <AdminLayout>
@@ -208,7 +195,7 @@ export default function AdminHealthPage() {
             <h3 className="text-lg font-medium text-gray-900">Services</h3>
           </div>
           <div className="divide-y divide-gray-200">
-            {mockServices.map((service) => (
+            {(healthData?.services || []).map((service) => (
               <div key={service.name} className="px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   {getStatusIcon(service.status)}
@@ -238,7 +225,7 @@ export default function AdminHealthPage() {
             <h3 className="text-lg font-medium text-gray-900">Recent Alerts</h3>
           </div>
           <div className="divide-y divide-gray-200">
-            {mockAlerts.map((alert) => (
+            {(healthData?.alerts || []).map((alert) => (
               <div key={alert.id} className="px-6 py-4 flex items-start space-x-3">
                 <div className="flex-shrink-0 mt-1">
                   {alert.level === 'error' && <XCircleIcon className="h-5 w-5 text-red-500" />}

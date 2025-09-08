@@ -34,6 +34,8 @@ const voiceRoutes = require('./routes/voice');
 const i18nRoutes = require('./routes/i18n');
 const adminRoutes = require('./routes/admin');
 const billingRoutes = require('./routes/billing');
+const surveyRoutes = require('./routes/survey');
+const settingsRoutes = require('./routes/settings');
 
 // Functional services
 const voiceProcessingPipeline = require('./services/voiceProcessingPipeline');
@@ -93,6 +95,8 @@ app.use('/api/crm', auditDataAccess('crm'), crmRoutes);
 app.use('/api/voice', auditDataAccess('voice'), voiceRoutes);
 app.use('/api/admin', auditDataAccess('admin'), adminRoutes);
 app.use('/api/billing', auditDataAccess('billing'), billingRoutes);
+app.use('/api/survey', surveyRoutes);
+app.use('/api/settings', settingsRoutes);
 app.use('/api/i18n', i18nRoutes);
 app.use('/webhooks', webhookRoutes);
 app.use('/api/webhooks', webhookRoutes);

@@ -3,7 +3,8 @@ import type {
   User,
   AuditLog,
   SystemMetrics,
-  AdminSettings
+  AdminSettings,
+  Notification
 } from '@/types';
 
 export type { SystemMetrics };
@@ -27,7 +28,7 @@ export class AdminService {
   /**
    * Get all users with admin details
    */
-  static async getUsers(page = 1, limit = 20, search?: string): Promise<{
+    static async getUsers(page = 1, limit = 20, search?: string, status?: string): Promise<{
     users: AdminUser[];
     total: number;
     page: number;
@@ -39,7 +40,7 @@ export class AdminService {
       page: number;
       totalPages: number;
     }>('/admin/users', {
-      params: { page, limit, search }
+            params: { page, limit, search, status }
     });
     return response.data!;
   }
@@ -86,6 +87,27 @@ export class AdminService {
   /**
    * Update system setting
    */
+      static async getNotifications(page = 1, limit = 20, status?: string, type?: string): Promise<{ notifications: Notification[]; total: number; page: number; totalPages: number; }> {
+    const response = await api.get<{ notifications: Notification[]; total: number; page: number; totalPages: number; }>('/admin/notifications', {
+      params: { page, limit, status, type },
+    });
+    return response.data!;
+  }
+
+  static async markNotificationAsRead(notificationId: string): Promise<Notification> {
+    const response = await api.patch<Notification>(`/admin/notifications/${notificationId}/read`);
+    return response.data!;
+  }
+
+    static async markAllNotificationsAsRead(): Promise<{ message: string }> {
+    const response = await api.post<{ message: string }>('/admin/notifications/mark-all-read');
+    return response.data!;
+  }
+
+  static async deleteNotification(notificationId: string): Promise<void> {
+    await api.delete(`/admin/notifications/${notificationId}`);
+  }
+
   static async updateSetting(settingId: string, value: string): Promise<AdminSettings> {
     const response = await api.put<AdminSettings>(`/admin/settings/${settingId}`, { value });
     return response.data!;

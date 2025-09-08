@@ -2,89 +2,36 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
-// import { AdminService } from '@/services/admin';
 import { 
   BellIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
   CheckCircleIcon,
-  // XMarkIcon,
   EyeIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-
-interface Notification {
-  id: string;
-  type: 'info' | 'warning' | 'error' | 'success';
-  title: string;
-  message: string;
-  read: boolean;
-  createdAt: string;
-  userId?: string;
-  actionUrl?: string;
-}
+import { AdminService } from '@/services/admin';
+import { Notification } from '@/types';
 
 export default function AdminNotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     loadNotifications();
-  }, []);
+  }, [filter, typeFilter, currentPage]);
 
   const loadNotifications = async () => {
     try {
       setLoading(true);
-      // Mock data since we don't have a notifications endpoint yet
-      const mockNotifications: Notification[] = [
-        {
-          id: '1',
-          type: 'warning',
-          title: 'High API Usage',
-          message: 'API usage has exceeded 80% of the monthly limit',
-          read: false,
-          createdAt: new Date().toISOString(),
-          actionUrl: '/admin/statistics'
-        },
-        {
-          id: '2',
-          type: 'info',
-          title: 'New User Registration',
-          message: '5 new users registered in the last hour',
-          read: false,
-          createdAt: new Date(Date.now() - 3600000).toISOString(),
-          actionUrl: '/admin/users'
-        },
-        {
-          id: '3',
-          type: 'error',
-          title: 'System Alert',
-          message: 'Database connection timeout detected',
-          read: true,
-          createdAt: new Date(Date.now() - 7200000).toISOString()
-        },
-        {
-          id: '4',
-          type: 'success',
-          title: 'Backup Completed',
-          message: 'Daily backup completed successfully',
-          read: true,
-          createdAt: new Date(Date.now() - 86400000).toISOString()
-        },
-        {
-          id: '5',
-          type: 'warning',
-          title: 'Failed Login Attempts',
-          message: 'Multiple failed login attempts detected for user@example.com',
-          read: false,
-          createdAt: new Date(Date.now() - 1800000).toISOString(),
-          actionUrl: '/admin/audit-logs'
-        }
-      ];
-      setNotifications(mockNotifications);
+      const response = await AdminService.getNotifications(currentPage, 20, filter, typeFilter);
+      setNotifications(response.notifications);
+      setTotalPages(response.totalPages);
     } catch (error) {
       console.error('Error loading notifications:', error);
       toast.error('Failed to load notifications');
@@ -93,13 +40,10 @@ export default function AdminNotificationsPage() {
     }
   };
 
-  const markAsRead = async (id: string) => {
+    const markAsRead = async (id: string) => {
     try {
-      setNotifications(prev => 
-        prev.map(notif => 
-          notif.id === id ? { ...notif, read: true } : notif
-        )
-      );
+      await AdminService.markNotificationAsRead(id);
+      loadNotifications();
       toast.success('Notification marked as read');
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -107,21 +51,23 @@ export default function AdminNotificationsPage() {
     }
   };
 
-  const deleteNotification = async (id: string) => {
-    try {
-      setNotifications(prev => prev.filter(notif => notif.id !== id));
-      toast.success('Notification deleted');
-    } catch (error) {
-      console.error('Error deleting notification:', error);
-      toast.error('Failed to delete notification');
+    const deleteNotification = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this notification?')) {
+      try {
+        await AdminService.deleteNotification(id);
+        loadNotifications();
+        toast.success('Notification deleted');
+      } catch (error) {
+        console.error('Error deleting notification:', error);
+        toast.error('Failed to delete notification');
+      }
     }
   };
 
-  const markAllAsRead = async () => {
+    const markAllAsRead = async () => {
     try {
-      setNotifications(prev => 
-        prev.map(notif => ({ ...notif, read: true }))
-      );
+      await AdminService.markAllNotificationsAsRead();
+      loadNotifications();
       toast.success('All notifications marked as read');
     } catch (error) {
       console.error('Error marking all as read:', error);

@@ -22,10 +22,10 @@ export default function AdminUsersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'suspended'>('all');
 
-  const loadUsers = useCallback(async () => {
+    const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await AdminService.getUsers(currentPage, 20, search || undefined);
+      const response = await AdminService.getUsers(currentPage, 20, search || undefined, statusFilter);
       setUsers(response.users);
       setTotalPages(response.totalPages);
     } catch (error) {
@@ -34,17 +34,9 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, search]);
+  }, [currentPage, search, statusFilter]);
 
-  const filteredUsers = useCallback(() => {
-    return users.filter(user => {
-      const matchesSearch = user.name.toLowerCase().includes(search.toLowerCase()) ||
-                           user.email.toLowerCase().includes(search.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [users, search, statusFilter]);
-
+  
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
@@ -184,7 +176,7 @@ export default function AdminUsersPage() {
                     </tr>
                   ))
                 ) : (
-                  filteredUsers().map((user: AdminUser) => (
+                  users.map((user: AdminUser) => (
                     <tr key={user.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
