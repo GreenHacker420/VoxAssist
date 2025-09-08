@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
+import Modal from '@/components/UI/Modal';
+import Button from '@/components/UI/Button';
+import Input from '@/components/UI/Input';
 import { CallsService } from '@/services/calls';
 import { Call } from '@/types';
 import { formatDate, formatDuration } from '@/lib/utils';
@@ -12,25 +15,21 @@ import {
   PlusIcon,
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
+import { toast } from 'react-hot-toast';
 
 export default function CallsPage() {
   const [calls, setCalls] = useState<Call[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isNewCallModalOpen, setIsNewCallModalOpen] = useState(false);
+  const [isCallDetailsModalOpen, setIsCallDetailsModalOpen] = useState(false);
+  const [selectedCall, setSelectedCall] = useState<Call | null>(null);
+  const [countryCode, setCountryCode] = useState('+1');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [isInitiating, setIsInitiating] = useState(false);
 
   useEffect(() => {
-    const fetchCalls = async () => {
-      try {
-        const data = await CallsService.getCalls();
-        setCalls(data);
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchCalls();
+    refreshCalls();
   }, []);
 
   const getStatusColor = (status: string) => {
@@ -58,6 +57,58 @@ export default function CallsPage() {
         return 'text-gray-600';
       default:
         return 'text-gray-400';
+    }
+  };
+
+  const handleInitiateCall = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!phoneNumber.trim()) {
+      toast.error('Please enter a phone number');
+      return;
+    }
+
+    try {
+      setIsInitiating(true);
+      const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+      const newCall = await CallsService.initiateCall(fullPhoneNumber);
+      setCalls([newCall, ...calls]);
+      setIsNewCallModalOpen(false);
+      setCountryCode('+1');
+      setPhoneNumber('');
+      toast.success('Call initiated successfully');
+    } catch (err) {
+      console.error('Failed to initiate call:', err);
+      toast.error('Failed to initiate call. Please try again.');
+    } finally {
+      setIsInitiating(false);
+    }
+  };
+
+  const refreshCalls = async () => {
+    try {
+      setIsLoading(true);
+      const data = await CallsService.getCalls();
+      setCalls(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleViewDetails = (call: Call) => {
+    setSelectedCall(call);
+    setIsCallDetailsModalOpen(true);
+  };
+
+  const handleEndCall = async (callId: string) => {
+    try {
+      await CallsService.endCall(callId);
+      toast.success('Call ended successfully');
+      refreshCalls();
+    } catch (err) {
+      console.error('Failed to end call:', err);
+      toast.error('Failed to end call. Please try again.');
     }
   };
 
@@ -95,13 +146,10 @@ export default function CallsPage() {
             </p>
           </div>
           <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
-            <button
-              type="button"
-              className="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-            >
-              <PlusIcon className="h-4 w-4 inline mr-2" />
+            <Button onClick={() => setIsNewCallModalOpen(true)}>
+              <PlusIcon className="h-4 w-4 mr-2" />
               New Call
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -120,13 +168,10 @@ export default function CallsPage() {
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No calls</h3>
                 <p className="mt-1 text-sm text-gray-500">Get started by making your first call.</p>
                 <div className="mt-6">
-                  <button
-                    type="button"
-                    className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                  >
-                    <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5" aria-hidden="true" />
+                  <Button onClick={() => setIsNewCallModalOpen(true)}>
+                    <PlusIcon className="h-5 w-5 mr-2" aria-hidden="true" />
                     New Call
-                  </button>
+                  </Button>
                 </div>
               </li>
             ) : (
@@ -169,6 +214,7 @@ export default function CallsPage() {
                         {call.status === 'active' && (
                           <button
                             type="button"
+                            onClick={() => handleEndCall(call.id)}
                             className="inline-flex items-center rounded-md bg-red-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-red-500"
                           >
                             <StopIcon className="h-4 w-4 mr-1" />
@@ -177,6 +223,7 @@ export default function CallsPage() {
                         )}
                         <button
                           type="button"
+                          onClick={() => handleViewDetails(call)}
                           className="inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                         >
                           <EyeIcon className="h-4 w-4 mr-1" />
@@ -191,6 +238,221 @@ export default function CallsPage() {
           </ul>
         </div>
       </div>
+
+      {/* New Call Modal */}
+      <Modal
+        isOpen={isNewCallModalOpen}
+        onClose={() => {
+          setIsNewCallModalOpen(false);
+          setCountryCode('+1');
+          setPhoneNumber('');
+        }}
+        title="Initiate New Call"
+        maxWidth="md"
+      >
+        <form onSubmit={handleInitiateCall} className="space-y-4">
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="country-code" className="block text-sm font-medium text-black mb-2">
+                Country Code
+              </label>
+              <select
+                id="country-code"
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-black shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              >
+                <option value="+1">🇺🇸 +1 (United States)</option>
+                <option value="+44">🇬🇧 +44 (United Kingdom)</option>
+                <option value="+91">🇮🇳 +91 (India)</option>
+                <option value="+86">🇨🇳 +86 (China)</option>
+                <option value="+49">🇩🇪 +49 (Germany)</option>
+                <option value="+33">🇫🇷 +33 (France)</option>
+                <option value="+81">🇯🇵 +81 (Japan)</option>
+                <option value="+82">🇰🇷 +82 (South Korea)</option>
+                <option value="+61">🇦🇺 +61 (Australia)</option>
+                <option value="+55">🇧🇷 +55 (Brazil)</option>
+                <option value="+7">🇷🇺 +7 (Russia)</option>
+                <option value="+34">🇪🇸 +34 (Spain)</option>
+                <option value="+39">🇮🇹 +39 (Italy)</option>
+                <option value="+31">🇳🇱 +31 (Netherlands)</option>
+                <option value="+46">🇸🇪 +46 (Sweden)</option>
+                <option value="+47">🇳🇴 +47 (Norway)</option>
+                <option value="+45">🇩🇰 +45 (Denmark)</option>
+                <option value="+41">🇨🇭 +41 (Switzerland)</option>
+                <option value="+43">🇦🇹 +43 (Austria)</option>
+                <option value="+32">🇧🇪 +32 (Belgium)</option>
+              </select>
+            </div>
+            
+            <Input
+              type="tel"
+              label="Phone Number"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="1234567890"
+              helperText={`Enter the phone number without country code. Full number will be: ${countryCode}${phoneNumber}`}
+              required
+            />
+          </div>
+          
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="submit"
+              isLoading={isInitiating}
+              className="flex-1"
+            >
+              {isInitiating ? 'Initiating...' : 'Initiate Call'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsNewCallModalOpen(false);
+                setCountryCode('+1');
+                setPhoneNumber('');
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Call Details Modal */}
+      <Modal
+        isOpen={isCallDetailsModalOpen}
+        onClose={() => {
+          setIsCallDetailsModalOpen(false);
+          setSelectedCall(null);
+        }}
+        title="Call Details"
+        maxWidth="lg"
+      >
+        {selectedCall && (
+          <div className="space-y-6">
+            {/* Call Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="text-sm font-medium text-black mb-2">Call Information</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Call ID:</span>
+                    <span className="text-black font-mono">{selectedCall.id}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Phone Number:</span>
+                    <span className="text-black">{selectedCall.customerPhone}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Status:</span>
+                    <span className={cn(
+                      'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+                      getStatusColor(selectedCall.status)
+                    )}>
+                      {selectedCall.status}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Started:</span>
+                    <span className="text-black">{formatDate(selectedCall.startTime)}</span>
+                  </div>
+                  {selectedCall.endTime && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Ended:</span>
+                      <span className="text-black">{formatDate(selectedCall.endTime)}</span>
+                    </div>
+                  )}
+                  {selectedCall.duration && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Duration:</span>
+                      <span className="text-black">{formatDuration(selectedCall.duration)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-black mb-2">Call Analysis</h4>
+                <div className="space-y-2 text-sm">
+                  {selectedCall.sentiment && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Sentiment:</span>
+                      <span className={cn('font-medium', getSentimentColor(selectedCall.sentiment))}>
+                        {selectedCall.sentiment}
+                      </span>
+                    </div>
+                  )}
+                  {selectedCall.escalated && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Escalated:</span>
+                      <span className="text-red-600 font-medium">Yes</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Call Type:</span>
+                    <span className="text-black">
+                      {selectedCall.callSid?.startsWith('mock-') ? 'Mock Call' : 'Live Call'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Transcript */}
+            {selectedCall.transcript && (
+              <div>
+                <h4 className="text-sm font-medium text-black mb-2">Transcript</h4>
+                <div className="bg-gray-50 rounded-lg p-4 max-h-40 overflow-y-auto">
+                  <p className="text-sm text-black whitespace-pre-wrap">{selectedCall.transcript}</p>
+                </div>
+              </div>
+            )}
+
+            {/* AI Insights */}
+            {selectedCall.aiInsights && (
+              <div>
+                <h4 className="text-sm font-medium text-black mb-2">AI Insights</h4>
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <p className="text-sm text-black">{selectedCall.aiInsights}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Mock Call Notice */}
+            {selectedCall.callSid?.startsWith('mock-') && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-yellow-800">Mock Call</h3>
+                    <div className="mt-2 text-sm text-yellow-700">
+                      <p>This is a simulated call for testing purposes. No actual phone call was placed. To make real calls, configure Twilio credentials and use an HTTPS webhook URL.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsCallDetailsModalOpen(false);
+                  setSelectedCall(null);
+                }}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </DashboardLayout>
   );
 }

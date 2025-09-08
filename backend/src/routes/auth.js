@@ -5,9 +5,8 @@ const bcrypt = require('bcryptjs');
 const { authenticateToken } = require('../middleware/auth');
 const { validate, sanitizeInput } = require('../middleware/validation');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { prisma } = require('../database/prisma');
 const logger = require('../utils/logger');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
 
 // Register new user
 router.post('/register', validate('register'), asyncHandler(async (req, res) => {

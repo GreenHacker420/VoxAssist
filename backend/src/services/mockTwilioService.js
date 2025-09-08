@@ -22,9 +22,9 @@ const mockCallData = {
 /**
  * Mock call initiation
  */
-const initiateCall = async (to, callbackUrl) => {
+const initiateCall = async (to, callbackUrl = null) => {
   try {
-    logger.info(`Mock call initiated to ${to} with callback ${callbackUrl}`);
+    logger.info(`Mock call initiated to ${to}${callbackUrl ? ` with callback ${callbackUrl}` : ' (no callback)'}`);
     
     const callId = `mock-call-${Date.now()}`;
     const mockCall = {
@@ -43,6 +43,9 @@ const initiateCall = async (to, callbackUrl) => {
       price: null,
       priceUnit: 'USD'
     };
+    
+    // Simulate successful call initiation
+    logger.info(`Mock call ${callId} successfully initiated to ${to}`);
     
     return {
       callSid: mockCall.sid,

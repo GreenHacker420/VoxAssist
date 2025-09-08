@@ -1,9 +1,33 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
+const { prisma } = require('../database/prisma');
 const logger = require('../utils/logger');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+
+// Helper function to convert data to CSV format
+function convertToCSV(data) {
+  if (!data || !data.calls || data.calls.length === 0) {
+    return 'No data available';
+  }
+  
+  const headers = ['Date', 'Customer Phone', 'Duration', 'Status', 'Sentiment', 'Category'];
+  const csvRows = [headers.join(',')];
+  
+  data.calls.forEach(call => {
+    const row = [
+      call.date || '',
+      call.customerPhone || '',
+      call.duration || 0,
+      call.status || '',
+      call.sentiment || '',
+      call.category || ''
+    ];
+    csvRows.push(row.join(','));
+  });
+  
+  return csvRows.join('\n');
+}
+
 
 // Get dashboard analytics
 router.get('/dashboard', authenticateToken, async (req, res) => {
@@ -387,8 +411,10 @@ router.get('/export', authenticateToken, async (req, res) => {
       // Convert to CSV format
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename=voxassist-analytics.csv');
-      // TODO: Implement CSV conversion
-      res.send('CSV data would be here');
+      
+      // Implement CSV conversion
+      const csvData = convertToCSV(data);
+      res.send(csvData);
     } else {
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', 'attachment; filename=voxassist-analytics.json');

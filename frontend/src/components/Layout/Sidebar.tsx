@@ -102,7 +102,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                         </svg>
                       </div>
-                      <span className="text-xl font-bold text-gray-900">VoxAssist</span>
+                      <span className="text-xl font-bold text-black">VoxAssist</span>
                     </div>
                   </div>
                   <nav className="flex flex-1 flex-col">
@@ -116,7 +116,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                                 className={cn(
                                   pathname === item.href
                                     ? 'bg-gray-50 text-indigo-600'
-                                    : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50',
+                                    : 'text-black hover:text-indigo-600 hover:bg-gray-50',
                                   'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
                                 )}
                               >
@@ -152,7 +152,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                 </svg>
               </div>
-              <span className="text-xl font-bold text-gray-900">VoxAssist</span>
+              <span className="text-xl font-bold text-black">VoxAssist</span>
             </div>
           </div>
           <nav className="flex flex-1 flex-col">
@@ -166,7 +166,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                         className={cn(
                           pathname === item.href
                             ? 'bg-gray-50 text-indigo-600'
-                            : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50',
+                            : 'text-black hover:text-indigo-600 hover:bg-gray-50',
                           'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
                         )}
                       >
@@ -196,7 +196,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                           className={cn(
                             pathname === item.href
                               ? 'bg-red-50 text-red-600'
-                              : 'text-gray-700 hover:text-red-600 hover:bg-red-50',
+                              : 'text-black hover:text-red-600 hover:bg-red-50',
                             'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
                           )}
                         >
@@ -215,9 +215,9 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                 </li>
               </PermissionGate>
               <li className="-mx-6 mt-auto">
-                <div className="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-gray-900">
+                <div className="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-black">
                   <div className="h-8 w-8 bg-gray-50 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-black">
                       {user?.name?.charAt(0).toUpperCase() || 'U'}
                     </span>
                   </div>

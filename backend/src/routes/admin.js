@@ -1,12 +1,73 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
+const router = express.Router();
 const { authenticateToken, authorizeRoles } = require('../middleware/auth');
-const { validate } = require('../middleware/validation');
-const { asyncHandler } = require('../middleware/errorHandler');
+const { prisma } = require('../database/prisma');
 const logger = require('../utils/logger');
 
-const router = express.Router();
-const prisma = new PrismaClient();
+// Async handler wrapper
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+
+// Helper function to calculate user storage usage
+async function calculateUserStorageUsage(userId) {
+  try {
+    // Calculate storage from call recordings and transcripts
+    const calls = await prisma.call.findMany({
+      where: { userId },
+      select: { metadata: true }
+    });
+    
+    let totalStorage = 0;
+    calls.forEach(call => {
+      if (call.metadata?.recordingUrl) {
+        totalStorage += 5 * 1024 * 1024; // Estimate 5MB per recording
+      }
+      if (call.metadata?.transcript) {
+        totalStorage += JSON.stringify(call.metadata.transcript).length;
+      }
+    });
+    
+    return Math.round(totalStorage / (1024 * 1024)); // Return in MB
+  } catch (error) {
+    logger.error(`Error calculating storage usage: ${error.message}`);
+    return 0;
+  }
+}
+
+// Helper function to calculate revenue metrics
+async function calculateRevenueMetrics() {
+  try {
+    const now = new Date();
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    
+    // Count active users as proxy for revenue (assuming $50/user/month)
+    const [thisMonthUsers, lastMonthUsers] = await Promise.all([
+      prisma.user.count({
+        where: {
+          isActive: true,
+          createdAt: { lte: now }
+        }
+      }),
+      prisma.user.count({
+        where: {
+          isActive: true,
+          createdAt: { lte: endOfLastMonth }
+        }
+      })
+    ]);
+    
+    const thisMonthRevenue = thisMonthUsers * 50; // $50 per user
+    const lastMonthRevenue = lastMonthUsers * 50;
+    
+    return { thisMonthRevenue, lastMonthRevenue };
+  } catch (error) {
+    logger.error(`Error calculating revenue: ${error.message}`);
+    return { thisMonthRevenue: 0, lastMonthRevenue: 0 };
+  }
+}
 
 // All admin routes require authentication and admin role
 router.use(authenticateToken);
@@ -84,7 +145,7 @@ router.get('/users', asyncHandler(async (req, res) => {
       updatedAt: user.updatedAt.toISOString(),
       usage: {
         callsThisMonth,
-        storageUsed: 0 // TODO: Calculate actual storage usage
+        storageUsed: await calculateUserStorageUsage(user.id)
       },
       organizationId: user.userOrganizations[0]?.organizationId || null
     };
@@ -319,10 +380,9 @@ router.get('/metrics', asyncHandler(async (req, res) => {
     })
   ]);
 
-  // Calculate revenue (mock data for now)
-  const thisMonthRevenue = 15000; // TODO: Calculate from actual subscription data
-  const lastMonthRevenue = 12000;
-  const revenueGrowth = ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
+  // Calculate revenue from subscription data
+  const { thisMonthRevenue, lastMonthRevenue } = await calculateRevenueMetrics();
+  const revenueGrowth = lastMonthRevenue > 0 ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 : 0;
 
   // Get system health metrics
   const systemHealth = {

@@ -35,19 +35,24 @@ export interface Call {
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
-  status: 'active' | 'completed' | 'escalated' | 'failed';
+  status: 'active' | 'completed' | 'escalated' | 'failed' | 'initiated';
   startTime: string;
   endTime?: string;
   duration?: number;
-  organizationId: number;
+  organizationId?: number;
   crmSynced?: boolean;
   sentiment?: 'positive' | 'neutral' | 'negative';
   sentimentScore?: number;
+  callSid?: string;
+  escalated?: boolean;
+  transcript?: string;
+  aiInsights?: string;
 }
 
-export interface CallDetails extends Call {
+export interface CallDetails extends Omit<Call, 'transcript'> {
   recordings: Recording[];
   transcript: TranscriptEntry[];
+  transcriptText?: string;
 }
 
 export interface Recording {

@@ -1,6 +1,5 @@
 const logger = require('../utils/logger');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const { prisma } = require('../database/prisma');
 
 /**
  * Security Audit and Compliance Middleware

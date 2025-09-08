@@ -18,8 +18,7 @@ router.post('/switch', authenticateToken, validate('languageSwitch'), asyncHandl
   }
 
   // Update user's language preference
-  const { PrismaClient } = require('@prisma/client');
-  const prisma = new PrismaClient();
+  const { prisma } = require('../database/prisma');
   await prisma.user.update({
     where: { id: req.user.userId },
     data: { preferredLanguage: language }
@@ -68,8 +67,7 @@ router.get('/languages', asyncHandler(async (req, res) => {
 
 // Get user's current language preference
 router.get('/preference', authenticateToken, asyncHandler(async (req, res) => {
-  const { PrismaClient } = require('@prisma/client');
-  const prisma = new PrismaClient();
+  const { prisma } = require('../database/prisma');
   
   const user = await prisma.user.findUnique({
     where: { id: req.user.userId },

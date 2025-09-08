@@ -88,6 +88,7 @@ model Call {
   startTime      DateTime  @default(now()) @map("start_time")
   endTime        DateTime? @map("end_time")
   recordingUrl   String?   @map("recording_url")
+  metadata       Json?     // Store AI insights, transcripts, and call metadata
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 

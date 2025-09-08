@@ -28,18 +28,30 @@ const initiateCall = async (to, callbackUrl) => {
       initializeTwilio();
     }
     
-    const call = await client.calls.create({
-      url: callbackUrl,
+    // For development, use a simple TwiML URL instead of webhook callbacks
+    const isDevelopment = !callbackUrl || callbackUrl.includes('localhost');
+    
+    const callOptions = {
       to: to,
       from: phoneNumber,
-      record: true,
-      recordingStatusCallback: `${callbackUrl}/recording-status`,
-      statusCallback: `${callbackUrl}/call-status`,
-      statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
-      statusCallbackMethod: 'POST'
-    });
+      record: true
+    };
+    
+    if (isDevelopment) {
+      // Use TwiML Bins or simple TwiML for development
+      callOptions.twiml = '<Response><Say>Hello! This is a test call from VoxAssist. Thank you for testing our system. Goodbye!</Say></Response>';
+    } else {
+      // Use webhook URLs for production
+      callOptions.url = callbackUrl;
+      callOptions.recordingStatusCallback = `${callbackUrl}/recording-status`;
+      callOptions.statusCallback = `${callbackUrl}/call-status`;
+      callOptions.statusCallbackEvent = ['initiated', 'ringing', 'answered', 'completed'];
+      callOptions.statusCallbackMethod = 'POST';
+    }
+    
+    const call = await client.calls.create(callOptions);
 
-    logger.info(`Call initiated: ${call.sid} to ${to}`);
+    logger.info(`Call initiated: ${call.sid} to ${to} (${isDevelopment ? 'development mode' : 'production mode'})`);
     return {
       callSid: call.sid,
       status: call.status,

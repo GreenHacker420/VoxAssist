@@ -3,8 +3,7 @@ const router = express.Router();
 const twilioService = require('../services/twilioService');
 const voiceProcessingPipeline = require('../services/voiceProcessingPipeline');
 const logger = require('../utils/logger');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const { prisma } = require('../database/prisma');
 
 // Handle incoming calls from Twilio
 router.post('/incoming', async (req, res) => {
@@ -214,12 +213,41 @@ router.get('/audio/:filename', async (req, res) => {
   try {
     const { filename } = req.params;
     
-    // TODO: Implement actual file serving from storage
-    // For now, return a placeholder
-    res.status(404).json({
-      success: false,
-      message: 'Audio file not found'
-    });
+    // Implement actual file serving from storage
+    const path = require('path');
+    const fs = require('fs');
+    
+    // Security: validate filename to prevent directory traversal
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid filename'
+      });
+    }
+    
+    // Look for the file in the audio storage directory
+    const audioDir = process.env.AUDIO_STORAGE_PATH || './storage/audio';
+    const filePath = path.join(audioDir, filename);
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Audio file not found'
+      });
+    }
+    
+    // Get file stats for content length
+    const stats = fs.statSync(filePath);
+    
+    // Set appropriate headers
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Content-Length', stats.size);
+    res.setHeader('Accept-Ranges', 'bytes');
+    
+    // Stream the file
+    const stream = fs.createReadStream(filePath);
+    stream.pipe(res);
     
   } catch (error) {
     logger.error(`Error serving audio file: ${error.message}`);

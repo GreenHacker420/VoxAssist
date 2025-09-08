@@ -2,20 +2,48 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #000000;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #ffffff;
+  --ring: #3b82f6;
+  --radius: 0.5rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
+/* Force light theme - override dark mode preferences */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #ffffff;
+    --foreground: #000000;
   }
 }
 
@@ -23,4 +51,56 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Ensure all text is black in light theme */
+* {
+  color: inherit;
+}
+
+/* Override any potential dark text colors */
+.text-gray-600,
+.text-gray-500,
+.text-gray-400 {
+  color: #000000 !important;
+}
+
+/* Ensure form elements have proper styling */
+input, textarea, select {
+  background-color: var(--input);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+/* Button styling consistency */
+button {
+  color: inherit;
+}
+
+/* Card and container styling */
+.bg-white {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Navigation and header styling */
+nav, header {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* Table styling */
+table {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+th, td {
+  color: #000000;
+}
+
+/* Modal and overlay styling */
+.modal, .overlay {
+  background-color: #ffffff;
+  color: #000000;
 }
