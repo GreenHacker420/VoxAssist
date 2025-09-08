@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
-import Button from '@/components/UI/Button';
+import Button from '@/components/ui/Button';
 import { CallsService } from '@/services/calls';
 import { Call } from '@/types';
 import { formatDate, formatDuration } from '@/lib/utils';

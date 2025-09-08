@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/Layout/DashboardLayout';
+import UserLayout from '@/components/UserLayout';
+import UserNavbar from '@/components/UserNavbar';
 import { AnalyticsService } from '@/services/analytics';
 import { DashboardAnalytics } from '@/types';
 import { formatDuration, formatPercentage } from '@/lib/utils';
@@ -68,7 +69,7 @@ export default function AnalyticsPage() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
+      <UserLayout>
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-gray-200 rounded w-1/4"></div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -79,7 +80,7 @@ export default function AnalyticsPage() {
             ))}
           </div>
         </div>
-      </DashboardLayout>
+      </UserLayout>
     );
   }
 
@@ -96,37 +97,36 @@ export default function AnalyticsPage() {
     { metric: 'First Call Resolution', value: 78, target: 80 },
   ];
 
-  return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        {/* Page header */}
-        <div className="sm:flex sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Analytics</h1>
-            <p className="mt-2 text-sm text-gray-700">
-              Comprehensive insights into your voice calling operations.
-            </p>
-          </div>
-          <div className="mt-4 sm:mt-0 sm:flex sm:space-x-3">
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            >
-              <option value="7d">Last 7 days</option>
-              <option value="30d">Last 30 days</option>
-              <option value="90d">Last 90 days</option>
-            </select>
-            <button
-              onClick={() => exportData('dashboard')}
-              className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-            >
-              <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
-              Export
-            </button>
-          </div>
-        </div>
+  const pageActions = (
+    <>
+      <select
+        value={dateRange}
+        onChange={(e) => setDateRange(e.target.value)}
+        className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+      >
+        <option value="7d">Last 7 days</option>
+        <option value="30d">Last 30 days</option>
+        <option value="90d">Last 90 days</option>
+      </select>
+      <button
+        onClick={() => exportData('dashboard')}
+        className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+      >
+        <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+        Export
+      </button>
+    </>
+  );
 
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <UserNavbar 
+        title="Analytics" 
+        subtitle="Comprehensive insights into your voice calling operations."
+        actions={pageActions}
+      />
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
         {error && (
           <div className="rounded-md bg-red-50 p-4">
             <div className="text-sm text-red-700">{error}</div>
@@ -394,6 +394,6 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

@@ -26,9 +26,12 @@ router.post('/session', widgetController.initializeSession);
 router.post('/message', widgetController.handleTextMessage);
 router.post('/voice', upload.single('audio'), widgetController.handleVoiceMessage);
 
-// Widget configuration
-router.get('/config/:widgetId', widgetController.getWidgetConfig);
-router.post('/create', widgetController.createWidget);
+// Get widget configuration
+router.get('/:id/config', widgetController.getWidgetConfig);
+router.get('/configs/:id', widgetController.getWidgetConfig);
+
+// Get widget analytics
+router.get('/:id/analytics', widgetController.getWidgetAnalytics);
 router.put('/update/:widgetId', widgetController.updateWidget);
 
 // Analytics

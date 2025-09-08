@@ -294,7 +294,7 @@ function WidgetModal({ widget, onClose, onSave }: WidgetModalProps) {
       autoOpen: widget?.behavior.autoOpen || false,
       greeting: widget?.behavior.greeting || 'Hi! How can I help you today?',
       language: 'en',
-      enableVoice: widget?.behavior.enableVoice || true,
+      enableVoice: widget?.behavior.enableVoice ?? false,
       enableText: true
     },
     permissions: {
