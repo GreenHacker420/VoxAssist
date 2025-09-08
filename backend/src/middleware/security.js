@@ -222,8 +222,10 @@ const corsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
       'http://localhost:3000',
+      'http://localhost:3004',
       'https://voxassist.com',
-      'https://app.voxassist.com'
+      'https://app.voxassist.com',
+      'https://vox-assist-red.vercel.app'
     ];
 
     if (!origin || allowedOrigins.includes(origin)) {

@@ -71,6 +71,42 @@ export class AuthService {
     }
   }
 
+  // Forgot password - request reset token
+  static async forgotPassword(email: string): Promise<{ message: string; resetToken?: string }> {
+    try {
+      const response = await apiClient.post('/auth/forgot-password', { email }) as any;
+      
+      if (response.success) {
+        return {
+          message: response.message || 'Password reset email sent',
+          resetToken: response.resetToken // Only available in development
+        };
+      }
+      
+      throw new Error(response.error || 'Failed to send password reset email');
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      throw new Error('Failed to send password reset email');
+    }
+  }
+
+  // Reset password with token
+  static async resetPassword(token: string, newPassword: string): Promise<void> {
+    try {
+      const response = await apiClient.post('/auth/reset-password', {
+        token,
+        newPassword,
+      });
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to reset password');
+      }
+    } catch (error) {
+      console.error('Password reset error:', error);
+      throw new Error('Failed to reset password');
+    }
+  }
+
   // Logout user
   static async logout(): Promise<void> {
     try {

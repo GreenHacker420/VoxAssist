@@ -20,7 +20,10 @@ export function useSocket(options: UseSocketOptions = {}) {
     if (!autoConnect || !AuthService.isAuthenticated()) return;
 
     const token = AuthService.getToken();
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 
+      (process.env.NODE_ENV === 'production' 
+        ? 'https://voxassist.onrender.com' 
+        : 'http://localhost:3001');
 
     socketRef.current = io(socketUrl, {
       auth: {

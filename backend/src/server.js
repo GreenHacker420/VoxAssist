@@ -39,8 +39,15 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
-    methods: ["GET", "POST"]
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3004", 
+      "https://vox-assist-red.vercel.app",
+      "https://voxassist.com",
+      "https://app.voxassist.com"
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 

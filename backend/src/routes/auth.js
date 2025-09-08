@@ -273,6 +273,113 @@ router.post('/change-password', authenticateToken, validate('changePassword'), a
   });
 }));
 
+// Forgot password - generate reset token
+router.post('/forgot-password', validate('forgotPassword'), asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  
+  // Sanitize email
+  const cleanEmail = sanitizeInput.cleanEmail(email);
+  
+  // Find user
+  const user = await prisma.user.findUnique({
+    where: { email: cleanEmail }
+  });
+  
+  if (!user) {
+    // Don't reveal if user exists or not for security
+    return res.json({
+      success: true,
+      message: 'If an account with that email exists, a password reset link has been sent.'
+    });
+  }
+  
+  // Generate reset token (valid for 1 hour)
+  const resetToken = jwt.sign(
+    { userId: user.id, email: user.email, type: 'password-reset' },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+  
+  // Store reset token in database (you might want to add a passwordResetToken field)
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      // Note: You'll need to add passwordResetToken and passwordResetExpires fields to your schema
+      // For now, we'll just log the token
+    }
+  });
+  
+  logger.info(`Password reset requested for user: ${cleanEmail}`);
+  logger.info(`Reset token (for development): ${resetToken}`);
+  
+  // In production, you would send this via email
+  // For now, return it in the response (ONLY for development)
+  res.json({
+    success: true,
+    message: 'If an account with that email exists, a password reset link has been sent.',
+    // Remove this in production:
+    resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined
+  });
+}));
+
+// Reset password with token
+router.post('/reset-password', validate('resetPassword'), asyncHandler(async (req, res) => {
+  const { token, newPassword } = req.body;
+  
+  try {
+    // Verify reset token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    if (decoded.type !== 'password-reset') {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid reset token'
+      });
+    }
+    
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId }
+    });
+    
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid reset token'
+      });
+    }
+    
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update password
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: hashedPassword }
+    });
+    
+    logger.info(`Password reset completed for user: ${user.email}`);
+    
+    res.json({
+      success: true,
+      message: 'Password reset successfully'
+    });
+    
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(400).json({
+        success: false,
+        error: 'Reset token has expired'
+      });
+    }
+    
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid reset token'
+    });
+  }
+}));
+
 // Logout (client-side token removal)
 router.post('/logout', authenticateToken, (req, res) => {
   logger.info(`User logged out: ${req.user.email}`);
