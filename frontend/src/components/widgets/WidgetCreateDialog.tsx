@@ -42,8 +42,6 @@ export default function WidgetCreateDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  if (!open) return null;
-
   const [formData, setFormData] = useState<WidgetConfig>({
     name: widget?.name || "",
     contextUrl: widget?.contextUrl || "",
@@ -106,6 +104,8 @@ export default function WidgetCreateDialog({
       setSaving(false);
     }
   };
+
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
