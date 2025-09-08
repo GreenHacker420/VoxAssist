@@ -24,7 +24,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen landing-animated-bg">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <header className="py-6">
