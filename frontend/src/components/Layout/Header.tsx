@@ -20,7 +20,7 @@ export default function Header({ setSidebarOpen }: HeaderProps) {
   ];
 
   return (
-    <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 glass-blue px-4 sm:gap-x-6 sm:px-6 lg:px-8 rounded-b-xl">
+    <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 glass-gray top-glow px-4 sm:gap-x-6 sm:px-6 lg:px-8 rounded-b-xl">
       <button
         type="button"
         className="-m-2.5 p-2.5 text-black lg:hidden"
