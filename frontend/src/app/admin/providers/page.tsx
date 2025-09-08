@@ -11,7 +11,7 @@ interface ProviderConfig {
   provider: string;
   isActive: boolean;
   isPrimary: boolean;
-  settings: Record<string, any>;
+  settings: Record<string, unknown>;
   webhookUrl?: string;
   createdAt: string;
   updatedAt: string;
@@ -44,9 +44,15 @@ interface SupportedProvider {
       name: string;
       label: string;
       type: string;
-      default?: any;
+      default?: unknown;
     }>;
   };
+}
+
+interface TestResult {
+  testing?: boolean;
+  success?: boolean;
+  error?: string;
 }
 
 export default function ProvidersPage() {
@@ -55,7 +61,7 @@ export default function ProvidersPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState<ProviderConfig | null>(null);
-  const [testResults, setTestResults] = useState<Record<string, any>>({});
+  const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
 
   useEffect(() => {
     fetchConfigs();
@@ -69,7 +75,7 @@ export default function ProvidersPage() {
         const data = await response.json();
         setConfigs(data);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to fetch provider configs:', error);
       toast.error('Failed to load provider configurations');
     } finally {
@@ -84,7 +90,7 @@ export default function ProvidersPage() {
         const data = await response.json();
         setSupportedProviders(data);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to fetch supported providers:', error);
     }
   };
@@ -113,7 +119,7 @@ export default function ProvidersPage() {
       } else {
         throw new Error('Failed to delete provider configuration');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Delete provider config error:', error);
       toast.error('Failed to delete provider configuration');
     }
@@ -135,7 +141,7 @@ export default function ProvidersPage() {
       } else {
         toast.error(`Connection test failed: ${result.error}`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Test connection error:', error);
       toast.error('Failed to test connection');
       setTestResults({ ...testResults, [configId]: { success: false, error: 'Test failed' } });
@@ -156,7 +162,7 @@ export default function ProvidersPage() {
       } else {
         throw new Error('Failed to update provider status');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Toggle provider status error:', error);
       toast.error('Failed to update provider status');
     }
@@ -176,7 +182,7 @@ export default function ProvidersPage() {
       } else {
         throw new Error('Failed to set primary provider');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Set primary provider error:', error);
       toast.error('Failed to set primary provider');
     }
@@ -413,7 +419,7 @@ function ProviderModal({ config, supportedProviders, onClose, onSave }: Provider
     type: config?.type || 'phone',
     provider: config?.provider || 'twilio',
     credentials: {} as Record<string, string>,
-    settings: config?.settings || {},
+    settings: (config?.settings as Record<string, unknown>) || {},
     isPrimary: config?.isPrimary || false
   });
 
@@ -428,10 +434,10 @@ function ProviderModal({ config, supportedProviders, onClose, onSave }: Provider
     
     if (provider && !config) {
       // Initialize default settings for new configs
-      const defaultSettings = {};
+      const defaultSettings: Record<string, unknown> = {};
       provider.requirements.settings.forEach(setting => {
         if (setting.default !== undefined) {
-          (defaultSettings as Record<string, any>)[setting.name] = setting.default;
+          defaultSettings[setting.name] = setting.default as unknown;
         }
       });
       setFormData(prev => ({ ...prev, settings: defaultSettings }));
@@ -480,9 +486,10 @@ function ProviderModal({ config, supportedProviders, onClose, onSave }: Provider
         const error = await response.json();
         throw new Error(error.error || `Failed to ${config ? 'update' : 'create'} provider`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Save provider error:', error);
-      toast.error(error.message || `Failed to ${config ? 'update' : 'create'} provider`);
+      const message = error instanceof Error ? error.message : `Failed to ${config ? 'update' : 'create'} provider`;
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -602,7 +609,7 @@ function ProviderModal({ config, supportedProviders, onClose, onSave }: Provider
                       <label className="flex items-center">
                         <input
                           type="checkbox"
-                          checked={formData.settings[setting.name] || setting.default || false}
+                          checked={Boolean((formData.settings as Record<string, unknown>)[setting.name] ?? setting.default ?? false)}
                           onChange={(e) => setFormData({
                             ...formData,
                             settings: { ...formData.settings, [setting.name]: e.target.checked }
@@ -614,17 +621,33 @@ function ProviderModal({ config, supportedProviders, onClose, onSave }: Provider
                     ) : setting.type === 'number' ? (
                       <input
                         type="number"
-                        value={formData.settings[setting.name] || setting.default || ''}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          settings: { ...formData.settings, [setting.name]: parseInt(e.target.value) }
-                        })}
+                        value={
+                          typeof (formData.settings as Record<string, unknown>)[setting.name] === 'number'
+                            ? (formData.settings as Record<string, unknown>)[setting.name] as number
+                            : typeof setting.default === 'number'
+                              ? (setting.default as number)
+                              : ''
+                        }
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const parsed = val === '' ? '' : Number(val);
+                          setFormData({
+                            ...formData,
+                            settings: { ...formData.settings, [setting.name]: parsed }
+                          });
+                        }}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     ) : (
                       <input
                         type="text"
-                        value={formData.settings[setting.name] || setting.default || ''}
+                        value={
+                          typeof (formData.settings as Record<string, unknown>)[setting.name] === 'string'
+                            ? ((formData.settings as Record<string, unknown>)[setting.name] as string)
+                            : typeof setting.default === 'string'
+                              ? (setting.default as string)
+                              : ''
+                        }
                         onChange={(e) => setFormData({
                           ...formData,
                           settings: { ...formData.settings, [setting.name]: e.target.value }

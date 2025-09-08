@@ -1,20 +1,33 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import UserLayout from '@/components/UserLayout';
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import StatsGrid from '@/components/dashboard/StatsGrid';
-import WidgetsList from '@/components/dashboard/WidgetsList';
-import RecentActivity from '@/components/dashboard/RecentActivity';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import DashboardLayout from '@/components/Layout/DashboardLayout';
+import { AnalyticsService } from '@/services/analytics';
+import { DashboardAnalytics } from '@/types';
+import { calculatePercentageChange, formatDuration, formatPercentage } from '@/lib/utils';
+import {
+  PhoneIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  ClockIcon,
+} from '@heroicons/react/24/outline';
+import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/20/solid';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  LineChart,
+  Line,
+} from 'recharts';
 
 export default function DashboardPage() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [widgets, setWidgets] = useState([]);
+  const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -28,12 +41,12 @@ export default function DashboardPage() {
       }
     };
 
-    return () => clearTimeout(timer);
+    fetchAnalytics();
   }, []);
 
-  const handleCreateWidget = () => {
-    router.push('/widgets/create');
-  };
+  // const handleCreateWidget = () => {
+  //   router.push('/widgets/create');
+  // };
 
   if (isLoading) {
     return (
@@ -57,7 +70,7 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
-      </UserLayout>
+      </DashboardLayout>
     );
   }
 
@@ -69,7 +82,7 @@ export default function DashboardPage() {
           <h3 className="mt-2 text-sm font-medium text-gray-900">Error loading dashboard</h3>
           <p className="mt-1 text-sm text-gray-500">{error}</p>
         </div>
-      </UserLayout>
+      </DashboardLayout>
     );
   }
 
@@ -288,6 +301,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </UserLayout>
+    </DashboardLayout>
   );
 }
+

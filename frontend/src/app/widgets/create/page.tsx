@@ -85,11 +85,12 @@ export default function CreateWidgetPage() {
   };
 
   const generateEmbedCode = () => {
+    const baseOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com';
     return `<!-- VoxAssist Widget -->
 <script>
   (function() {
     var script = document.createElement('script');
-    script.src = '${window.location.origin}/widget.js';
+    script.src = '${baseOrigin}/widget.js';
     script.async = true;
     script.setAttribute('data-widget-config', JSON.stringify({
       greeting: "${formData.greeting}",
@@ -197,7 +198,7 @@ export default function CreateWidgetPage() {
                     </label>
                     <select
                       value={formData.position}
-                      onChange={(e) => setFormData({ ...formData, position: e.target.value as any })}
+                      onChange={(e) => setFormData({ ...formData, position: e.target.value as WidgetFormData['position'] })}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     >
                       <option value="bottom-right">Bottom Right</option>
@@ -294,7 +295,7 @@ export default function CreateWidgetPage() {
                 </pre>
               </div>
               <p className="mt-2 text-sm text-gray-500">
-                Copy this code and paste it into your website's HTML to add the widget.
+                Copy this code and paste it into your website&apos;s HTML to add the widget.
               </p>
             </div>
           </div>

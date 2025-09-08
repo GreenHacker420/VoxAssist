@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import UserLayout from '@/components/UserLayout';
-import UserNavbar from '@/components/UserNavbar';
+import DashboardLayout from '@/components/Layout/DashboardLayout';
 import { AnalyticsService } from '@/services/analytics';
 import { DashboardAnalytics } from '@/types';
 import { formatDuration, formatPercentage } from '@/lib/utils';
@@ -69,7 +68,7 @@ export default function AnalyticsPage() {
 
   if (isLoading) {
     return (
-      <UserLayout>
+      <DashboardLayout>
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-gray-200 rounded w-1/4"></div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -80,7 +79,7 @@ export default function AnalyticsPage() {
             ))}
           </div>
         </div>
-      </UserLayout>
+      </DashboardLayout>
     );
   }
 
@@ -119,19 +118,21 @@ export default function AnalyticsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <UserNavbar 
-        title="Analytics" 
-        subtitle="Comprehensive insights into your voice calling operations."
-        actions={pageActions}
-      />
-      <div className="px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-        {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="text-sm text-red-700">{error}</div>
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Analytics</h1>
+            <p className="mt-1 text-sm text-gray-600">Comprehensive insights into your voice calling operations.</p>
           </div>
-        )}
+          <div className="flex items-center gap-3">{pageActions}</div>
+        </div>
+        <div className="space-y-6">
+          {error && (
+            <div className="rounded-md bg-red-50 p-4">
+              <div className="text-sm text-red-700">{error}</div>
+            </div>
+          )}
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -393,8 +394,8 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </div>
-        </div>
       </div>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

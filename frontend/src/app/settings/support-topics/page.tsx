@@ -91,7 +91,7 @@ export default function SupportTopicsPage() {
                     <div>
                       <h3 className="text-lg font-medium text-gray-900">{topic.name}</h3>
                       <p className="text-sm text-gray-500">Keywords: {topic.keywords.join(', ')}</p>
-                      <p className="text-sm text-gray-500 mt-1">Description: "{topic.description}"</p>
+                      <p className="text-sm text-gray-500 mt-1">Response Script: {topic.responseScript}</p>
                     </div>
                     <div className="flex space-x-2">
                       <button onClick={() => handleEdit(topic)} className="p-2 text-gray-400 hover:text-gray-600">
