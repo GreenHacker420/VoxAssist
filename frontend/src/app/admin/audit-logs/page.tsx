@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
 import { AdminService } from '@/services/admin';
 import { AuditLog } from '@/types';
 import { 
   ClipboardDocumentListIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
@@ -21,11 +20,7 @@ export default function AuditLogsPage() {
   const [selectedAction, setSelectedAction] = useState('');
   const [selectedResource, setSelectedResource] = useState('');
 
-  useEffect(() => {
-    loadAuditLogs();
-  }, [currentPage, searchTerm, selectedAction, selectedResource]);
-
-  const loadAuditLogs = async () => {
+  const loadAuditLogs = useCallback(async () => {
     try {
       setLoading(true);
       const response = await AdminService.getAuditLogs(currentPage, 20);
@@ -37,7 +32,11 @@ export default function AuditLogsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage]);
+
+  useEffect(() => {
+    loadAuditLogs();
+  }, [loadAuditLogs]);
 
   const getActionBadgeColor = (action: string) => {
     switch (action.toLowerCase()) {
@@ -61,7 +60,7 @@ export default function AuditLogsPage() {
     }
   };
 
-  const formatDetails = (details: Record<string, any>) => {
+  const formatDetails = (details: Record<string, unknown>) => {
     return Object.entries(details).map(([key, value]) => (
       <div key={key} className="text-xs">
         <span className="font-medium text-gray-600">{key}:</span>{' '}

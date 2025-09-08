@@ -220,6 +220,11 @@ export interface SystemMetrics {
   uptime: string;
   memoryUsage: number;
   cpuUsage: number;
+  diskUsage: number;
+  revenue?: {
+    thisMonth: number;
+    growth: number;
+  };
 }
 
 export interface AdminSettings {
@@ -238,7 +243,7 @@ export interface AuditLog {
   action: string;
   resource: string;
   resourceId: string;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   ipAddress: string;
   userAgent: string;
   createdAt: string;

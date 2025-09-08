@@ -6,6 +6,8 @@ import type {
   AdminSettings
 } from '@/types';
 
+export type { SystemMetrics };
+
 export interface AdminUser extends User {
   lastLogin?: string;
   status: 'active' | 'inactive' | 'suspended';

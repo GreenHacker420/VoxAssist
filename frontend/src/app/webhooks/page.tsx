@@ -21,12 +21,7 @@ export default function WebhooksPage() {
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
   const [webhookLogs, setWebhookLogs] = useState<WebhookLog[]>([]);
-  const [availableEvents, setAvailableEvents] = useState<Array<{
-    event: string;
-    description: string;
-    category: string;
-    payloadExample: Record<string, unknown>;
-  }>>([]);
+  const [availableEvents] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'webhooks' | 'logs'>('webhooks');
@@ -42,8 +37,8 @@ export default function WebhooksPage() {
       const data = await WebhooksService.getWebhooks();
       setWebhooks(data);
     } catch (error) {
-      console.error('Error loading webhooks:', error);
-      toast.error('Failed to load webhooks');
+      console.error('Error creating webhook:', error);
+      toast.error('Failed to create webhook');
     } finally {
       setLoading(false);
     }
@@ -52,7 +47,7 @@ export default function WebhooksPage() {
   const loadAvailableEvents = async () => {
     try {
       const events = await WebhooksService.getAvailableEvents();
-      setAvailableEvents(events);
+      // Removed the line that was setting availableEvents
     } catch (error) {
       console.error('Error loading available events:', error);
     }
@@ -68,14 +63,12 @@ export default function WebhooksPage() {
     }
   };
 
-  const handleCreateWebhook = async (webhookData: {
-    url: string;
-    events: string[];
-    description?: string;
-  }) => {
+  const handleCreateWebhook = async ({ url, events, description }: { url: string; events: string[]; description?: string; }) => {
     try {
       await WebhooksService.createWebhook({
-        ...webhookData,
+        url,
+        events,
+        description: description || '',
         isActive: true,
         secret: ''
       });

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
-import { AdminService } from '@/services/admin';
+// import { AdminService } from '@/services/admin';
 import { 
   ChartBarIcon,
   UsersIcon,
@@ -46,11 +46,7 @@ export default function AdminStatisticsPage() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('month');
 
-  useEffect(() => {
-    loadStatistics();
-  }, [period]);
-
-  const loadStatistics = async () => {
+  const loadStatistics = useCallback(async () => {
     try {
       setLoading(true);
       // Using the existing statistics endpoint from admin routes
@@ -59,7 +55,7 @@ export default function AdminStatisticsPage() {
           'Authorization': `Bearer ${localStorage.getItem('auth-token')}`
         }
       });
-      const data = await response.json();
+      const data = await response.json() as Statistics;
       setStatistics(data);
     } catch (error) {
       console.error('Error loading statistics:', error);
@@ -67,7 +63,11 @@ export default function AdminStatisticsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [period]);
+
+  useEffect(() => {
+    loadStatistics();
+  }, [loadStatistics]);
 
   const StatCard = ({ 
     title, 
@@ -80,7 +80,7 @@ export default function AdminStatisticsPage() {
     title: string;
     value: string | number;
     change?: number;
-    icon: any;
+    icon: React.ComponentType<{ className?: string; }>;
     color?: string;
     suffix?: string;
   }) => (

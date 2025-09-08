@@ -191,7 +191,7 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-500">Uptime</span>
-                <span className="text-sm text-gray-900">{metrics?.systemHealth?.uptime || '99.9%'}</span>
+                <span className="text-sm text-gray-900">{metrics?.uptime || '99.9%'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-500">CPU Usage</span>
@@ -199,10 +199,10 @@ export default function AdminDashboard() {
                   <div className="w-20 bg-gray-200 rounded-full h-2">
                     <div 
                       className="bg-blue-600 h-2 rounded-full" 
-                      style={{ width: `${metrics?.systemHealth?.cpuUsage || 45}%` }}
+                      style={{ width: `${metrics?.cpuUsage || 45}%` }}
                     ></div>
                   </div>
-                  <span className="text-sm text-gray-900">{metrics?.systemHealth?.cpuUsage || 45}%</span>
+                  <span className="text-sm text-gray-900">{metrics?.cpuUsage || 45}%</span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
@@ -211,10 +211,10 @@ export default function AdminDashboard() {
                   <div className="w-20 bg-gray-200 rounded-full h-2">
                     <div 
                       className="bg-green-600 h-2 rounded-full" 
-                      style={{ width: `${metrics?.systemHealth?.memoryUsage || 62}%` }}
+                      style={{ width: `${metrics?.memoryUsage || 62}%` }}
                     ></div>
                   </div>
-                  <span className="text-sm text-gray-900">{metrics?.systemHealth?.memoryUsage || 62}%</span>
+                  <span className="text-sm text-gray-900">{metrics?.memoryUsage || 62}%</span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
@@ -223,10 +223,10 @@ export default function AdminDashboard() {
                   <div className="w-20 bg-gray-200 rounded-full h-2">
                     <div 
                       className="bg-yellow-600 h-2 rounded-full" 
-                      style={{ width: `${metrics?.systemHealth?.diskUsage || 78}%` }}
+                      style={{ width: `${metrics?.diskUsage || 78}%` }}
                     ></div>
                   </div>
-                  <span className="text-sm text-gray-900">{metrics?.systemHealth?.diskUsage || 78}%</span>
+                  <span className="text-sm text-gray-900">{metrics?.diskUsage || 78}%</span>
                 </div>
               </div>
             </div>

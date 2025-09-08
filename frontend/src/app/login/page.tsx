@@ -45,7 +45,7 @@ export default function LoginPage() {
     try {
       await login(email, password);
       router.push('/dashboard');
-    } catch (error) {
+    } catch {
       // Error is handled by the AuthContext
     } finally {
       setIsLoading(false);

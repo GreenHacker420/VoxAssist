@@ -40,8 +40,8 @@ export default function BillingPage() {
       setUsage(usageData);
       setPaymentMethods(paymentData);
     } catch (error) {
-      console.error('Error loading billing data:', error);
-      toast.error('Failed to load billing information');
+      console.error('Error loading subscription:', error);
+      toast.error('Failed to load subscription');
     } finally {
       setLoading(false);
     }

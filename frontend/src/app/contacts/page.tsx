@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<(Customer | Lead)[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {

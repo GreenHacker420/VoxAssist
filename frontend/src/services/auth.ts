@@ -56,13 +56,18 @@ export class AuthService {
 
   // Change password
   static async changePassword(currentPassword: string, newPassword: string): Promise<void> {
-    const response = await apiClient.post('/auth/change-password', {
-      currentPassword,
-      newPassword,
-    });
-    
-    if (!response.success) {
-      throw new Error(response.error || 'Failed to change password');
+    try {
+      const response = await apiClient.post('/auth/change-password', {
+        currentPassword,
+        newPassword,
+      });
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to change password');
+      }
+    } catch (error) {
+      console.error('Password reset error:', error);
+      throw new Error('Failed to reset password');
     }
   }
 

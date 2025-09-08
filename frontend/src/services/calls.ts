@@ -1,5 +1,5 @@
 import apiClient from '@/lib/api';
-import { Call, CallDetails, AIResponse, ApiResponse } from '@/types';
+import { Call, CallDetails, AIResponse } from '@/types';
 
 export class CallsService {
   // Get all calls
@@ -62,7 +62,7 @@ export class CallsService {
   }
 
   // Get call transcript
-  static async getCallTranscript(callId: string, format?: string): Promise<unknown> {
+  static async getCallTranscript(callId: string): Promise<unknown> {
     const response = await apiClient.get<unknown>(`/calls/${callId}/transcript`, {});
     
     if (response.success && response.data) {

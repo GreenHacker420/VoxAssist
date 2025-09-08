@@ -34,7 +34,16 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, search, statusFilter]);
+  }, [currentPage, search]);
+
+  const filteredUsers = useCallback(() => {
+    return users.filter(user => {
+      const matchesSearch = user.name.toLowerCase().includes(search.toLowerCase()) ||
+                           user.email.toLowerCase().includes(search.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [users, search, statusFilter]);
 
   useEffect(() => {
     loadUsers();
@@ -45,7 +54,7 @@ export default function AdminUsersPage() {
       await AdminService.updateUserStatus(userId, status);
       toast.success(`User status updated to ${status}`);
       loadUsers();
-    } catch (error) {
+    } catch {
       toast.error('Failed to update user status');
     }
   };
@@ -59,7 +68,7 @@ export default function AdminUsersPage() {
       await AdminService.deleteUser(userId);
       toast.success('User deleted successfully');
       loadUsers();
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete user');
     }
   };
@@ -73,10 +82,6 @@ export default function AdminUsersPage() {
     return styles[status as keyof typeof styles] || styles.inactive;
   };
 
-  const filteredUsers = users.filter(user => {
-    if (statusFilter === 'all') return true;
-    return user.status === statusFilter;
-  });
 
   return (
     <AdminLayout>
@@ -179,7 +184,7 @@ export default function AdminUsersPage() {
                     </tr>
                   ))
                 ) : (
-                  filteredUsers.map((user) => (
+                  filteredUsers().map((user: AdminUser) => (
                     <tr key={user.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">

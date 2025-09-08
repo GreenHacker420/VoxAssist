@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 export default function ScriptsPage() {
   const [scripts, setScripts] = useState<Script[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string>('all');
 
   useEffect(() => {

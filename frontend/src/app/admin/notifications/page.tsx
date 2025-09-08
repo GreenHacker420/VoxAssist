@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
-import { AdminService } from '@/services/admin';
+// import { AdminService } from '@/services/admin';
 import { 
   BellIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
   CheckCircleIcon,
-  XMarkIcon,
+  // XMarkIcon,
   EyeIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
@@ -155,7 +155,7 @@ export default function AdminNotificationsPage() {
     }
   };
 
-  const filteredNotifications = notifications.filter(notif => {
+  const filteredNotifications = notifications.filter((notif) => {
     if (filter === 'read' && !notif.read) return false;
     if (filter === 'unread' && notif.read) return false;
     if (typeFilter !== 'all' && notif.type !== typeFilter) return false;
@@ -210,7 +210,7 @@ export default function AdminNotificationsPage() {
               </label>
               <select
                 value={filter}
-                onChange={(e) => setFilter(e.target.value as any)}
+                onChange={(e) => setFilter(e.target.value as 'all' | 'unread' | 'read')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
               >
                 <option value="all">All Notifications</option>
