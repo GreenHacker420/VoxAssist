@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { WidgetsService, type WidgetDTO } from "@/services/widgets";
 
 export interface WidgetConfig {
   id?: string;
@@ -36,11 +37,13 @@ export default function WidgetCreateDialog({
   widget,
   onClose,
   onSaved,
+  organizationId,
 }: {
   open: boolean;
   widget?: WidgetConfig | null;
   onClose: () => void;
   onSaved: () => void;
+  organizationId?: number;
 }) {
   const [formData, setFormData] = useState<WidgetConfig>({
     name: widget?.name || "",
@@ -79,20 +82,14 @@ export default function WidgetCreateDialog({
 
     setSaving(true);
     try {
-      const url = widget?.id ? `/api/widget/update/${widget.id}` : "/api/widget/create";
-      const method = widget?.id ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          organizationId: 1, // TODO: replace with real org id
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to ${widget?.id ? "update" : "create"} widget`);
+      if (widget?.id) {
+        // Update existing widget
+        await WidgetsService.update(widget.id, formData as Partial<WidgetDTO>);
+      } else {
+        if (!organizationId) {
+          throw new Error("Organization ID is required to create a widget");
+        }
+        await WidgetsService.create(organizationId, formData as WidgetDTO);
       }
 
       toast.success(`Widget ${widget?.id ? "updated" : "created"} successfully`);

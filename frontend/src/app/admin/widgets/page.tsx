@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Plus, Settings, Eye, Trash2, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import WidgetCreateDialog, { WidgetConfig } from '@/components/widgets/WidgetCreateDialog';
+import { useAuth } from '@/contexts/AuthContext';
+import { WidgetsService } from '@/services/widgets';
 
 interface Widget {
   id: string;
@@ -31,6 +33,7 @@ interface WidgetAnalytics {
 }
 
 export default function WidgetsPage() {
+  const { user, isLoading } = useAuth();
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [analytics, setAnalytics] = useState<Record<string, WidgetAnalytics>>({});
   const [loading, setLoading] = useState(true);
@@ -38,25 +41,40 @@ export default function WidgetsPage() {
   const [selectedWidget, setSelectedWidget] = useState<WidgetConfig | null>(null);
 
   useEffect(() => {
-    fetchWidgets();
-  }, []);
+    if (!isLoading) {
+      fetchWidgets();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, user?.organizationId]);
 
   const fetchWidgets = async () => {
     try {
-      const response = await fetch('/api/widget/configs/1'); // Replace with actual org ID
-      if (response.ok) {
-        const data = await response.json();
-        setWidgets(data);
-        
-        // Fetch analytics for each widget
-        data.forEach(async (widget: Widget) => {
-          const analyticsResponse = await fetch(`/api/widget/analytics/${widget.id}`);
-          if (analyticsResponse.ok) {
-            const analyticsData = await analyticsResponse.json();
-            setAnalytics(prev => ({ ...prev, [widget.id]: analyticsData }));
-          }
-        });
+      const orgId = user?.organizationId;
+      if (!orgId) {
+        toast.error('Organization context missing');
+        setLoading(false);
+        return;
       }
+      const data = await WidgetsService.list(orgId);
+      setWidgets(data as unknown as Widget[]);
+
+      // Batch fetch analytics for all widgets in parallel via service
+      const results = await Promise.all(
+        (data as unknown as Widget[]).map(async (w) => {
+          try {
+            const an = await WidgetsService.analytics(w.id);
+            return { id: w.id, analytics: an };
+          } catch {
+            return null;
+          }
+        })
+      );
+      const aggregated: Record<string, WidgetAnalytics> = {};
+      results.filter(Boolean).forEach((r) => {
+        const item = r as { id: string; analytics: WidgetAnalytics };
+        aggregated[item.id] = item.analytics;
+      });
+      setAnalytics(aggregated);
     } catch (error) {
       console.error('Failed to fetch widgets:', error);
       toast.error('Failed to load widgets');
@@ -107,16 +125,9 @@ export default function WidgetsPage() {
     if (!confirm('Are you sure you want to delete this widget?')) return;
 
     try {
-      const response = await fetch(`/api/widget/update/${widgetId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        toast.success('Widget deleted successfully');
-        fetchWidgets();
-      } else {
-        throw new Error('Failed to delete widget');
-      }
+      await WidgetsService.remove(widgetId);
+      toast.success('Widget deleted successfully');
+      fetchWidgets();
     } catch (error) {
       console.error('Delete widget error:', error);
       toast.error('Failed to delete widget');
@@ -131,18 +142,9 @@ export default function WidgetsPage() {
 
   const toggleWidgetStatus = async (widget: Widget) => {
     try {
-      const response = await fetch(`/api/widget/update/${widget.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: !widget.isActive }),
-      });
-
-      if (response.ok) {
-        toast.success(`Widget ${widget.isActive ? 'deactivated' : 'activated'}`);
-        fetchWidgets();
-      } else {
-        throw new Error('Failed to update widget status');
-      }
+      await WidgetsService.toggleActive(widget.id, !widget.isActive);
+      toast.success(`Widget ${widget.isActive ? 'deactivated' : 'activated'}`);
+      fetchWidgets();
     } catch (error) {
       console.error('Toggle widget status error:', error);
       toast.error('Failed to update widget status');
@@ -289,6 +291,7 @@ export default function WidgetsPage() {
       <WidgetCreateDialog
         open={showCreateModal}
         widget={selectedWidget || undefined}
+        organizationId={user?.organizationId}
         onClose={() => setShowCreateModal(false)}
         onSaved={() => {
           setShowCreateModal(false);
