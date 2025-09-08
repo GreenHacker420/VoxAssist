@@ -86,11 +86,11 @@ export default function AdminSidebar({ sidebarOpen = false, setSidebarOpen }: Ad
                     </button>
                   </div>
                 </Transition.Child>
-                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-red-600 px-6 pb-4">
+                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-r border-white/30 px-6 pb-4">
                   <div className="flex h-16 shrink-0 items-center">
                     <div className="flex items-center space-x-2">
-                      <ShieldCheckIcon className="h-8 w-8 text-white" />
-                      <span className="text-xl font-bold text-white">VoxAssist Admin</span>
+                      <ShieldCheckIcon className="h-8 w-8 text-slate-800" />
+                      <span className="text-xl font-bold text-slate-900">VoxAssist Admin</span>
                     </div>
                   </div>
                   <nav className="flex flex-1 flex-col">
@@ -103,14 +103,14 @@ export default function AdminSidebar({ sidebarOpen = false, setSidebarOpen }: Ad
                                 href={item.href}
                                 className={cn(
                                   pathname === item.href
-                                    ? 'bg-red-700 text-white'
-                                    : 'text-red-200 hover:text-white hover:bg-red-700',
+                                    ? 'bg-white/60 text-slate-800'
+                                    : 'text-gray-900 hover:text-slate-700 hover:bg-white/50',
                                   'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
                                 )}
                               >
                                 <item.icon
                                   className={cn(
-                                    pathname === item.href ? 'text-white' : 'text-red-200 group-hover:text-white',
+                                    pathname === item.href ? 'text-slate-800' : 'text-gray-400 group-hover:text-slate-700',
                                     'h-6 w-6 shrink-0'
                                   )}
                                   aria-hidden="true"
@@ -132,11 +132,11 @@ export default function AdminSidebar({ sidebarOpen = false, setSidebarOpen }: Ad
 
       {/* Static sidebar for desktop */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-red-600 px-6 pb-4">
+        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-white/30 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 px-6 pb-4">
           <div className="flex h-16 shrink-0 items-center">
             <div className="flex items-center space-x-2">
-              <ShieldCheckIcon className="h-8 w-8 text-white" />
-              <span className="text-xl font-bold text-white">VoxAssist Admin</span>
+              <ShieldCheckIcon className="h-8 w-8 text-slate-800" />
+              <span className="text-xl font-bold text-slate-900">VoxAssist Admin</span>
             </div>
           </div>
           <nav className="flex flex-1 flex-col">
@@ -149,14 +149,14 @@ export default function AdminSidebar({ sidebarOpen = false, setSidebarOpen }: Ad
                         href={item.href}
                         className={cn(
                           pathname === item.href
-                            ? 'bg-red-700 text-white'
-                            : 'text-red-200 hover:text-white hover:bg-red-700',
+                            ? 'bg-white/60 text-slate-800'
+                            : 'text-gray-900 hover:text-slate-700 hover:bg-white/50',
                           'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
                         )}
                       >
                         <item.icon
                           className={cn(
-                            pathname === item.href ? 'text-white' : 'text-red-200 group-hover:text-white',
+                            pathname === item.href ? 'text-slate-800' : 'text-gray-400 group-hover:text-slate-700',
                             'h-6 w-6 shrink-0'
                           )}
                           aria-hidden="true"
@@ -168,20 +168,20 @@ export default function AdminSidebar({ sidebarOpen = false, setSidebarOpen }: Ad
                 </ul>
               </li>
               <li className="mt-auto">
-                <div className="bg-red-700 rounded-lg p-4">
+                <div className="glass-menu rounded-lg p-4">
                   <div className="flex items-center space-x-3">
                     <div className="flex-shrink-0">
-                      <div className="h-8 w-8 rounded-full bg-red-500 flex items-center justify-center">
-                        <span className="text-sm font-medium text-white">
+                      <div className="h-8 w-8 rounded-full bg-white/80 ring-1 ring-white/40 flex items-center justify-center">
+                        <span className="text-sm font-medium text-slate-900">
                           {user?.name?.charAt(0) || 'A'}
                         </span>
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">
+                      <p className="text-sm font-medium text-slate-900 truncate">
                         {user?.name || 'Admin'}
                       </p>
-                      <p className="text-xs text-red-200 truncate">
+                      <p className="text-xs text-slate-500 truncate">
                         {user?.email || 'admin@voxassist.com'}
                       </p>
                     </div>
