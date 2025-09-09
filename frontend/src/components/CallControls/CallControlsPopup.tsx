@@ -2,17 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { 
-  PhoneIcon, 
   PhoneXMarkIcon, 
   MicrophoneIcon, 
   SpeakerWaveIcon,
   EyeIcon,
   UserIcon,
   ChartBarIcon,
-  Cog6ToothIcon
+  
 } from '@heroicons/react/24/outline';
 import { Call } from '@/types';
-import { CallsService } from '@/services/calls';
 import toast from 'react-hot-toast';
 
 interface CallControlsPopupProps {
@@ -68,7 +66,7 @@ export default function CallControlsPopup({
       setIsHandingOff(true);
       await onHandoffToHuman();
       toast.success('Call handed off to human agent');
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to handoff call');
     } finally {
       setIsHandingOff(false);

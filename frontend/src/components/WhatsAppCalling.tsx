@@ -14,7 +14,6 @@ import {
   Modal, 
   List, 
   Tag, 
-  Divider,
   Alert
 } from 'antd';
 import { 
@@ -29,6 +28,8 @@ import {
 
 const { Title, Text } = Typography;
 
+type JSONObject = Record<string, unknown>;
+
 interface WhatsAppConfig {
   accessToken: string;
   phoneNumberId: string;
@@ -41,11 +42,20 @@ interface CallHistoryItem {
   phoneNumber: string;
   eventType: string;
   timestamp: string;
-  metadata: any;
+  metadata: JSONObject;
 }
 
 interface WhatsAppCallingProps {
   onCallInitiated?: (phoneNumber: string) => void;
+}
+
+interface WhatsAppAccountConfig {
+  id: string;
+  provider: string;
+  phoneNumber: string;
+  verifiedName: string;
+  isActive: boolean;
+  status: 'connected' | 'disconnected' | string;
 }
 
 export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProps) {
@@ -58,7 +68,7 @@ export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProp
   const [configModalVisible, setConfigModalVisible] = useState(false);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [callHistory, setCallHistory] = useState<CallHistoryItem[]>([]);
-  const [whatsappConfig, setWhatsappConfig] = useState<any>(null);
+  const [whatsappConfig, setWhatsappConfig] = useState<WhatsAppAccountConfig | null>(null);
 
   useEffect(() => {
     checkConfiguration();

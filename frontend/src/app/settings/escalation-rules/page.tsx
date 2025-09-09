@@ -21,7 +21,7 @@ export default function EscalationRulesPage() {
       setIsLoading(true);
       const data = await SettingsService.getEscalationRules();
       setRules(data);
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to load escalation rules.');
     } finally {
       setIsLoading(false);
@@ -39,7 +39,7 @@ export default function EscalationRulesPage() {
       }
       setIsModalOpen(false);
       loadRules();
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to save escalation rule.');
     }
   };
@@ -55,7 +55,7 @@ export default function EscalationRulesPage() {
         await SettingsService.deleteEscalationRule(id);
         toast.success('Escalation rule deleted.');
         loadRules();
-      } catch (error) {
+      } catch (_error) {
         toast.error('Failed to delete escalation rule.');
       }
     }

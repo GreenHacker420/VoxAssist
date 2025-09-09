@@ -21,9 +21,9 @@ export default function WebhooksPage() {
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
   const [webhookLogs, setWebhookLogs] = useState<WebhookLog[]>([]);
-  const [availableEvents] = useState<string[]>([]);
+  const [_availableEvents] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [_showCreateModal, setShowCreateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'webhooks' | 'logs'>('webhooks');
 
   useEffect(() => {
@@ -36,8 +36,8 @@ export default function WebhooksPage() {
       setLoading(true);
       const data = await WebhooksService.getWebhooks();
       setWebhooks(data);
-    } catch (error) {
-      console.error('Error creating webhook:', error);
+    } catch (_error) {
+      console.error('Error creating webhook:', _error);
       toast.error('Failed to create webhook');
     } finally {
       setLoading(false);
@@ -46,10 +46,9 @@ export default function WebhooksPage() {
 
   const loadAvailableEvents = async () => {
     try {
-      const events = await WebhooksService.getAvailableEvents();
-      // Removed the line that was setting availableEvents
-    } catch (error) {
-      console.error('Error loading available events:', error);
+      await WebhooksService.getAvailableEvents();
+    } catch (_error) {
+      console.error('Error loading available events:', _error);
     }
   };
 
@@ -63,6 +62,7 @@ export default function WebhooksPage() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleCreateWebhook = async ({ url, events, description }: { url: string; events: string[]; description?: string; }) => {
     try {
       await WebhooksService.createWebhook({

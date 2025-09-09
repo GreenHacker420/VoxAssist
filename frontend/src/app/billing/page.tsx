@@ -54,7 +54,7 @@ export default function BillingPage() {
       await BillingService.cancelSubscription();
       toast.success('Subscription cancelled successfully');
       loadBillingData();
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to cancel subscription');
     }
   };
@@ -70,7 +70,7 @@ export default function BillingPage() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to download invoice');
     }
   };
