@@ -7,8 +7,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (use npm install instead of npm ci for better compatibility)
-RUN npm install --production --no-optional
+# Install dependencies with clean cache
+RUN npm cache clean --force && npm install --omit=dev --legacy-peer-deps
 
 # Copy Prisma schema and generate client
 COPY prisma/ ./prisma/
