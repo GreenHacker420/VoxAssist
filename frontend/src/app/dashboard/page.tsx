@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
+import CallConfiguration, { CallConfig } from '@/components/CallConfiguration';
+import WhatsAppCalling from '@/components/WhatsAppCalling';
 import { AnalyticsService } from '@/services/analytics';
 import { DashboardAnalytics } from '@/types';
 import { calculatePercentageChange, formatDuration, formatPercentage } from '@/lib/utils';
@@ -130,6 +132,26 @@ export default function DashboardPage() {
             Overview of your voice calling operations and performance metrics.
           </p>
         </div>
+
+        {/* Call Configuration using Ant Design */}
+        <CallConfiguration 
+          onStartCall={(config: CallConfig) => {
+            console.log('Starting call with config:', config);
+            // Handle call initiation
+          }}
+          onCreateWidget={(config: CallConfig) => {
+            console.log('Creating widget with config:', config);
+            // Handle widget creation
+          }}
+        />
+
+        {/* WhatsApp Calling Interface */}
+        <WhatsAppCalling 
+          onCallInitiated={(phoneNumber: string) => {
+            console.log('WhatsApp call initiated to:', phoneNumber);
+            // Handle WhatsApp call tracking
+          }}
+        />
 
         {/* Stats */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">

@@ -65,7 +65,7 @@ export default function LoginPage() {
             Sign in to VoxAssist
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            AI-powered voice calling platform
+            AI-powered voice calling with WhatsApp Business integration
           </p>
         </div>
 
@@ -81,14 +81,14 @@ export default function LoginPage() {
           <div className="space-y-2">
             <div className="flex justify-between items-center bg-white rounded px-3 py-2 border border-blue-200">
               <div>
-                <p className="text-xs font-medium text-gray-700">Admin Account</p>
-                <p className="text-xs text-gray-600">admin@voxassist.com</p>
+                <p className="text-xs font-medium text-gray-700">User Account</p>
+                <p className="text-xs text-gray-600">demo@voxassist.com</p>
               </div>
               <button
                 type="button"
                 onClick={() => {
-                  setEmail('admin@voxassist.com');
-                  setPassword('admin123');
+                  setEmail('demo@voxassist.com');
+                  setPassword('demo123');
                 }}
                 className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors"
               >
@@ -97,14 +97,14 @@ export default function LoginPage() {
             </div>
             <div className="flex justify-between items-center bg-white rounded px-3 py-2 border border-blue-200">
               <div>
-                <p className="text-xs font-medium text-gray-700">User Account</p>
-                <p className="text-xs text-gray-600">user@voxassist.com</p>
+                <p className="text-xs font-medium text-gray-700">Agent Account</p>
+                <p className="text-xs text-gray-600">agent@voxassist.com</p>
               </div>
               <button
                 type="button"
                 onClick={() => {
-                  setEmail('user@voxassist.com');
-                  setPassword('user123');
+                  setEmail('agent@voxassist.com');
+                  setPassword('agent123');
                 }}
                 className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors"
               >

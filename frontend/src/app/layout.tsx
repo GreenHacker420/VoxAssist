@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from "react-hot-toast";
+import 'antd/dist/reset.css';
+import { ConfigProvider, App as AntdApp, theme } from 'antd';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,45 +28,57 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased landing-animated-bg`}>
-        <AuthProvider>
-          {children}
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#ffffff',
-                color: '#000000',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-              },
-              success: {
-                duration: 3000,
-                style: {
-                  background: '#f0fdf4',
-                  color: '#000000',
-                  border: '1px solid #bbf7d0',
-                },
-                iconTheme: {
-                  primary: '#10B981',
-                  secondary: '#ffffff',
-                },
-              },
-              error: {
-                duration: 5000,
-                style: {
-                  background: '#fef2f2',
-                  color: '#000000',
-                  border: '1px solid #fecaca',
-                },
-                iconTheme: {
-                  primary: '#EF4444',
-                  secondary: '#ffffff',
-                },
-              },
-            }}
-          />
-        </AuthProvider>
+        <ConfigProvider
+          theme={{
+            algorithm: theme.defaultAlgorithm,
+            token: {
+              colorPrimary: '#1d4ed8',
+              borderRadius: 8,
+            },
+          }}
+        >
+          <AntdApp>
+            <AuthProvider>
+              {children}
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: '#ffffff',
+                    color: '#000000',
+                    border: '1px solid #e2e8f0',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  },
+                  success: {
+                    duration: 3000,
+                    style: {
+                      background: '#f0fdf4',
+                      color: '#000000',
+                      border: '1px solid #bbf7d0',
+                    },
+                    iconTheme: {
+                      primary: '#10B981',
+                      secondary: '#ffffff',
+                    },
+                  },
+                  error: {
+                    duration: 5000,
+                    style: {
+                      background: '#fef2f2',
+                      color: '#000000',
+                      border: '1px solid #fecaca',
+                    },
+                    iconTheme: {
+                      primary: '#EF4444',
+                      secondary: '#ffffff',
+                    },
+                  },
+                }}
+              />
+            </AuthProvider>
+          </AntdApp>
+        </ConfigProvider>
       </body>
     </html>
   );

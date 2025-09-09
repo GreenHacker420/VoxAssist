@@ -3,7 +3,7 @@ export interface User {
   id: number;
   email: string;
   name: string;
-  role: 'admin' | 'user' | 'agent';
+  role: 'user' | 'agent';
   organizationId?: number;
   createdAt?: string;
 }
@@ -221,14 +221,16 @@ export interface SystemMetrics {
   activeUsers: number;
   totalCalls: number;
   callsToday: number;
-  systemHealth: 'healthy' | 'warning' | 'critical';
-  uptime: string;
-  memoryUsage: number;
-  cpuUsage: number;
-  diskUsage: number;
-  revenue?: {
+  revenue: {
     thisMonth: number;
+    lastMonth?: number;
     growth: number;
+  };
+  systemHealth: {
+    uptime: string;
+    cpuUsage: number;
+    memoryUsage: number;
+    diskUsage: number;
   };
 }
 
@@ -249,6 +251,7 @@ export interface AdminSettings {
   value: string;
   description: string;
   category: string;
+  type?: 'number' | 'boolean' | 'string';
   updatedAt: string;
 }
 

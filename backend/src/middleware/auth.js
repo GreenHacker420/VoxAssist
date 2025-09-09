@@ -20,21 +20,27 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+// Simplified authorization - all authenticated users have full access
+const authorizeUser = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  next();
+};
+
+// Legacy function kept for backward compatibility but now allows all roles
 const authorizeRoles = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
-
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Insufficient permissions' });
-    }
-
+    // All authenticated users now have access regardless of role
     next();
   };
 };
 
 module.exports = {
   authenticateToken,
-  authorizeRoles
+  authorizeRoles,
+  authorizeUser
 };

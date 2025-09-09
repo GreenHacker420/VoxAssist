@@ -14,10 +14,8 @@ import {
   CogIcon,
   CreditCardIcon,
   LinkIcon,
-  ShieldCheckIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
-import PermissionGate from '@/components/PermissionGate';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -33,9 +31,6 @@ const navigation = [
   { name: 'Settings', href: '/settings', icon: CogIcon },
 ];
 
-const adminNavigation = [
-  { name: 'Admin Panel', href: '/admin', icon: ShieldCheckIcon },
-];
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -184,36 +179,6 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                 </ul>
               </li>
               
-              {/* Admin Navigation */}
-              <PermissionGate role="admin">
-                <li>
-                  <div className="text-xs font-semibold leading-6 text-gray-400">Administration</div>
-                  <ul role="list" className="-mx-2 mt-2 space-y-1">
-                    {adminNavigation.map((item) => (
-                      <li key={item.name}>
-                        <Link
-                          href={item.href}
-                          className={cn(
-                            pathname === item.href
-                              ? 'bg-red-50 text-red-600'
-                              : 'text-black hover:text-red-600 hover:bg-red-50',
-                            'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
-                          )}
-                        >
-                          <item.icon
-                            className={cn(
-                              pathname === item.href ? 'text-red-600' : 'text-gray-400 group-hover:text-red-600',
-                              'h-6 w-6 shrink-0'
-                            )}
-                            aria-hidden="true"
-                          />
-                          {item.name}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              </PermissionGate>
               <li className="-mx-6 mt-auto">
                 <div className="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-black">
                   <div className="h-8 w-8 bg-gray-50 rounded-full flex items-center justify-center">

@@ -9,6 +9,7 @@
 - **Conversational Intelligence** - Powered by Gemini API for advanced query understanding
 - **Real-time Dashboard** - Monitor live conversations with wave animations and sentiment analysis
 - **Analytics & Insights** - Track resolution rates, call duration, and performance metrics
+- **User Empowerment** - Complete user control over all settings and configurations
 
 ### 🌐 Plug & Play Voice Chat Widget
 - **Embeddable Widget** - Add voice chat to any website with a simple script tag
@@ -16,13 +17,16 @@
 - **Customizable Appearance** - Match your brand colors, position, and behavior
 - **Real-time Audio Streaming** - WebRTC/WebSocket for seamless voice communication
 - **Multi-language Support** - Serve customers in their preferred language
+- **Widget Builder** - Visual widget customization and deployment tools
 
-### 📞 Configurable Multi-Provider Calling
-- **Multiple Provider Support** - Twilio, Plivo, Ringg AI, Sarvam AI
-- **WhatsApp Integration** - Voice calls and messaging through WhatsApp Business API
+### 📞 Advanced Multi-Provider Calling
+- **Multiple Provider Support** - Twilio, Plivo, Vonage, Bandwidth
+- **WhatsApp Business Calling** - Official Meta WhatsApp Business Calling API integration
+- **VoIP Integration** - Voice-over-internet protocol calling within WhatsApp threads
 - **Provider Switching** - Easy configuration without code changes
 - **Cost Optimization** - Choose providers based on regions and pricing
 - **Failover Support** - Automatic fallback to secondary providers
+- **Real-time Call Tracking** - Live call status updates and comprehensive history
 
 ### 🔒 GDPR Compliance & Security
 - **Data Encryption** - End-to-end encryption for all sensitive data
@@ -81,7 +85,7 @@
 6. **Access the application:**
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:5000
-   - Admin Dashboard: http://localhost:3000/admin
+   - User Dashboard: http://localhost:3000/dashboard
 
 ## 🌐 Embedding the Voice Chat Widget
 
@@ -121,18 +125,26 @@ Add this script tag to any website to enable voice chat:
 ## 📞 Multi-Provider Calling Setup
 
 ### Supported Providers
-1. **Twilio** - Global coverage, WhatsApp support
+1. **Twilio** - Global coverage, comprehensive API
 2. **Plivo** - Cost-effective, good for high volume
-3. **Ringg AI** - AI-optimized calling features
-4. **Sarvam AI** - Regional optimization for India
+3. **Vonage** - Enterprise-grade reliability
+4. **Bandwidth** - High-quality voice services
+
+### WhatsApp Business Calling
+- **Official Meta Integration** - Direct WhatsApp Business Calling API
+- **VoIP Calling** - Voice calls within WhatsApp conversations
+- **Interactive Messages** - Call buttons and invitation templates
+- **Real-time Status** - Live call delivery and read receipts
+- **Webhook Support** - Complete event tracking and processing
 
 ### Provider Configuration
-Configure providers through the admin dashboard at `/admin/providers`:
+Configure providers through the user dashboard at `/dashboard`:
 
-1. Add provider credentials
-2. Test connection
-3. Set as primary or backup
-4. Configure WhatsApp Business API (Twilio)
+1. Add provider credentials (encrypted storage)
+2. Test connection with one-click validation
+3. Set as primary or backup provider
+4. Configure WhatsApp Business API credentials
+5. View call history and analytics
 
 ## 📁 Project Structure
 
