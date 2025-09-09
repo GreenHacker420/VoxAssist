@@ -30,6 +30,7 @@ const navigation = [
   { key: 'billing', name: 'Billing', href: '/billing', icon: <CreditCardOutlined /> },
   { key: 'webhooks', name: 'Webhooks', href: '/webhooks', icon: <LinkOutlined /> },
   { key: 'settings', name: 'Settings', href: '/settings', icon: <SettingOutlined /> },
+  { key: 'providers', name: 'Providers', href: '/settings/providers', icon: <PhoneOutlined /> },
 ];
 
 

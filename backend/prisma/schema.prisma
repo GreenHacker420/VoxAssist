@@ -24,6 +24,7 @@ model User {
   userOrganizations UserOrganization[]
   sessions          UserSession[]
   calls             Call[]
+  scriptVersions    ScriptVersion[]
   auditLogs         AuditLog[]
   notifications     Notification[]
 
@@ -41,6 +42,9 @@ model Organization {
   // Relations
   userOrganizations UserOrganization[]
   calls             Call[]
+  campaigns         Campaign[]
+  scripts           Script[]
+  contacts          Contact[]
   knowledgeBase     KnowledgeBase[]
   escalationRules   EscalationRule[]
   dailyAnalytics    DailyAnalytics[]
@@ -98,12 +102,20 @@ model Call {
   // Relations
   organization     Organization?     @relation(fields: [organizationId], references: [id])
   user             User?             @relation(fields: [userId], references: [id])
+  campaign         Campaign?         @relation(fields: [campaignId], references: [id])
+  contact          Contact?          @relation(fields: [contactId], references: [id])
   callInteractions CallInteraction[]
   survey           Survey?
   providerCalls    ProviderCall[]
 
+  // Additional fields for campaign support
+  campaignId       Int?              @map("campaign_id")
+  contactId        Int?              @map("contact_id")
+
   @@index([organizationId])
   @@index([userId])
+  @@index([campaignId])
+  @@index([contactId])
   @@index([status])
   @@index([startTime])
   @@map("calls")
@@ -128,6 +140,138 @@ model CallInteraction {
   @@index([callId])
   @@index([timestamp])
   @@map("call_interactions")
+}
+
+model Campaign {
+  id             Int      @id @default(autoincrement())
+  organizationId Int      @map("organization_id")
+  name           String
+  description    String?
+  type           String   @default("outbound") // outbound, inbound
+  status         String   @default("draft") // draft, active, paused, completed, cancelled
+  script         String?  @db.Text
+  scheduledStart DateTime? @map("scheduled_start")
+  scheduledEnd   DateTime? @map("scheduled_end")
+  startedAt      DateTime? @map("started_at")
+  pausedAt       DateTime? @map("paused_at")
+  resumedAt      DateTime? @map("resumed_at")
+  completedAt    DateTime? @map("completed_at")
+  settings       Json?    // Campaign-specific settings
+  progress       Int      @default(0) // Percentage completion
+  successRate    Decimal  @default(0) @map("success_rate") @db.Decimal(5, 2)
+  createdBy      Int      @map("created_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  calls        Call[]
+  contacts     CampaignContact[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("campaigns")
+}
+
+model Script {
+  id             Int      @id @default(autoincrement())
+  organizationId Int      @map("organization_id")
+  name           String
+  description    String?
+  type           String   @default("conversation") // conversation, greeting, closing
+  content        String   @db.Text
+  category       String   @default("general")
+  tags           Json?    // Array of tags
+  isActive       Boolean  @default(false) @map("is_active")
+  version        Int      @default(1)
+  activatedAt    DateTime? @map("activated_at")
+  deactivatedAt  DateTime? @map("deactivated_at")
+  createdBy      Int      @map("created_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  versions     ScriptVersion[]
+  campaigns    Campaign[]
+  tests        ScriptTest[]
+
+  @@index([organizationId])
+  @@index([isActive])
+  @@index([category])
+  @@map("scripts")
+}
+
+model ScriptVersion {
+  id              Int      @id @default(autoincrement())
+  scriptId        Int      @map("script_id")
+  version         Int
+  content         String   @db.Text
+  isActive        Boolean  @default(false) @map("is_active")
+  revertedFrom    Int?     @map("reverted_from") // Version number this was reverted from
+  createdBy       Int      @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  script        Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  createdByUser User   @relation(fields: [createdBy], references: [id])
+
+  @@unique([scriptId, version])
+  @@index([scriptId])
+  @@map("script_versions")
+}
+
+model ScriptTest {
+  id             Int      @id @default(autoincrement())
+  scriptId       Int      @map("script_id")
+  input          String   @db.Text
+  response       String   @db.Text
+  confidence     Decimal  @db.Decimal(3, 2)
+  processingTime Int      @map("processing_time") // milliseconds
+  testedBy       Int      @map("tested_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  script Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+
+  @@index([scriptId])
+  @@index([createdAt])
+  @@map("script_tests")
+}
+
+model Contact {
+  id             Int      @id @default(autoincrement())
+  organizationId Int      @map("organization_id")
+  name           String
+  email          String?
+  phone          String
+  metadata       Json?    // Additional contact information
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaigns    CampaignContact[]
+  calls        Call[]
+
+  @@unique([organizationId, phone])
+  @@index([organizationId])
+  @@index([phone])
+  @@map("contacts")
+}
+
+model CampaignContact {
+  campaignId Int @map("campaign_id")
+  contactId  Int @map("contact_id")
+  addedAt    DateTime @default(now()) @map("added_at")
+
+  // Relations
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact  Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, contactId])
+  @@map("campaign_contacts")
 }
 
 model KnowledgeBase {
@@ -374,6 +518,7 @@ model ProviderConfig {
   credentials    Json     // Encrypted API keys and secrets
   settings       Json     // Provider-specific settings
   webhookUrl     String?  @map("webhook_url")
+  lastTested     DateTime? @map("last_tested")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 

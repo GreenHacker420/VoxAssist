@@ -500,3 +500,147 @@ input:hover, textarea:hover, [contenteditable="true"]:hover { cursor: text !impo
     0 8px 24px rgba(2, 6, 23, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
+
+/* ===== CUSTOM CURSOR SYSTEM ===== */
+
+/* Default cursor for all elements */
+* {
+  cursor: url('/cursors/default.svg') 12 12, auto;
+}
+
+/* Pointer cursor for interactive elements */
+button,
+a,
+[role="button"],
+[role="link"],
+.cursor-pointer,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+select,
+.ant-btn,
+.ant-menu-item,
+.ant-dropdown-trigger,
+.ant-pagination-item,
+.ant-table-row,
+.ant-card-hoverable,
+.ant-list-item-action,
+.ant-tabs-tab,
+.ant-collapse-header,
+.ant-tree-node-content-wrapper,
+.ant-upload,
+.ant-switch,
+.ant-checkbox,
+.ant-radio,
+.ant-rate-star,
+.ant-slider-handle,
+.ant-steps-item,
+.ant-anchor-link,
+.ant-back-top,
+.ant-affix {
+  cursor: url('/cursors/pointer.svg') 12 12, pointer !important;
+}
+
+/* Text cursor for text input elements */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="number"],
+textarea,
+[contenteditable="true"],
+.ant-input,
+.ant-input-number-input,
+.ant-mentions,
+.ant-select-selection-search-input,
+.cursor-text {
+  cursor: url('/cursors/text.svg') 12 12, text !important;
+}
+
+/* Loading cursor for loading states */
+.cursor-loading,
+.ant-spin-container,
+.loading,
+[aria-busy="true"] {
+  cursor: url('/cursors/loading.svg') 12 12, wait !important;
+}
+
+/* Grab cursor for draggable elements */
+.cursor-grab,
+[draggable="true"],
+.ant-table-column-sorter,
+.ant-slider-rail,
+.ant-tree-draggable-icon,
+.sortable-item {
+  cursor: url('/cursors/grab.svg') 12 12, grab !important;
+}
+
+/* Grabbing cursor for elements being dragged */
+.cursor-grabbing,
+.dragging,
+.ant-table-column-sorter:active,
+.ant-slider-handle:active {
+  cursor: url('/cursors/grabbing.svg') 12 12, grabbing !important;
+}
+
+/* Enhanced hover effects for interactive elements */
+button:hover,
+a:hover,
+[role="button"]:hover,
+.ant-btn:hover {
+  transform: translateY(-1px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Cursor transitions for smooth experience */
+* {
+  transition: cursor 0.1s ease-out;
+}
+
+/* Special cursor states for specific VoxAssist elements */
+.call-control-button {
+  cursor: url('/cursors/pointer.svg') 12 12, pointer !important;
+}
+
+.call-control-button:hover {
+  transform: scale(1.05) translateY(-1px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.transcript-text {
+  cursor: url('/cursors/text.svg') 12 12, text !important;
+}
+
+/* Accessibility: Respect user's cursor preferences */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+
+  button:hover,
+  a:hover,
+  [role="button"]:hover,
+  .ant-btn:hover {
+    transform: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  * {
+    cursor: auto !important;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    cursor: pointer !important;
+  }
+
+  input,
+  textarea {
+    cursor: text !important;
+  }
+}

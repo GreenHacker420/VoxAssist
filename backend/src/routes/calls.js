@@ -4,24 +4,10 @@ const { authenticateToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const { prisma } = require('../database/prisma');
 
-// Check if real services are available, otherwise use mocks
-let twilioService;
+// Import services
+const dynamicProviderService = require('../services/dynamicProviderService');
 let geminiService;
 let elevenlabsService;
-
-// Service selection with fallback to mocks
-try {
-  // Use real Twilio service if credentials are present (allow localhost for testing)
-  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
-    twilioService = require('../services/twilioService');
-    logger.info('Using real Twilio service with credentials');
-  } else {
-    throw new Error('Twilio credentials not found');
-  }
-} catch (error) {
-  logger.warn('Real Twilio service not available, using mock service');
-  twilioService = require('../services/mockTwilioService');
-}
 
 // Gemini service selection
 if (process.env.GEMINI_API_KEY) {
@@ -283,31 +269,42 @@ router.post('/initiate', authenticateToken, async (req, res) => {
     });
 
     try {
-      // Try to initiate Twilio call
-      const twilioCall = await twilioService.initiateCall(
+      // Get user's configured provider service
+      const providerService = await dynamicProviderService.getProviderService(userId, 'phone');
+
+      // Initiate call using the configured provider
+      const providerCall = await providerService.initiateCall(
         phoneNumber,
-        callbackUrl || `${process.env.BASE_URL}/api/webhooks/twilio/voice`
+        {
+          callbackUrl: callbackUrl || `${process.env.BASE_URL}/api/webhooks/${providerService.provider}/voice`,
+          enableAdvancedAnalysis: enableAdvancedAnalysis || false
+        }
       );
 
-      // Update call with Twilio SID
+      // Update call with provider SID and status
       const updatedCall = await prisma.call.update({
         where: { id: call.id },
         data: {
-          callSid: twilioCall.sid,
-          status: 'active'
+          callSid: providerCall.callSid,
+          status: providerCall.status === 'initiated' ? 'active' : providerCall.status,
+          metadata: {
+            ...call.metadata,
+            provider: providerService.provider,
+            providerCallId: providerCall.callSid
+          }
         }
       });
 
-      logger.info(`Call initiated successfully: ${updatedCall.id}`);
+      logger.info(`Call initiated successfully using ${providerService.provider}: ${updatedCall.id}`);
 
       res.json({
         success: true,
         data: updatedCall
       });
-    } catch (twilioError) {
-      // Handle Twilio errors (like unverified numbers in trial accounts)
-      if (twilioError.message.includes('unverified') || twilioError.message.includes('Trial')) {
-        logger.warn(`Twilio trial limitation for ${phoneNumber}, creating mock call instead`);
+    } catch (providerError) {
+      // Handle provider errors (like unverified numbers in trial accounts)
+      if (providerError.message.includes('unverified') || providerError.message.includes('Trial')) {
+        logger.warn(`Provider trial limitation for ${phoneNumber}, creating mock call instead`);
         
         // Create a mock call for demo purposes
         const mockCall = await prisma.call.update({
@@ -450,12 +447,12 @@ router.get('/:callId/transcript', authenticateToken, async (req, res) => {
   }
 });
 
-// Update call sentiment
+// Update call sentiment (consolidated and improved)
 router.post('/:callId/sentiment', authenticateToken, async (req, res) => {
   try {
     const { callId } = req.params;
-    const { sentiment, score } = req.body;
-    
+    const { sentiment, confidence, score, keyTopics, escalationReasons } = req.body;
+
     // Update sentiment in database
     const call = await prisma.call.findFirst({
       where: {
@@ -463,43 +460,75 @@ router.post('/:callId/sentiment', authenticateToken, async (req, res) => {
         userId: req.user.userId
       }
     });
-    
+
     if (!call) {
       return res.status(404).json({ success: false, error: 'Call not found' });
     }
-    
+
     const updatedCall = await prisma.call.update({
       where: { id: parseInt(callId) },
       data: {
         metadata: {
           ...call.metadata,
           sentiment,
-          sentimentScore: score,
+          sentimentScore: score || confidence,
+          sentimentConfidence: confidence,
+          keyTopics: keyTopics || [],
+          escalationReasons: escalationReasons || [],
+          lastAnalyzed: new Date().toISOString(),
           sentimentUpdated: new Date().toISOString()
         }
       }
     });
-    
-    // Emit real-time update
+
+    // Emit real-time update via Socket.io
     const io = req.app.get('io');
-    io.to(`call-${callId}`).emit('sentiment-update', { sentiment, score });
-    
-    res.json({ success: true, message: 'Sentiment updated' });
+    if (io) {
+      io.to(`call-${callId}`).emit('sentiment-update', {
+        sentiment,
+        score: score || confidence,
+        confidence,
+        keyTopics,
+        escalationReasons
+      });
+    }
+
+    // Also broadcast via WebSocket for compatibility
+    const wsClients = global.wsClients || new Map();
+    const callClients = wsClients.get(parseInt(callId)) || [];
+    callClients.forEach(client => {
+      if (client.readyState === 1) {
+        client.send(JSON.stringify({
+          type: 'sentiment_update',
+          sentiment: { overall: sentiment, score: score || confidence, confidence }
+        }));
+      }
+    });
+
+    res.json({ success: true, data: updatedCall });
   } catch (error) {
     logger.error(`Error updating sentiment: ${error.message}`);
     res.status(500).json({ success: false, error: 'Failed to update sentiment' });
   }
 });
 
-// Get single call
+// Get single call (fixed duplicate route and improved data transformation)
 router.get('/:callId', authenticateToken, async (req, res) => {
   try {
     const { callId } = req.params;
-    
-    const call = await prisma.call.findUnique({
+
+    const call = await prisma.call.findFirst({
       where: {
-        id: callId,
+        id: parseInt(callId),
         userId: req.user.userId
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true
+          }
+        }
       }
     });
 
@@ -507,7 +536,26 @@ router.get('/:callId', authenticateToken, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Call not found' });
     }
 
-    res.json({ success: true, data: call });
+    // Transform data to match frontend expectations
+    const transformedCall = {
+      id: call.id.toString(),
+      customerName: call.metadata?.customerName || null,
+      customerEmail: call.metadata?.customerEmail || null,
+      customerPhone: call.customerPhone,
+      status: call.status,
+      duration: call.duration,
+      startTime: call.startTime,
+      endTime: call.endTime,
+      callSid: call.callSid,
+      sentiment: call.metadata?.sentiment || null,
+      sentimentScore: call.metadata?.sentimentScore || null,
+      escalated: call.status === 'escalated',
+      transcript: call.metadata?.transcript || [],
+      aiInsights: call.metadata?.aiInsights || null,
+      user: call.user
+    };
+
+    res.json({ success: true, data: transformedCall });
   } catch (error) {
     logger.error('Error fetching call:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch call' });
@@ -518,10 +566,11 @@ router.get('/:callId', authenticateToken, async (req, res) => {
 router.post('/:callId/end', authenticateToken, async (req, res) => {
   try {
     const { callId } = req.params;
-    
-    const call = await prisma.call.findUnique({
+    const callIdInt = parseInt(callId);
+
+    const call = await prisma.call.findFirst({
       where: {
-        id: callId,
+        id: callIdInt,
         userId: req.user.userId
       }
     });
@@ -530,18 +579,24 @@ router.post('/:callId/end', authenticateToken, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Call not found' });
     }
 
-    if (call.status !== 'active') {
-      return res.status(400).json({ success: false, error: 'Call is not active' });
+    if (call.status !== 'active' && call.status !== 'ringing') {
+      return res.status(400).json({ success: false, error: 'Call is not active or ringing' });
     }
 
-    // End call with Twilio
+    // End call with configured provider
     if (call.callSid && !call.callSid.startsWith('mock-')) {
-      await twilioService.endCall(call.callSid);
+      try {
+        const providerService = await dynamicProviderService.getProviderService(req.user.userId, 'phone');
+        await providerService.endCall(call.callSid);
+        logger.info(`Call ${call.callSid} ended using ${providerService.provider}`);
+      } catch (providerError) {
+        logger.warn(`Failed to end provider call ${call.callSid}: ${providerError.message}`);
+      }
     }
 
     // Update call in database
     const updatedCall = await prisma.call.update({
-      where: { id: callId },
+      where: { id: callIdInt },
       data: {
         status: 'completed',
         endTime: new Date(),
@@ -561,9 +616,19 @@ router.post('/:callId/end', authenticateToken, async (req, res) => {
       }
     }
 
-    // Broadcast call status update via WebSocket
+    // Broadcast call status update via Socket.io
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`call-${callId}`).emit('call-ended', {
+        call: updatedCall,
+        endTime: updatedCall.endTime,
+        duration: updatedCall.duration
+      });
+    }
+
+    // Broadcast call status update via WebSocket for compatibility
     const wsClients = global.wsClients || new Map();
-    const callClients = wsClients.get(callId) || [];
+    const callClients = wsClients.get(callIdInt) || [];
     callClients.forEach(client => {
       if (client.readyState === 1) { // WebSocket.OPEN
         client.send(JSON.stringify({
@@ -585,10 +650,11 @@ router.post('/:callId/end', authenticateToken, async (req, res) => {
 router.post('/:callId/handoff', authenticateToken, async (req, res) => {
   try {
     const { callId } = req.params;
-    
-    const call = await prisma.call.findUnique({
+    const callIdInt = parseInt(callId);
+
+    const call = await prisma.call.findFirst({
       where: {
-        id: callId,
+        id: callIdInt,
         userId: req.user.userId
       }
     });
@@ -601,22 +667,34 @@ router.post('/:callId/handoff', authenticateToken, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Call is not active' });
     }
 
-    // Update call metadata to indicate human handoff
+    // Update call status and metadata to indicate human handoff
     const updatedCall = await prisma.call.update({
-      where: { id: callId },
+      where: { id: callIdInt },
       data: {
+        status: 'escalated',
         metadata: {
           ...call.metadata,
           handedOffToHuman: true,
           handoffTime: new Date().toISOString(),
-          agentId: req.user.userId
+          agentId: req.user.userId,
+          escalationReason: 'Manual handoff requested'
         }
       }
     });
 
-    // Broadcast handoff event via WebSocket
+    // Broadcast handoff event via Socket.io
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`call-${callId}`).emit('call-handoff', {
+        call: updatedCall,
+        agentId: req.user.userId,
+        handoffTime: updatedCall.metadata.handoffTime
+      });
+    }
+
+    // Broadcast handoff event via WebSocket for compatibility
     const wsClients = global.wsClients || new Map();
-    const callClients = wsClients.get(callId) || [];
+    const callClients = wsClients.get(callIdInt) || [];
     callClients.forEach(client => {
       if (client.readyState === 1) {
         client.send(JSON.stringify({

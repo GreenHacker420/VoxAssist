@@ -1,0 +1,96 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grabbingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1d4ed8;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#2563eb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+    </linearGradient>
+    <filter id="grabbingShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="1" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+    <filter id="grabbingGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Closed hand cursor for dragging -->
+  <g transform="translate(2,3)">
+    <!-- Thumb (more curved when grabbing) -->
+    <ellipse cx="6" cy="13" rx="2.2" ry="3" 
+             fill="url(#grabbingGradient)" 
+             filter="url(#grabbingShadow)"
+             opacity="0.95"
+             transform="rotate(-10 6 13)"/>
+    
+    <!-- Index finger (curved) -->
+    <ellipse cx="10" cy="9" rx="1.6" ry="4" 
+             fill="url(#grabbingGradient)" 
+             filter="url(#grabbingShadow)"
+             opacity="0.95"
+             transform="rotate(15 10 9)"/>
+    
+    <!-- Middle finger (curved) -->
+    <ellipse cx="12.5" cy="8" rx="1.6" ry="4.5" 
+             fill="url(#grabbingGradient)" 
+             filter="url(#grabbingShadow)"
+             opacity="0.95"
+             transform="rotate(10 12.5 8)"/>
+    
+    <!-- Ring finger (curved) -->
+    <ellipse cx="15" cy="9" rx="1.6" ry="4" 
+             fill="url(#grabbingGradient)" 
+             filter="url(#grabbingShadow)"
+             opacity="0.95"
+             transform="rotate(5 15 9)"/>
+    
+    <!-- Pinky (curved) -->
+    <ellipse cx="17" cy="10.5" rx="1.4" ry="3.5" 
+             fill="url(#grabbingGradient)" 
+             filter="url(#grabbingShadow)"
+             opacity="0.95"
+             transform="rotate(-5 17 10.5)"/>
+    
+    <!-- Palm (more compact when grabbing) -->
+    <ellipse cx="11.5" cy="14" rx="4.5" ry="3" 
+             fill="url(#grabbingGradient)" 
+             filter="url(#grabbingShadow)"
+             opacity="0.95"/>
+    
+    <!-- Enhanced glass effect highlights for active state -->
+    <ellipse cx="6" cy="12.5" rx="1.3" ry="1.8" 
+             fill="rgba(255,255,255,0.5)" 
+             opacity="0.9"
+             transform="rotate(-10 6 12.5)"/>
+    <ellipse cx="10" cy="8.5" rx="1" ry="2" 
+             fill="rgba(255,255,255,0.5)" 
+             opacity="0.9"
+             transform="rotate(15 10 8.5)"/>
+    <ellipse cx="12.5" cy="7.5" rx="1" ry="2.2" 
+             fill="rgba(255,255,255,0.5)" 
+             opacity="0.9"
+             transform="rotate(10 12.5 7.5)"/>
+    <ellipse cx="15" cy="8.5" rx="1" ry="2" 
+             fill="rgba(255,255,255,0.5)" 
+             opacity="0.9"
+             transform="rotate(5 15 8.5)"/>
+    <ellipse cx="17" cy="10" rx="0.9" ry="1.8" 
+             fill="rgba(255,255,255,0.5)" 
+             opacity="0.9"
+             transform="rotate(-5 17 10)"/>
+    <ellipse cx="11.5" cy="13.5" rx="2.2" ry="1.2" 
+             fill="rgba(255,255,255,0.4)" 
+             opacity="0.9"/>
+  </g>
+  
+  <!-- Active glow effect -->
+  <circle cx="12" cy="12" r="9" 
+          fill="none" 
+          stroke="rgba(29,78,216,0.3)" 
+          stroke-width="1.5" 
+          filter="url(#grabbingGlow)"
+          opacity="0.8"/>
+</svg>

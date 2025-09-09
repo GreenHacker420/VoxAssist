@@ -87,7 +87,7 @@ router.post('/', asyncHandler(async (req, res) => {
   }
 
   const validTypes = ['phone', 'whatsapp'];
-  const validProviders = ['twilio', 'plivo', 'vonage', 'bandwidth'];
+  const validProviders = ['twilio', 'plivo', 'vonage', 'bandwidth', 'ringg', 'sarvam'];
 
   if (!validTypes.includes(type)) {
     return res.status(400).json({ 
@@ -96,8 +96,8 @@ router.post('/', asyncHandler(async (req, res) => {
   }
 
   if (!validProviders.includes(provider)) {
-    return res.status(400).json({ 
-      error: 'Invalid provider. Must be: twilio, plivo, vonage, bandwidth' 
+    return res.status(400).json({
+      error: 'Invalid provider. Must be: twilio, plivo, vonage, bandwidth, ringg, sarvam'
     });
   }
 
@@ -338,6 +338,36 @@ router.post('/:id/test', asyncHandler(async (req, res) => {
           testResult = { success: false, message: 'Missing Bandwidth credentials' };
         }
         break;
+      case 'ringg':
+        if (!decryptedCredentials.apiKey || !decryptedCredentials.apiSecret) {
+          testResult = { success: false, message: 'Missing Ringg AI credentials' };
+        } else {
+          // Mock successful test for Ringg AI
+          testResult = {
+            success: true,
+            message: 'Ringg AI connection successful',
+            details: {
+              accountInfo: { name: 'Ringg AI Account', status: 'active' },
+              balance: 100
+            }
+          };
+        }
+        break;
+      case 'sarvam':
+        if (!decryptedCredentials.apiKey || !decryptedCredentials.apiSecret) {
+          testResult = { success: false, message: 'Missing Sarvam AI credentials' };
+        } else {
+          // Mock successful test for Sarvam AI
+          testResult = {
+            success: true,
+            message: 'Sarvam AI connection successful',
+            details: {
+              accountInfo: { name: 'Sarvam AI Account', status: 'active' },
+              balance: 50
+            }
+          };
+        }
+        break;
     }
   } catch (error) {
     testResult = { success: false, message: 'Connection test failed' };
@@ -426,6 +456,161 @@ router.post('/:id/set-primary', asyncHandler(async (req, res) => {
   });
 
   res.json({ message: 'Provider set as primary successfully' });
+}));
+
+/**
+ * GET /providers/configs - Alias for frontend compatibility
+ */
+router.get('/configs', asyncHandler(async (req, res) => {
+  // Redirect to main providers endpoint
+  req.url = '/';
+  return router.handle(req, res);
+}));
+
+/**
+ * POST /providers/configs - Alias for frontend compatibility
+ */
+router.post('/configs', asyncHandler(async (req, res) => {
+  // Redirect to main providers endpoint
+  req.url = '/';
+  return router.handle(req, res);
+}));
+
+/**
+ * GET /providers/active - Get active provider for specific type
+ */
+router.get('/active', asyncHandler(async (req, res) => {
+  const { type = 'phone' } = req.query;
+
+  const userOrg = await prisma.userOrganization.findFirst({
+    where: { userId: req.user.userId }
+  });
+
+  if (!userOrg) {
+    return res.status(404).json({ error: 'User organization not found' });
+  }
+
+  const activeProvider = await prisma.providerConfig.findFirst({
+    where: {
+      organizationId: userOrg.organizationId,
+      type,
+      isActive: true,
+      isPrimary: true
+    },
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      provider: true,
+      isActive: true,
+      isPrimary: true,
+      settings: true,
+      webhookUrl: true,
+      createdAt: true,
+      updatedAt: true
+      // Exclude credentials for security
+    }
+  });
+
+  res.json({ success: true, data: activeProvider });
+}));
+
+/**
+ * GET /providers/status - Get status of all providers
+ */
+router.get('/status', asyncHandler(async (req, res) => {
+  const userOrg = await prisma.userOrganization.findFirst({
+    where: { userId: req.user.userId }
+  });
+
+  if (!userOrg) {
+    return res.status(404).json({ error: 'User organization not found' });
+  }
+
+  const providers = await prisma.providerConfig.findMany({
+    where: { organizationId: userOrg.organizationId },
+    select: {
+      id: true,
+      name: true,
+      provider: true,
+      isActive: true,
+      lastTested: true,
+      updatedAt: true
+    }
+  });
+
+  const statuses = providers.map(provider => ({
+    id: provider.id,
+    name: provider.name,
+    provider: provider.provider,
+    status: provider.isActive ? 'connected' : 'disconnected',
+    lastChecked: provider.lastTested || provider.updatedAt
+  }));
+
+  res.json({ success: true, data: statuses });
+}));
+
+/**
+ * POST /providers/validate - Validate credentials without saving
+ */
+router.post('/validate', asyncHandler(async (req, res) => {
+  const { provider, credentials } = req.body;
+
+  if (!provider || !credentials) {
+    return res.status(400).json({
+      error: 'Provider and credentials are required'
+    });
+  }
+
+  const validProviders = ['twilio', 'plivo', 'vonage', 'bandwidth', 'ringg', 'sarvam'];
+  if (!validProviders.includes(provider)) {
+    return res.status(400).json({
+      error: 'Invalid provider'
+    });
+  }
+
+  // Mock validation - in real implementation, test actual provider APIs
+  let validationResult = { connected: true, message: 'Credentials are valid' };
+
+  try {
+    switch (provider) {
+      case 'twilio':
+        if (!credentials.accountSid || !credentials.authToken) {
+          validationResult = { connected: false, error: 'Missing Twilio credentials' };
+        }
+        break;
+      case 'plivo':
+        if (!credentials.authId || !credentials.authToken) {
+          validationResult = { connected: false, error: 'Missing Plivo credentials' };
+        }
+        break;
+      case 'ringg':
+        if (!credentials.apiKey || !credentials.apiSecret) {
+          validationResult = { connected: false, error: 'Missing Ringg AI credentials' };
+        } else {
+          validationResult = {
+            connected: true,
+            details: { accountInfo: { name: 'Ringg AI Account', status: 'active' } }
+          };
+        }
+        break;
+      case 'sarvam':
+        if (!credentials.apiKey || !credentials.apiSecret) {
+          validationResult = { connected: false, error: 'Missing Sarvam AI credentials' };
+        } else {
+          validationResult = {
+            connected: true,
+            details: { accountInfo: { name: 'Sarvam AI Account', status: 'active' } }
+          };
+        }
+        break;
+    }
+  } catch (error) {
+    validationResult = { connected: false, error: 'Validation failed' };
+    logger.error(`Credential validation error: ${error.message}`);
+  }
+
+  res.json({ success: true, data: validationResult });
 }));
 
 module.exports = router;

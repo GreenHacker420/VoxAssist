@@ -1,0 +1,71 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grabGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#2563eb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
+    </linearGradient>
+    <filter id="grabShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  
+  <!-- Open hand cursor for grabbable elements -->
+  <g transform="translate(2,2)">
+    <!-- Thumb -->
+    <ellipse cx="5" cy="12" rx="2" ry="3.5" 
+             fill="url(#grabGradient)" 
+             filter="url(#grabShadow)"
+             opacity="0.95"/>
+    
+    <!-- Index finger -->
+    <ellipse cx="9" cy="6" rx="1.8" ry="5" 
+             fill="url(#grabGradient)" 
+             filter="url(#grabShadow)"
+             opacity="0.95"/>
+    
+    <!-- Middle finger -->
+    <ellipse cx="12" cy="5" rx="1.8" ry="6" 
+             fill="url(#grabGradient)" 
+             filter="url(#grabShadow)"
+             opacity="0.95"/>
+    
+    <!-- Ring finger -->
+    <ellipse cx="15" cy="6" rx="1.8" ry="5" 
+             fill="url(#grabGradient)" 
+             filter="url(#grabShadow)"
+             opacity="0.95"/>
+    
+    <!-- Pinky -->
+    <ellipse cx="17.5" cy="8" rx="1.5" ry="4" 
+             fill="url(#grabGradient)" 
+             filter="url(#grabShadow)"
+             opacity="0.95"/>
+    
+    <!-- Palm -->
+    <ellipse cx="11" cy="13" rx="5" ry="3.5" 
+             fill="url(#grabGradient)" 
+             filter="url(#grabShadow)"
+             opacity="0.95"/>
+    
+    <!-- Glass effect highlights -->
+    <ellipse cx="5" cy="11" rx="1.2" ry="2" 
+             fill="rgba(255,255,255,0.4)" 
+             opacity="0.8"/>
+    <ellipse cx="9" cy="5.5" rx="1" ry="2.5" 
+             fill="rgba(255,255,255,0.4)" 
+             opacity="0.8"/>
+    <ellipse cx="12" cy="4.5" rx="1" ry="3" 
+             fill="rgba(255,255,255,0.4)" 
+             opacity="0.8"/>
+    <ellipse cx="15" cy="5.5" rx="1" ry="2.5" 
+             fill="rgba(255,255,255,0.4)" 
+             opacity="0.8"/>
+    <ellipse cx="17.5" cy="7" rx="0.8" ry="2" 
+             fill="rgba(255,255,255,0.4)" 
+             opacity="0.8"/>
+    <ellipse cx="11" cy="12" rx="2.5" ry="1.5" 
+             fill="rgba(255,255,255,0.3)" 
+             opacity="0.8"/>
+  </g>
+</svg>

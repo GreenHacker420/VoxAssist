@@ -378,46 +378,105 @@ router.get('/insights', authenticateToken, async (req, res) => {
   }
 });
 
-// Export analytics data
-router.get('/export', authenticateToken, async (req, res) => {
+// Get call volume analytics
+router.get('/call-volume', authenticateToken, async (req, res) => {
   try {
-    const { format = 'json', startDate, endDate } = req.query;
-    
-    // Mock export data
-    const exportData = {
-      generatedAt: new Date().toISOString(),
-      period: { startDate, endDate },
+    const { period = '7d' } = req.query;
+
+    // Mock call volume data
+    const callVolume = {
+      period,
+      data: [
+        { date: '2024-01-01', calls: 45, successful: 38, failed: 7 },
+        { date: '2024-01-02', calls: 52, successful: 44, failed: 8 },
+        { date: '2024-01-03', calls: 38, successful: 32, failed: 6 },
+        { date: '2024-01-04', calls: 61, successful: 53, failed: 8 },
+        { date: '2024-01-05', calls: 47, successful: 40, failed: 7 },
+        { date: '2024-01-06', calls: 44, successful: 37, failed: 7 },
+        { date: '2024-01-07', calls: 39, successful: 33, failed: 6 }
+      ],
       summary: {
-        totalCalls: 1247,
-        resolutionRate: 84.8,
-        avgDuration: 142,
-        customerSatisfaction: 4.2
-      },
-      calls: [
-        // Mock call data
-        {
-          id: 'call_001',
-          date: '2024-01-07T10:30:00Z',
-          duration: 156,
-          resolved: true,
-          sentiment: 'positive',
-          category: 'billing'
-        }
-        // ... more call data
-      ]
+        totalCalls: 326,
+        successfulCalls: 277,
+        failedCalls: 49,
+        successRate: 85.0
+      }
     };
 
+    res.json({ success: true, data: callVolume });
+  } catch (error) {
+    logger.error(`Error fetching call volume: ${error.message}`);
+    res.status(500).json({ success: false, error: 'Failed to fetch call volume' });
+  }
+});
+
+// Export analytics data
+router.get('/export/:type', authenticateToken, async (req, res) => {
+  try {
+    const { type } = req.params;
+    const { format = 'json', startDate, endDate } = req.query;
+
+    let exportData;
+
+    switch (type) {
+      case 'dashboard':
+        exportData = {
+          type: 'dashboard',
+          generatedAt: new Date().toISOString(),
+          period: { startDate, endDate },
+          summary: {
+            totalCalls: 1247,
+            resolutionRate: 84.8,
+            avgDuration: 142,
+            customerSatisfaction: 4.2
+          }
+        };
+        break;
+      case 'calls':
+        exportData = {
+          type: 'calls',
+          generatedAt: new Date().toISOString(),
+          period: { startDate, endDate },
+          calls: [
+            {
+              id: 'call_001',
+              date: '2024-01-07T10:30:00Z',
+              duration: 156,
+              resolved: true,
+              sentiment: 'positive',
+              category: 'billing'
+            }
+          ]
+        };
+        break;
+      case 'sentiment':
+        exportData = {
+          type: 'sentiment',
+          generatedAt: new Date().toISOString(),
+          period: { startDate, endDate },
+          sentiment: {
+            positive: 68.3,
+            neutral: 23.1,
+            negative: 8.6
+          }
+        };
+        break;
+      default:
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid export type'
+        });
+    }
+
     if (format === 'csv') {
-      // Convert to CSV format
       res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename=voxassist-analytics.csv');
-      
-      // Implement CSV conversion
-      const csvData = convertToCSV(data);
+      res.setHeader('Content-Disposition', `attachment; filename=voxassist-${type}-analytics.csv`);
+
+      const csvData = convertToCSV(exportData);
       res.send(csvData);
     } else {
       res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', 'attachment; filename=voxassist-analytics.json');
+      res.setHeader('Content-Disposition', `attachment; filename=voxassist-${type}-analytics.json`);
       res.json(exportData);
     }
   } catch (error) {
