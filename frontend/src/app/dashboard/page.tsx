@@ -1,35 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/Layout/DashboardLayout';
-import CallConfiguration, { CallConfig } from '@/components/CallConfiguration';
-import WhatsAppCalling from '@/components/WhatsAppCalling';
-import { AnalyticsService } from '@/services/analytics';
-import { DashboardAnalytics } from '@/types';
-import { calculatePercentageChange, formatDuration, formatPercentage } from '@/lib/utils';
-import {
-  PhoneIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  ClockIcon,
-} from '@heroicons/react/24/outline';
-import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/20/solid';
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  LineChart,
-  Line,
-} from 'recharts';
+import { useRouter } from 'next/navigation';
+import UserLayout from '@/components/UserLayout';
+import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import StatsGrid from '@/components/dashboard/StatsGrid';
+import WidgetsList from '@/components/dashboard/WidgetsList';
+import RecentActivity from '@/components/dashboard/RecentActivity';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
+  const [widgets, setWidgets] = useState([]);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -46,9 +30,9 @@ export default function DashboardPage() {
     fetchAnalytics();
   }, []);
 
-  // const handleCreateWidget = () => {
-  //   router.push('/widgets/create');
-  // };
+  const handleCreateWidget = () => {
+    router.push('/widgets/create');
+  };
 
   if (isLoading) {
     return (
@@ -196,7 +180,15 @@ export default function DashboardPage() {
             <h3 className="text-lg font-medium text-gray-900 mb-4">Hourly Call Distribution</h3>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analytics?.hourlyDistribution || []}>
+                <BarChart
+                  data={analytics?.hourlyDistribution || []}
+                  onMouseMove={(state: any) => {
+                    if (state && typeof state.chartX === 'number' && typeof state.chartY === 'number') {
+                      setBarMouse({ x: state.chartX, y: state.chartY });
+                    }
+                  }}
+                  onMouseLeave={() => setBarMouse(null)}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     dataKey="hour" 
@@ -206,6 +198,17 @@ export default function DashboardPage() {
                   <Tooltip 
                     labelFormatter={(value) => `${value}:00`}
                     formatter={(value) => [value, 'Calls']}
+                  />
+                  {/* Interactive grid shine overlay */}
+                  <Customized
+                    component={(props: any) => (
+                      <GridShineOverlay
+                        {...props}
+                        mouse={barMouse}
+                        radius={GRID_SHINE_RADIUS}
+                        color="#60a5fa" // blue-400
+                      />
+                    )}
                   />
                   <Bar dataKey="calls" fill="#4F46E5" />
                 </BarChart>
@@ -218,11 +221,30 @@ export default function DashboardPage() {
             <h3 className="text-lg font-medium text-gray-900 mb-4">Sentiment Trends</h3>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={analytics?.sentimentTrends || []}>
+                <LineChart
+                  data={analytics?.sentimentTrends || []}
+                  onMouseMove={(state: any) => {
+                    if (state && typeof state.chartX === 'number' && typeof state.chartY === 'number') {
+                      setLineMouse({ x: state.chartX, y: state.chartY });
+                    }
+                  }}
+                  onMouseLeave={() => setLineMouse(null)}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
                   <Tooltip />
+                  {/* Interactive grid shine overlay */}
+                  <Customized
+                    component={(props: any) => (
+                      <GridShineOverlay
+                        {...props}
+                        mouse={lineMouse}
+                        radius={GRID_SHINE_RADIUS}
+                        color="#60a5fa" // blue-400
+                      />
+                    )}
+                  />
                   <Line 
                     type="monotone" 
                     dataKey="positive" 
