@@ -1,6 +1,6 @@
 # VoxAssist Frontend
 
-Production-ready Next.js frontend for the VoxAssist AI voice calling platform. Built with TypeScript, Tailwind CSS, and modern React patterns.
+> Production-ready Next.js frontend for the VoxAssist AI voice calling platform. Built with TypeScript, Tailwind CSS, and modern React patterns.
 
 ## Features
 

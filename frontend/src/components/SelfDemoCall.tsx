@@ -2,16 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Button, Typography, Space, Alert, Steps, Spin } from 'antd';
-import { 
-  PhoneOutlined, 
-  PlayCircleOutlined, 
+import { Card, Button, Typography, Space, Alert, Steps, Spin, message } from 'antd';
+import {
+  PhoneOutlined,
+  PlayCircleOutlined,
   CheckCircleOutlined,
-  LoadingOutlined 
+  LoadingOutlined
 } from '@ant-design/icons';
 import { CallsService } from '@/services/calls';
 import { useAuth } from '@/contexts/AuthContext';
-import toast from 'react-hot-toast';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -53,7 +52,7 @@ export default function SelfDemoCall() {
         } else if (newState === 'ended') {
           setCurrentStep(3);
           setIsInitiating(false);
-          toast.success('Demo call completed! Redirecting to call details...');
+          message.success('Demo call completed! Redirecting to call details...');
           setTimeout(() => {
             router.push(`/calls/live/${callId}`);
           }, 2000);
@@ -71,7 +70,7 @@ export default function SelfDemoCall() {
 
   const handleStartSelfDemo = async () => {
     if (!isDemoMode) {
-      toast.error('Self-demo call is only available in demo mode');
+      message.error('Self-demo call is only available in demo mode');
       return;
     }
 
@@ -83,13 +82,13 @@ export default function SelfDemoCall() {
       // Step 1: Initialize call
       const call = await CallsService.initiateSelfDemoCall();
       setDemoCallId(call.id);
-      toast.success('Self-demo call initiated!');
+      message.success('Self-demo call initiated!');
       setCurrentStep(1);
 
       // Step 2: Simulate connection delay
       setTimeout(() => {
         setCurrentStep(2);
-        toast.success('Connected! Redirecting to live call view...');
+        message.success('Connected! Redirecting to live call view...');
         
         // Step 3: Redirect to live call monitoring
         setTimeout(() => {
@@ -99,7 +98,7 @@ export default function SelfDemoCall() {
 
     } catch (error) {
       console.error('Failed to start self-demo call:', error);
-      toast.error('Failed to start self-demo call');
+      message.error('Failed to start self-demo call');
       setCurrentStep(0);
     } finally {
       setTimeout(() => {

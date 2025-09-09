@@ -6,16 +6,35 @@ import { AnalyticsService } from '@/services/analytics';
 import { DashboardAnalytics } from '@/types';
 import { formatDuration, formatPercentage } from '@/lib/utils';
 import {
-  ChartBarIcon,
-  ArrowDownTrayIcon,
-} from '@heroicons/react/24/outline';
-import { 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  BarChart, 
+  Card,
+  Row,
+  Col,
+  Statistic,
+  Select,
+  Button,
+  Typography,
+  Space,
+  Spin,
+  Alert,
+  DatePicker,
+  message
+} from 'antd';
+import {
+  BarChartOutlined,
+  DownloadOutlined,
+  CalendarOutlined,
+  TrophyOutlined,
+  PhoneOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined
+} from '@ant-design/icons';
+import {
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
   Bar,
   PieChart,
   Pie,
@@ -24,7 +43,9 @@ import {
   AreaChart
 } from 'recharts';
 
-// const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444'];
+const { Title, Text } = Typography;
+const { RangePicker } = DatePicker;
+const COLORS = ['#1890ff', '#52c41a', '#faad14', '#f5222d'];
 
 export default function AnalyticsPage() {
   const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
@@ -51,7 +72,7 @@ export default function AnalyticsPage() {
     try {
       const endDate = new Date().toISOString().split('T')[0];
       const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      
+
       const blob = await AnalyticsService.exportAnalytics(type, startDate, endDate);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -61,24 +82,39 @@ export default function AnalyticsPage() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+      message.success('Analytics data exported successfully');
     } catch (error) {
       console.error('Export failed:', error);
+      message.error('Failed to export analytics data');
     }
   };
 
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white shadow rounded-lg p-6">
-                <div className="h-80 bg-gray-200 rounded"></div>
-              </div>
-            ))}
+        <Spin size="large" className="flex justify-center items-center min-h-[400px]">
+          <div className="text-center">
+            <Title level={3}>Loading analytics...</Title>
           </div>
-        </div>
+        </Spin>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <Alert
+          message="Error Loading Analytics"
+          description={error}
+          type="error"
+          showIcon
+          action={
+            <Button size="small" danger onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          }
+        />
       </DashboardLayout>
     );
   }
@@ -96,43 +132,35 @@ export default function AnalyticsPage() {
     { metric: 'First Call Resolution', value: 78, target: 80 },
   ];
 
-  const pageActions = (
-    <>
-      <select
-        value={dateRange}
-        onChange={(e) => setDateRange(e.target.value)}
-        className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-      >
-        <option value="7d">Last 7 days</option>
-        <option value="30d">Last 30 days</option>
-        <option value="90d">Last 90 days</option>
-      </select>
-      <button
-        onClick={() => exportData('dashboard')}
-        className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-      >
-        <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
-        Export
-      </button>
-    </>
-  );
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Analytics</h1>
-            <p className="mt-1 text-sm text-gray-600">Comprehensive insights into your voice calling operations.</p>
+            <Title level={2}>Analytics</Title>
+            <Text type="secondary">Comprehensive insights into your voice calling operations.</Text>
           </div>
-          <div className="flex items-center gap-3">{pageActions}</div>
+          <Space>
+            <Select
+              value={dateRange}
+              onChange={setDateRange}
+              style={{ width: 150 }}
+              options={[
+                { value: '7d', label: 'Last 7 days' },
+                { value: '30d', label: 'Last 30 days' },
+                { value: '90d', label: 'Last 90 days' },
+              ]}
+            />
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={() => exportData('dashboard')}
+            >
+              Export
+            </Button>
+          </Space>
         </div>
-        <div className="space-y-6">
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-700">{error}</div>
-            </div>
-          )}
+
+        <Space direction="vertical" size="large" className="w-full">
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -140,7 +168,7 @@ export default function AnalyticsPage() {
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <ChartBarIcon className="h-6 w-6 text-gray-400" />
+                  <BarChartOutlined className="text-xl text-gray-400" />
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
@@ -158,7 +186,7 @@ export default function AnalyticsPage() {
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <ChartBarIcon className="h-6 w-6 text-gray-400" />
+                  <TrophyOutlined className="text-xl text-gray-400" />
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
@@ -176,7 +204,7 @@ export default function AnalyticsPage() {
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <ChartBarIcon className="h-6 w-6 text-gray-400" />
+                  <ClockCircleOutlined className="text-xl text-gray-400" />
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
@@ -194,7 +222,7 @@ export default function AnalyticsPage() {
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <ChartBarIcon className="h-6 w-6 text-gray-400" />
+                  <PhoneOutlined className="text-xl text-gray-400" />
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
@@ -394,7 +422,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </div>
-      </div>
+        </Space>
       </div>
     </DashboardLayout>
   );

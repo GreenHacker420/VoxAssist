@@ -1,34 +1,34 @@
 'use client';
 
-import { Fragment } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Dialog, Transition } from '@headlessui/react';
-import { 
-  HomeIcon, 
-  PhoneIcon, 
-  UsersIcon, 
-  MegaphoneIcon, 
-  DocumentTextIcon, 
-  ChartBarIcon,
-  CogIcon,
-  CreditCardIcon,
-  LinkIcon,
-  XMarkIcon
-} from '@heroicons/react/24/outline';
-import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { Menu, Drawer, Typography, Divider } from 'antd';
+import {
+  HomeOutlined,
+  PhoneOutlined,
+  TeamOutlined,
+  SoundOutlined,
+  FileTextOutlined,
+  BarChartOutlined,
+  SettingOutlined,
+  CreditCardOutlined,
+  LinkOutlined,
+
+} from '@ant-design/icons';
+
+const { Text } = Typography;
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-  { name: 'Calls', href: '/calls', icon: PhoneIcon },
-  { name: 'Contacts', href: '/contacts', icon: UsersIcon },
-  { name: 'Campaigns', href: '/campaigns', icon: MegaphoneIcon },
-  { name: 'Scripts', href: '/scripts', icon: DocumentTextIcon },
-  { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
-  { name: 'Billing', href: '/billing', icon: CreditCardIcon },
-  { name: 'Webhooks', href: '/webhooks', icon: LinkIcon },
-  { name: 'Settings', href: '/settings', icon: CogIcon },
+  { key: 'dashboard', name: 'Dashboard', href: '/dashboard', icon: <HomeOutlined /> },
+  { key: 'calls', name: 'Calls', href: '/calls', icon: <PhoneOutlined /> },
+  { key: 'contacts', name: 'Contacts', href: '/contacts', icon: <TeamOutlined /> },
+  { key: 'campaigns', name: 'Campaigns', href: '/campaigns', icon: <SoundOutlined /> },
+  { key: 'scripts', name: 'Scripts', href: '/scripts', icon: <FileTextOutlined /> },
+  { key: 'analytics', name: 'Analytics', href: '/analytics', icon: <BarChartOutlined /> },
+  { key: 'billing', name: 'Billing', href: '/billing', icon: <CreditCardOutlined /> },
+  { key: 'webhooks', name: 'Webhooks', href: '/webhooks', icon: <LinkOutlined /> },
+  { key: 'settings', name: 'Settings', href: '/settings', icon: <SettingOutlined /> },
 ];
 
 
@@ -41,157 +41,90 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
 
+  // Get selected menu key based on current pathname
+  const getSelectedKey = () => {
+    const currentPath = pathname.split('/')[1] || 'dashboard';
+    return currentPath === '' ? 'dashboard' : currentPath;
+  };
+
+  // Convert navigation items to Ant Design Menu items
+  const menuItems = navigation.map(item => ({
+    key: item.key,
+    icon: item.icon,
+    label: (
+      <Link href={item.href} onClick={() => setSidebarOpen(false)}>
+        {item.name}
+      </Link>
+    ),
+  }));
+
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className="flex items-center px-6 py-4">
+        <div className="flex items-center">
+          <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+          </div>
+          <span className="ml-3 text-xl font-bold text-gray-900">VoxAssist</span>
+        </div>
+      </div>
+
+      <Divider className="my-0" />
+
+      {/* Navigation Menu */}
+      <div className="flex-1 px-3 py-4">
+        <Menu
+          mode="inline"
+          selectedKeys={[getSelectedKey()]}
+          items={menuItems}
+          className="border-none"
+        />
+      </div>
+
+      <Divider className="my-0" />
+
+      {/* User Info */}
+      <div className="p-4">
+        <div className="flex items-center">
+          <div className="h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center">
+            <Text className="text-sm font-medium text-gray-700">
+              {user?.name?.charAt(0) || 'U'}
+            </Text>
+          </div>
+          <div className="ml-3">
+            <Text className="text-sm font-medium text-gray-900">{user?.name || 'User'}</Text>
+            <Text className="text-xs text-gray-500">{user?.email || 'user@example.com'}</Text>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
-      {/* Mobile sidebar */}
-      <Transition.Root show={sidebarOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50 lg:hidden" onClose={setSidebarOpen}>
-          <Transition.Child
-            as={Fragment}
-            enter="transition-opacity ease-linear duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="transition-opacity ease-linear duration-300"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-gray-900/80" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 flex">
-            <Transition.Child
-              as={Fragment}
-              enter="transition ease-in-out duration-300 transform"
-              enterFrom="-translate-x-full"
-              enterTo="translate-x-0"
-              leave="transition ease-in-out duration-300 transform"
-              leaveFrom="translate-x-0"
-              leaveTo="-translate-x-full"
-            >
-              <Dialog.Panel className="relative mr-16 flex w-full max-w-xs flex-1">
-                <Transition.Child
-                  as={Fragment}
-                  enter="ease-in-out duration-300"
-                  enterFrom="opacity-0"
-                  enterTo="opacity-100"
-                  leave="ease-in-out duration-300"
-                  leaveFrom="opacity-100"
-                  leaveTo="opacity-0"
-                >
-                  <div className="absolute left-full top-0 flex w-16 justify-center pt-5">
-                    <button
-                      type="button"
-                      className="-m-2.5 p-2.5"
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <span className="sr-only">Close sidebar</span>
-                      <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-                    </button>
-                  </div>
-                </Transition.Child>
-                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-r border-white/30 top-glow px-6 pb-2">
-                  <div className="flex h-16 shrink-0 items-center">
-                    <div className="flex items-center space-x-2">
-                      <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                        <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                        </svg>
-                      </div>
-                      <span className="text-xl font-bold text-black">VoxAssist</span>
-                    </div>
-                  </div>
-                  <nav className="flex flex-1 flex-col">
-                    <ul role="list" className="flex flex-1 flex-col gap-y-7">
-                      <li>
-                        <ul role="list" className="-mx-2 space-y-1">
-                          {navigation.map((item) => (
-                            <li key={item.name}>
-                              <Link
-                                href={item.href}
-                                className={cn(
-                                  pathname === item.href
-                                    ? 'bg-white/60 text-blue-700'
-                                    : 'text-gray-900 hover:text-blue-700 hover:bg-white/50',
-                                  'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
-                                )}
-                              >
-                                <item.icon
-                                  className={cn(
-                                    pathname === item.href ? 'text-indigo-600' : 'text-gray-400 group-hover:text-indigo-600',
-                                    'h-6 w-6 shrink-0'
-                                  )}
-                                  aria-hidden="true"
-                                />
-                                {item.name}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </li>
-                    </ul>
-                  </nav>
-                </div>
-              </Dialog.Panel>
-            </Transition.Child>
-          </div>
-        </Dialog>
-      </Transition.Root>
+      {/* Mobile sidebar - Ant Design Drawer */}
+      <Drawer
+        title="VoxAssist"
+        placement="left"
+        onClose={() => setSidebarOpen(false)}
+        open={sidebarOpen}
+        className="lg:hidden"
+        width={280}
+        styles={{
+          body: { padding: 0 },
+          header: { borderBottom: '1px solid #f0f0f0' }
+        }}
+      >
+        <SidebarContent />
+      </Drawer>
 
       {/* Static sidebar for desktop */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-white/30 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 top-glow px-6">
-          <div className="flex h-16 shrink-0 items-center">
-            <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
-              </div>
-              <span className="text-xl font-bold text-black">VoxAssist</span>
-            </div>
-          </div>
-          <nav className="flex flex-1 flex-col">
-            <ul role="list" className="flex flex-1 flex-col gap-y-7">
-              <li>
-                <ul role="list" className="-mx-2 space-y-1">
-                  {navigation.map((item) => (
-                    <li key={item.name}>
-                      <Link
-                        href={item.href}
-                        className={cn(
-                          pathname === item.href
-                            ? 'bg-white/60 text-blue-700'
-                            : 'text-gray-900 hover:text-blue-700 hover:bg-white/50',
-                          'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
-                        )}
-                      >
-                        <item.icon
-                          className={cn(
-                            pathname === item.href ? 'text-indigo-600' : 'text-gray-400 group-hover:text-indigo-600',
-                            'h-6 w-6 shrink-0'
-                          )}
-                          aria-hidden="true"
-                        />
-                        {item.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-              
-              <li className="-mx-6 mt-auto">
-                <div className="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-black">
-                  <div className="h-8 w-8 bg-gray-50 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-black">
-                      {user?.name?.charAt(0).toUpperCase() || 'U'}
-                    </span>
-                  </div>
-                  <span className="sr-only">Your profile</span>
-                  <span aria-hidden="true">{user?.name}</span>
-                </div>
-              </li>
-            </ul>
-          </nav>
+        <div className="flex grow flex-col border-r border-gray-200 bg-white shadow-sm">
+          <SidebarContent />
         </div>
       </div>
     </>

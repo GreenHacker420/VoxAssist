@@ -1,17 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
 import { BillingService, Subscription, Invoice, BillingUsage, PaymentMethod } from '@/services/billing';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { 
-  CreditCardIcon, 
-  DocumentArrowDownIcon, 
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  ClockIcon
-} from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
+import {
+  Card,
+  Tabs,
+  Table,
+  Button,
+  Tag,
+  Typography,
+  Space,
+  Statistic,
+  Row,
+  Col,
+  Alert,
+  Spin,
+  message,
+  Modal,
+  Progress
+} from 'antd';
+import {
+  CreditCardOutlined,
+  DownloadOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+  ClockCircleOutlined,
+  DollarOutlined,
+  PhoneOutlined,
+  MessageOutlined
+} from '@ant-design/icons';
+
+const { Title, Text } = Typography;
 
 export default function BillingPage() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -41,22 +62,31 @@ export default function BillingPage() {
       setPaymentMethods(paymentData);
     } catch (error) {
       console.error('Error loading subscription:', error);
-      toast.error('Failed to load subscription');
+      message.error('Failed to load subscription');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancelSubscription = async () => {
-    if (!subscription || !confirm('Are you sure you want to cancel your subscription?')) return;
+    if (!subscription) return;
 
-    try {
-      await BillingService.cancelSubscription();
-      toast.success('Subscription cancelled successfully');
-      loadBillingData();
-    } catch {
-      toast.error('Failed to cancel subscription');
-    }
+    Modal.confirm({
+      title: 'Cancel Subscription',
+      content: 'Are you sure you want to cancel your subscription?',
+      okText: 'Yes, Cancel',
+      okType: 'danger',
+      cancelText: 'No, Keep',
+      onOk: async () => {
+        try {
+          await BillingService.cancelSubscription();
+          message.success('Subscription cancelled successfully');
+          loadBillingData();
+        } catch {
+          message.error('Failed to cancel subscription');
+        }
+      }
+    });
   };
 
   const handleDownloadInvoice = async (invoiceId: string) => {
@@ -71,308 +101,305 @@ export default function BillingPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch {
-      toast.error('Failed to download invoice');
+      message.error('Failed to download invoice');
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusTag = (status: string) => {
     switch (status) {
       case 'active':
       case 'paid':
-        return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+        return <Tag color="success" icon={<CheckCircleOutlined />}>{status}</Tag>;
       case 'pending':
-        return <ClockIcon className="h-5 w-5 text-yellow-500" />;
+        return <Tag color="warning" icon={<ClockCircleOutlined />}>{status}</Tag>;
       case 'failed':
       case 'canceled':
-        return <ExclamationTriangleIcon className="h-5 w-5 text-red-500" />;
+        return <Tag color="error" icon={<ExclamationCircleOutlined />}>{status}</Tag>;
       default:
-        return null;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-      case 'paid':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'failed':
-      case 'canceled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+        return <Tag>{status}</Tag>;
     }
   };
 
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white shadow rounded-lg p-6">
-                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                <div className="h-8 bg-gray-200 rounded w-3/4"></div>
-              </div>
-            ))}
+        <Spin size="large" className="flex justify-center items-center min-h-[400px]">
+          <div className="text-center">
+            <Title level={3}>Loading billing information...</Title>
           </div>
-        </div>
+        </Spin>
       </DashboardLayout>
     );
   }
+
+  const tabItems = [
+    {
+      key: 'overview',
+      label: 'Overview',
+      children: renderOverviewTab(),
+    },
+    {
+      key: 'invoices',
+      label: 'Invoices',
+      children: renderInvoicesTab(),
+    },
+    {
+      key: 'payment-methods',
+      label: 'Payment Methods',
+      children: renderPaymentMethodsTab(),
+    },
+  ];
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Billing & Subscription</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <Title level={2}>Billing & Subscription</Title>
+          <Text type="secondary">
             Manage your subscription, view invoices, and update payment methods
-          </p>
+          </Text>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            {[
-              { id: 'overview', name: 'Overview' },
-              { id: 'invoices', name: 'Invoices' },
-              { id: 'payment-methods', name: 'Payment Methods' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as 'overview' | 'invoices' | 'payment-methods')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.id
-                    ? 'border-indigo-500 text-indigo-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tab.name}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {activeTab === 'overview' && (
-          <div className="space-y-6">
-            {/* Current Subscription */}
-            {subscription && (
-              <div className="bg-white shadow rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-medium text-gray-900">Current Subscription</h2>
-                  <div className="flex items-center space-x-2">
-                    {getStatusIcon(subscription.status)}
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(subscription.status)}`}>
-                      {subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1)}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Plan</h3>
-                    <p className="mt-1 text-lg font-semibold text-gray-900">{subscription.plan}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Price</h3>
-                    <p className="mt-1 text-lg font-semibold text-gray-900">
-                      {formatCurrency(subscription.price)}/month
-                    </p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Current Period</h3>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
-                    </p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Auto-renewal</h3>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {subscription.cancelAtPeriodEnd ? 'Disabled' : 'Enabled'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex space-x-3">
-                  <button className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">
-                    Upgrade Plan
-                  </button>
-                  {!subscription.cancelAtPeriodEnd && (
-                    <button
-                      onClick={handleCancelSubscription}
-                      className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
-                    >
-                      Cancel Subscription
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Usage Statistics */}
-            {usage && (
-              <div className="bg-white shadow rounded-lg p-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">Usage This Period</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-500">Calls</span>
-                      <span className="text-sm text-gray-900">
-                        {usage.callsUsed.toLocaleString()} / {usage.callsLimit.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-indigo-600 h-2 rounded-full"
-                        style={{ width: `${Math.min((usage.callsUsed / usage.callsLimit) * 100, 100)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-500">Storage</span>
-                      <span className="text-sm text-gray-900">
-                        {(usage.storageUsed / 1024 / 1024 / 1024).toFixed(2)} GB / {(usage.storageLimit / 1024 / 1024 / 1024).toFixed(0)} GB
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-indigo-600 h-2 rounded-full"
-                        style={{ width: `${Math.min((usage.storageUsed / usage.storageLimit) * 100, 100)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-                <p className="mt-4 text-sm text-gray-500">
-                  Period: {formatDate(usage.period.start)} - {formatDate(usage.period.end)}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'invoices' && (
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900">Invoices</h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Invoice
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {invoices.map((invoice) => (
-                    <tr key={invoice.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {invoice.number}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(invoice.date)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(invoice.amount)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center space-x-2">
-                          {getStatusIcon(invoice.status)}
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(invoice.status)}`}>
-                            {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <button
-                          onClick={() => handleDownloadInvoice(invoice.id)}
-                          className="text-indigo-600 hover:text-indigo-900 flex items-center space-x-1"
-                        >
-                          <DocumentArrowDownIcon className="h-4 w-4" />
-                          <span>Download</span>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'payment-methods' && (
-          <div className="space-y-6">
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-medium text-gray-900">Payment Methods</h2>
-                <button className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">
-                  Add Payment Method
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                {paymentMethods.map((method) => (
-                  <div key={method.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <CreditCardIcon className="h-8 w-8 text-gray-400" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {method.brand?.toUpperCase()} ending in {method.last4}
-                          </p>
-                          {method.expiryMonth && method.expiryYear && (
-                            <p className="text-sm text-gray-500">
-                              Expires {method.expiryMonth.toString().padStart(2, '0')}/{method.expiryYear}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {method.isDefault && (
-                          <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                            Default
-                          </span>
-                        )}
-                        <button className="text-indigo-600 hover:text-indigo-900 text-sm">
-                          Edit
-                        </button>
-                        <button className="text-red-600 hover:text-red-900 text-sm">
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                
-                {paymentMethods.length === 0 && (
-                  <div className="text-center py-8">
-                    <CreditCardIcon className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">No payment methods</h3>
-                    <p className="mt-1 text-sm text-gray-500">Add a payment method to manage your subscription.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        <Tabs
+          activeKey={activeTab}
+          onChange={(key) => setActiveTab(key as 'overview' | 'invoices' | 'payment-methods')}
+          items={tabItems}
+        />
       </div>
     </DashboardLayout>
   );
+
+  function renderOverviewTab() {
+    return (
+      <Space direction="vertical" size="large" className="w-full">
+        {/* Current Subscription */}
+        {subscription && (
+          <Card>
+            <div className="flex items-center justify-between mb-4">
+              <Title level={4}>Current Subscription</Title>
+              {getStatusTag(subscription.status)}
+            </div>
+
+            <Row gutter={[24, 16]}>
+              <Col xs={24} md={12}>
+                <Statistic
+                  title="Plan"
+                  value={subscription.plan}
+                  valueStyle={{ fontSize: '18px', fontWeight: 600 }}
+                />
+              </Col>
+              <Col xs={24} md={12}>
+                <Statistic
+                  title="Price"
+                  value={subscription.price}
+                  prefix={<DollarOutlined />}
+                  suffix="/month"
+                  valueStyle={{ fontSize: '18px', fontWeight: 600 }}
+                />
+              </Col>
+              <Col xs={24} md={12}>
+                <div>
+                  <Text type="secondary" className="block mb-1">Current Period</Text>
+                  <Text strong>
+                    {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
+                  </Text>
+                </div>
+              </Col>
+              <Col xs={24} md={12}>
+                <div>
+                  <Text type="secondary" className="block mb-1">Auto-renewal</Text>
+                  <Tag color={subscription.cancelAtPeriodEnd ? 'error' : 'success'}>
+                    {subscription.cancelAtPeriodEnd ? 'Disabled' : 'Enabled'}
+                  </Tag>
+                </div>
+              </Col>
+            </Row>
+
+            <div className="mt-6">
+              <Space>
+                <Button type="primary" icon={<CreditCardOutlined />}>
+                  Upgrade Plan
+                </Button>
+                {!subscription.cancelAtPeriodEnd && (
+                  <Button
+                    danger
+                    onClick={handleCancelSubscription}
+                  >
+                    Cancel Subscription
+                  </Button>
+                )}
+              </Space>
+            </div>
+          </Card>
+        )}
+
+        {/* Usage Statistics */}
+        {usage && (
+          <Card>
+            <Title level={4} className="mb-4">Usage This Period</Title>
+            <Row gutter={[24, 24]}>
+              <Col xs={24} md={12}>
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <Text strong><PhoneOutlined /> Calls</Text>
+                    <Text>
+                      {usage.callsUsed.toLocaleString()} / {usage.callsLimit.toLocaleString()}
+                    </Text>
+                  </div>
+                  <Progress
+                    percent={Math.min((usage.callsUsed / usage.callsLimit) * 100, 100)}
+                    strokeColor="#1890ff"
+                  />
+                </div>
+              </Col>
+              <Col xs={24} md={12}>
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <Text strong><MessageOutlined /> Storage</Text>
+                    <Text>
+                      {(usage.storageUsed / 1024 / 1024 / 1024).toFixed(2)} GB / {(usage.storageLimit / 1024 / 1024 / 1024).toFixed(0)} GB
+                    </Text>
+                  </div>
+                  <Progress
+                    percent={Math.min((usage.storageUsed / usage.storageLimit) * 100, 100)}
+                    strokeColor="#52c41a"
+                  />
+                </div>
+              </Col>
+            </Row>
+            <Alert
+              message={`Period: ${formatDate(usage.period.start)} - ${formatDate(usage.period.end)}`}
+              type="info"
+              showIcon
+              className="mt-4"
+            />
+          </Card>
+        )}
+      </Space>
+    );
+  }
+
+  function renderInvoicesTab() {
+    const invoiceColumns = [
+      {
+        title: 'Invoice',
+        dataIndex: 'number',
+        key: 'number',
+        render: (number: string) => <Text strong>{number}</Text>,
+      },
+      {
+        title: 'Date',
+        dataIndex: 'date',
+        key: 'date',
+        render: (date: string) => formatDate(date),
+        sorter: (a: Invoice, b: Invoice) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      },
+      {
+        title: 'Amount',
+        dataIndex: 'amount',
+        key: 'amount',
+        render: (amount: number) => <Text strong>{formatCurrency(amount)}</Text>,
+        sorter: (a: Invoice, b: Invoice) => a.amount - b.amount,
+      },
+      {
+        title: 'Status',
+        dataIndex: 'status',
+        key: 'status',
+        render: (status: string) => getStatusTag(status),
+        filters: [
+          { text: 'Paid', value: 'paid' },
+          { text: 'Pending', value: 'pending' },
+          { text: 'Failed', value: 'failed' },
+        ],
+        onFilter: (value: boolean | React.Key, record: Invoice) => record.status === value,
+      },
+      {
+        title: 'Actions',
+        key: 'actions',
+        render: (_: unknown, record: Invoice) => (
+          <Button
+            type="link"
+            icon={<DownloadOutlined />}
+            onClick={() => handleDownloadInvoice(record.id)}
+          >
+            Download
+          </Button>
+        ),
+      },
+    ];
+
+    return (
+      <Card>
+        <Title level={4} className="mb-4">Invoices</Title>
+        <Table
+          columns={invoiceColumns}
+          dataSource={invoices}
+          rowKey="id"
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} invoices`,
+          }}
+        />
+      </Card>
+    );
+  }
+
+  function renderPaymentMethodsTab() {
+    return (
+      <Card>
+        <div className="flex justify-between items-center mb-4">
+          <Title level={4}>Payment Methods</Title>
+          <Button type="primary" icon={<CreditCardOutlined />}>
+            Add Payment Method
+          </Button>
+        </div>
+
+        <Space direction="vertical" size="middle" className="w-full">
+          {paymentMethods.map((method) => (
+            <Card key={method.id} size="small" className="border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <CreditCardOutlined className="text-2xl text-gray-400" />
+                  <div>
+                    <Text strong>
+                      {method.brand?.toUpperCase()} ending in {method.last4}
+                    </Text>
+                    {method.expiryMonth && method.expiryYear && (
+                      <div>
+                        <Text type="secondary" className="text-sm">
+                          Expires {method.expiryMonth.toString().padStart(2, '0')}/{method.expiryYear}
+                        </Text>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {method.isDefault && (
+                    <Tag color="success">Default</Tag>
+                  )}
+                  <Space>
+                    {!method.isDefault && (
+                      <Button size="small">Set as Default</Button>
+                    )}
+                    <Button size="small" danger>Remove</Button>
+                  </Space>
+                </div>
+              </div>
+            </Card>
+          ))}
+
+          {paymentMethods.length === 0 && (
+            <Alert
+              message="No payment methods"
+              description="Add a payment method to manage your subscription."
+              type="info"
+              showIcon
+            />
+          )}
+        </Space>
+      </Card>
+    );
+  }
 }
