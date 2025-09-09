@@ -11,6 +11,8 @@ import Input from '@/components/UI/Input';
 import CallControlsPopup from '@/components/CallControls/CallControlsPopup';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
 import { formatDate, formatDuration } from '@/lib/utils';
+import { Table, Card, Tag, Space, Tooltip, Badge, Drawer, Statistic, Row, Col, Select, DatePicker, Input as AntInput, Button as AntButton } from 'antd';
+import { SearchOutlined, FilterOutlined, PhoneOutlined, EyeOutlined, PlusOutlined, SettingOutlined } from '@ant-design/icons';
 import {
   PhoneIcon,
   StopIcon,
@@ -212,104 +214,179 @@ export default function CallsPage() {
           </div>
         )}
 
-        {/* Calls list */}
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
-          <ul role="list" className="divide-y divide-gray-200">
-            {calls.length === 0 ? (
-              <li className="px-6 py-12 text-center">
-                <PhoneIcon className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No calls</h3>
-                <p className="mt-1 text-sm text-gray-500">Get started by making your first call.</p>
-                <div className="mt-6">
-                  <Button onClick={() => setIsNewCallModalOpen(true)}>
-                    <PlusIcon className="h-5 w-5 mr-2" aria-hidden="true" />
+        {/* Enhanced Calls Table */}
+        <Card className="shadow-sm">
+          <Table
+            dataSource={calls}
+            loading={isLoading}
+            rowKey="id"
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} calls`,
+            }}
+            locale={{
+              emptyText: (
+                <div className="py-12 text-center">
+                  <PhoneOutlined className="text-4xl text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No calls</h3>
+                  <p className="text-gray-500 mb-6">Get started by making your first call.</p>
+                  <AntButton type="primary" onClick={() => setIsNewCallModalOpen(true)}>
+                    <PlusOutlined className="mr-2" />
                     New Call
-                  </Button>
+                  </AntButton>
                 </div>
-              </li>
-            ) : (
-              calls.map((call) => (
-                <li key={call.id}>
-                  <div className="px-4 py-4 sm:px-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <PhoneIcon className="h-6 w-6 text-gray-400" />
-                        </div>
-                        <div className="ml-4">
-                          <div className="flex items-center">
-                            <p className="text-sm font-medium text-indigo-600 truncate">
-                              {call.customerName || call.customerPhone || `Call ${call.id}`}
-                            </p>
-                            <span
-                              className={cn(
-                                'ml-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                                getStatusColor(call.status)
-                              )}
-                            >
-                              {call.status}
-                            </span>
-                          </div>
-                          <div className="mt-2 flex items-center text-sm text-gray-500">
-                            <p>
-                              Started {formatDate(call.startTime)}
-                              {call.duration && ` • Duration: ${formatDuration(call.duration)}`}
-                              {call.sentiment && (
-                                <span className={cn('ml-2', getSentimentColor(call.sentiment))}>
-                                  • {call.sentiment} sentiment
-                                </span>
-                              )}
-                            </p>
-                          </div>
-                        </div>
+              ),
+            }}
+            columns={[
+              {
+                title: 'Customer',
+                dataIndex: 'customerName',
+                key: 'customer',
+                render: (name: string, record: Call) => (
+                  <div className="flex items-center">
+                    <div className="p-2 bg-blue-50 rounded-lg mr-3">
+                      <PhoneOutlined className="text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        {name || record.customerPhone || `Call ${record.id}`}
                       </div>
-                      <div className="flex items-center space-x-2">
-                        {call.status === 'active' && (
-                          <button
-                            type="button"
-                            onClick={() => handleEndCall(call.id)}
-                            className="inline-flex items-center rounded-md bg-red-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-red-500"
-                          >
-                            <StopIcon className="h-4 w-4 mr-1" />
-                            End Call
-                          </button>
-                        )}
-                        {call.status === 'active' && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => handleShowCallControls(call)}
-                              className="inline-flex items-center rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-500 mr-2"
-                            >
-                              <Cog6ToothIcon className="h-4 w-4 mr-1" />
-                              Call Controls
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => window.open(`/calls/live/${call.id}`, '_blank')}
-                              className="inline-flex items-center rounded-md bg-green-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-green-500 mr-2"
-                            >
-                              <EyeIcon className="h-4 w-4 mr-1" />
-                              Monitor Live
-                            </button>
-                          </>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleViewDetails(call)}
-                          className="inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                        >
-                          <EyeIcon className="h-4 w-4 mr-1" />
-                          View Details
-                        </button>
-                      </div>
+                      {record.customerPhone && (
+                        <div className="text-sm text-gray-500">{record.customerPhone}</div>
+                      )}
                     </div>
                   </div>
-                </li>
-              ))
-            )}
-          </ul>
-        </div>
+                ),
+                sorter: (a: Call, b: Call) =>
+                  (a.customerName || a.customerPhone || '').localeCompare(b.customerName || b.customerPhone || ''),
+              },
+              {
+                title: 'Status',
+                dataIndex: 'status',
+                key: 'status',
+                render: (status: string) => {
+                  const getTagColor = (status: string) => {
+                    switch (status) {
+                      case 'active': return 'processing';
+                      case 'completed': return 'success';
+                      case 'failed': return 'error';
+                      case 'escalated': return 'warning';
+                      default: return 'default';
+                    }
+                  };
+
+                  return (
+                    <Tag color={getTagColor(status)} className="capitalize">
+                      {status}
+                    </Tag>
+                  );
+                },
+                filters: [
+                  { text: 'Active', value: 'active' },
+                  { text: 'Completed', value: 'completed' },
+                  { text: 'Failed', value: 'failed' },
+                  { text: 'Escalated', value: 'escalated' },
+                ],
+                onFilter: (value, record: Call) => record.status === value,
+              },
+              {
+                title: 'Start Time',
+                dataIndex: 'startTime',
+                key: 'startTime',
+                render: (startTime: string) => (
+                  <Tooltip title={new Date(startTime).toLocaleString()}>
+                    <span>{formatDate(startTime)}</span>
+                  </Tooltip>
+                ),
+                sorter: (a: Call, b: Call) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+                defaultSortOrder: 'descend',
+              },
+              {
+                title: 'Duration',
+                dataIndex: 'duration',
+                key: 'duration',
+                render: (duration: number) => duration ? formatDuration(duration) : '-',
+                sorter: (a: Call, b: Call) => (a.duration || 0) - (b.duration || 0),
+              },
+              {
+                title: 'Sentiment',
+                dataIndex: 'sentiment',
+                key: 'sentiment',
+                render: (sentiment: string) => {
+                  if (!sentiment) return '-';
+
+                  const getSentimentColor = (sentiment: string) => {
+                    switch (sentiment.toLowerCase()) {
+                      case 'positive': return 'success';
+                      case 'negative': return 'error';
+                      case 'neutral': return 'default';
+                      default: return 'default';
+                    }
+                  };
+
+                  return (
+                    <Tag color={getSentimentColor(sentiment)} className="capitalize">
+                      {sentiment}
+                    </Tag>
+                  );
+                },
+                filters: [
+                  { text: 'Positive', value: 'positive' },
+                  { text: 'Neutral', value: 'neutral' },
+                  { text: 'Negative', value: 'negative' },
+                ],
+                onFilter: (value, record: Call) => record.sentiment?.toLowerCase() === value,
+              },
+              {
+                title: 'Actions',
+                key: 'actions',
+                render: (_, record: Call) => (
+                  <Space size="small">
+                    {record.status === 'active' && (
+                      <>
+                        <Tooltip title="End Call">
+                          <AntButton
+                            type="primary"
+                            danger
+                            size="small"
+                            icon={<StopIcon className="h-3 w-3" />}
+                            onClick={() => handleEndCall(record.id)}
+                          />
+                        </Tooltip>
+                        <Tooltip title="Call Controls">
+                          <AntButton
+                            type="primary"
+                            size="small"
+                            icon={<SettingOutlined />}
+                            onClick={() => handleShowCallControls(record)}
+                          />
+                        </Tooltip>
+                        <Tooltip title="Monitor Live">
+                          <AntButton
+                            type="default"
+                            size="small"
+                            icon={<EyeOutlined />}
+                            onClick={() => window.open(`/calls/live/${record.id}`, '_blank')}
+                          />
+                        </Tooltip>
+                      </>
+                    )}
+                    <Tooltip title="View Details">
+                      <AntButton
+                        type="default"
+                        size="small"
+                        icon={<EyeOutlined />}
+                        onClick={() => handleViewDetails(record)}
+                      />
+                    </Tooltip>
+                  </Space>
+                ),
+              },
+            ]}
+          />
+        </Card>
       </div>
 
       {/* New Call Modal */}

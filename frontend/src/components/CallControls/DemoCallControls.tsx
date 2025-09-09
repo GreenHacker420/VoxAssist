@@ -9,16 +9,14 @@ import {
   ArrowPathIcon,
   StopIcon
 } from '@heroicons/react/24/outline';
-import { DEMO_CONFIG } from '@/demo';
 import toast from 'react-hot-toast';
 
 interface DemoCallControlsProps {
-  callId: string;
   callStatus: string;
   onCallEnd?: () => void;
 }
 
-export default function DemoCallControls({ callId, callStatus, onCallEnd }: DemoCallControlsProps) {
+export default function DemoCallControls({ callStatus, onCallEnd }: DemoCallControlsProps) {
   const [isMuted, setIsMuted] = useState(false);
   const [isOnHold, setIsOnHold] = useState(false);
   const [isRecording, setIsRecording] = useState(false);

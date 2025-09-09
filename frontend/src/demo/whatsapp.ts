@@ -101,5 +101,59 @@ export const DEMO_WHATSAPP_TEMPLATES = {
     headerText: 'Voice Call Available',
     bodyText: 'We are ready to assist you via voice call.',
     languageCode: 'en_US'
+  },
+  SUPPORT_CALL: {
+    headerText: '🎧 Customer Support',
+    bodyText: 'Need help? Start a voice call with our AI assistant for instant support.',
+    footerText: 'Available 24/7 • Powered by VoxAssist'
+  },
+  SALES_CALL: {
+    headerText: '💼 Sales Consultation',
+    bodyText: 'Ready to learn more? Connect with our sales team via voice call.',
+    footerText: 'Free consultation • Powered by VoxAssist'
+  },
+  TECHNICAL_CALL: {
+    headerText: '🔧 Technical Support',
+    bodyText: 'Experiencing technical issues? Get immediate help through voice call.',
+    footerText: 'Expert assistance • Powered by VoxAssist'
   }
+};
+
+export const DEMO_WHATSAPP_ANALYTICS = {
+  totalCalls: 1247,
+  successfulCalls: 1089,
+  failedCalls: 158,
+  averageCallDuration: 245, // seconds
+  callsByHour: [
+    { hour: '00:00', calls: 12 },
+    { hour: '01:00', calls: 8 },
+    { hour: '02:00', calls: 5 },
+    { hour: '03:00', calls: 3 },
+    { hour: '04:00', calls: 7 },
+    { hour: '05:00', calls: 15 },
+    { hour: '06:00', calls: 28 },
+    { hour: '07:00', calls: 45 },
+    { hour: '08:00', calls: 67 },
+    { hour: '09:00', calls: 89 },
+    { hour: '10:00', calls: 102 },
+    { hour: '11:00', calls: 95 },
+    { hour: '12:00', calls: 87 },
+    { hour: '13:00', calls: 92 },
+    { hour: '14:00', calls: 98 },
+    { hour: '15:00', calls: 105 },
+    { hour: '16:00', calls: 89 },
+    { hour: '17:00', calls: 76 },
+    { hour: '18:00', calls: 54 },
+    { hour: '19:00', calls: 42 },
+    { hour: '20:00', calls: 35 },
+    { hour: '21:00', calls: 28 },
+    { hour: '22:00', calls: 22 },
+    { hour: '23:00', calls: 18 }
+  ],
+  callOutcomes: [
+    { outcome: 'Resolved', count: 892, percentage: 71.6 },
+    { outcome: 'Escalated', count: 197, percentage: 15.8 },
+    { outcome: 'Callback Requested', count: 89, percentage: 7.1 },
+    { outcome: 'Failed to Connect', count: 69, percentage: 5.5 }
+  ]
 };

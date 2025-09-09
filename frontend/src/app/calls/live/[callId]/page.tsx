@@ -495,7 +495,6 @@ export default function LiveCallPage() {
             {/* Demo Call Controls */}
             {isDemoMode && call && (
               <DemoCallControls
-                callId={call.id}
                 callStatus={call.status}
                 onCallEnd={() => {
                   // Handle demo call end
@@ -527,7 +526,6 @@ export default function LiveCallPage() {
         {isDemoMode && call && (
           <div className="mt-8">
             <DemoCallAnalytics
-              callId={call.id}
               callStatus={call.status}
               duration={callDuration}
             />

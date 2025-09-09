@@ -12,12 +12,11 @@ import {
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
 interface DemoCallAnalyticsProps {
-  callId: string;
   callStatus: string;
   duration: number;
 }
 
-export default function DemoCallAnalytics({ callId, callStatus, duration }: DemoCallAnalyticsProps) {
+export default function DemoCallAnalytics({ callStatus, duration }: DemoCallAnalyticsProps) {
   const [realTimeMetrics, setRealTimeMetrics] = useState({
     sentimentScore: 0.8,
     confidenceScore: 0.92,
@@ -34,14 +33,14 @@ export default function DemoCallAnalytics({ callId, callStatus, duration }: Demo
     { time: '2:00', sentiment: 0.85, confidence: 0.94 }
   ]);
 
-  const [emotionBreakdown, setEmotionBreakdown] = useState([
+  const [emotionBreakdown] = useState([
     { name: 'Joy', value: 45, color: '#10B981' },
     { name: 'Neutral', value: 30, color: '#6B7280' },
     { name: 'Surprise', value: 15, color: '#F59E0B' },
     { name: 'Concern', value: 10, color: '#EF4444' }
   ]);
 
-  const [callQualityMetrics, setCallQualityMetrics] = useState([
+  const [callQualityMetrics] = useState([
     { metric: 'Audio Quality', score: 95 },
     { metric: 'Speech Recognition', score: 92 },
     { metric: 'Response Accuracy', score: 88 },

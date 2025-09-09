@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
 import CallConfiguration from '@/components/CallConfiguration';
 import WhatsAppCalling from '@/components/WhatsAppCalling';
@@ -10,6 +11,9 @@ import { ResponsiveContainer, BarChart, LineChart, CartesianGrid, XAxis, YAxis, 
 import { AnalyticsService } from '@/services/analytics';
 import { DashboardAnalytics } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { Card, Statistic, Row, Col, Tag, Timeline, Button } from 'antd';
+import { ArrowUpOutlined, ArrowDownOutlined, CheckCircleOutlined, PhoneOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+
 
 // Utility functions
 const calculatePercentageChange = (current: number, previous: number): number => {
@@ -29,6 +33,7 @@ const formatDuration = (seconds: number): string => {
 
 export default function DashboardPage() {
   const { isDemoMode } = useAuth();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
@@ -156,46 +161,66 @@ export default function DashboardPage() {
           }}
         />
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Enhanced Stats with Ant Design */}
+        <Row gutter={[24, 24]}>
           {stats.map((item) => (
-            <div key={item.name} className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <item.icon className="h-6 w-6 text-gray-400" aria-hidden="true" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        {item.name}
-                        {isDemoMode && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">Demo</span>}
-                      </dt>
-                      <dd>
-                        <div className="text-lg font-medium text-gray-900">{item.stat}</div>
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-5 py-3">
-                <div className="text-sm">
+            <Col key={item.name} xs={24} sm={12} lg={6}>
+              <Card
+                className="h-full hover:shadow-lg transition-shadow duration-200"
+                bodyStyle={{ padding: '24px' }}
+              >
+                <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center">
-                    {item.changeType === 'increase' ? (
-                      <ArrowUpIcon className="h-4 w-4 text-green-500 mr-1" />
-                    ) : (
-                      <ArrowDownIcon className="h-4 w-4 text-red-500 mr-1" />
-                    )}
-                    <span className={item.changeType === 'increase' ? 'text-green-600' : 'text-red-600'}>
-                      {Math.abs(item.change).toFixed(1)}%
-                    </span>
-                    <span className="text-gray-500 ml-1">from last week</span>
+                    <div className="p-2 bg-blue-50 rounded-lg mr-3">
+                      <item.icon className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500 mb-1">
+                        {item.name}
+                        {isDemoMode && (
+                          <Tag color="blue" className="ml-2 text-xs">
+                            Demo
+                          </Tag>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
+
+                <Statistic
+                  value={item.stat}
+                  valueStyle={{
+                    fontSize: '24px',
+                    fontWeight: 600,
+                    color: '#1f2937'
+                  }}
+                />
+
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="flex items-center">
+                    <Statistic
+                      value={Math.abs(item.change)}
+                      precision={1}
+                      suffix="%"
+                      prefix={
+                        item.changeType === 'increase' ? (
+                          <ArrowUpOutlined style={{ color: '#10b981' }} />
+                        ) : (
+                          <ArrowDownOutlined style={{ color: '#ef4444' }} />
+                        )
+                      }
+                      valueStyle={{
+                        fontSize: '14px',
+                        color: item.changeType === 'increase' ? '#10b981' : '#ef4444'
+                      }}
+                    />
+                    <span className="text-gray-500 text-sm ml-2">from last week</span>
+                  </div>
+                </div>
+              </Card>
+            </Col>
           ))}
-        </div>
+        </Row>
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -240,80 +265,158 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Recent Activity {isDemoMode && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">Demo Data</span>}
-            </h3>
-            <div className="flow-root">
-              <ul role="list" className="-mb-8">
-                {[
-                  {
-                    id: 1,
-                    content: isDemoMode ? 'Self-demo call completed successfully' : 'Call completed with high satisfaction score',
-                    target: isDemoMode ? 'Demo User (Self)' : 'Customer #1234',
-                    href: '#',
-                    date: '2 hours ago',
-                    datetime: '2023-01-23T15:56',
-                    icon: CheckCircleIcon,
-                    iconBackground: 'bg-green-500',
-                  },
-                  {
-                    id: 2,
-                    content: isDemoMode ? 'WhatsApp demo call initiated' : 'New lead generated from campaign',
-                    target: isDemoMode ? 'WhatsApp User +1-555-0123' : 'Campaign: Q1 Outreach',
-                    href: '#',
-                    date: '4 hours ago',
-                    datetime: '2023-01-23T13:23',
-                    icon: PhoneIcon,
-                    iconBackground: 'bg-blue-500',
-                  },
-                  {
-                    id: 3,
-                    content: isDemoMode ? 'Demo call with advanced analysis' : 'Call escalated to human agent',
-                    target: isDemoMode ? 'Customer +1-555-0456' : 'Customer #5678',
-                    href: '#',
-                    date: '6 hours ago',
-                    datetime: '2023-01-23T11:03',
-                    icon: ExclamationTriangleIcon,
-                    iconBackground: isDemoMode ? 'bg-purple-500' : 'bg-yellow-500',
-                  },
-                ].map((activityItem, activityItemIdx) => (
-                  <li key={activityItem.id}>
-                    <div className="relative pb-8">
-                      {activityItemIdx !== 2 ? (
-                        <span className="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true" />
-                      ) : null}
-                      <div className="relative flex space-x-3">
-                        <div>
-                          <span
-                            className={`${activityItem.iconBackground} h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white`}
-                          >
-                            <activityItem.icon className="h-5 w-5 text-white" aria-hidden="true" />
-                          </span>
-                        </div>
-                        <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
-                          <div>
-                            <p className="text-sm text-gray-500">
-                              {activityItem.content}{' '}
-                              <a href={activityItem.href} className="font-medium text-gray-900">
-                                {activityItem.target}
-                              </a>
-                            </p>
-                          </div>
-                          <div className="whitespace-nowrap text-right text-sm text-gray-500">
-                            <time dateTime={activityItem.datetime}>{activityItem.date}</time>
-                          </div>
-                        </div>
-                      </div>
+        {/* Enhanced Recent Activity with Timeline */}
+        <Card
+          title={
+            <div className="flex items-center">
+              <span>Recent Activity</span>
+              {isDemoMode && (
+                <Tag color="blue" className="ml-2 text-xs">
+                  Demo Data
+                </Tag>
+              )}
+            </div>
+          }
+          className="shadow-sm"
+        >
+          <Timeline
+            items={[
+              {
+                dot: <CheckCircleOutlined style={{ fontSize: '16px', color: '#10b981' }} />,
+                children: (
+                  <div>
+                    <div className="text-sm text-gray-900 font-medium">
+                      {isDemoMode ? 'Self-demo call completed successfully' : 'Call completed with high satisfaction score'}
                     </div>
-                  </li>
-                ))}
-              </ul>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {isDemoMode ? 'Demo User (Self)' : 'Customer #1234'} • 2 hours ago
+                    </div>
+                  </div>
+                ),
+                color: 'green',
+              },
+              {
+                dot: <PhoneOutlined style={{ fontSize: '16px', color: '#3b82f6' }} />,
+                children: (
+                  <div>
+                    <div className="text-sm text-gray-900 font-medium">
+                      {isDemoMode ? 'WhatsApp demo call initiated' : 'New lead generated from campaign'}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {isDemoMode ? 'WhatsApp User +1-555-0123' : 'Campaign: Q1 Outreach'} • 4 hours ago
+                    </div>
+                  </div>
+                ),
+                color: 'blue',
+              },
+              {
+                dot: <ExclamationCircleOutlined style={{ fontSize: '16px', color: isDemoMode ? '#8b5cf6' : '#f59e0b' }} />,
+                children: (
+                  <div>
+                    <div className="text-sm text-gray-900 font-medium">
+                      {isDemoMode ? 'Demo call with advanced analysis' : 'Call escalated to human agent'}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {isDemoMode ? 'Customer +1-555-0456' : 'Customer #5678'} • 6 hours ago
+                    </div>
+                  </div>
+                ),
+                color: isDemoMode ? 'purple' : 'orange',
+              },
+            ]}
+          />
+        </Card>
+
+        {/* Enhanced Widgets Preview */}
+        {isDemoMode && (
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg leading-6 font-medium text-gray-900">Voice Chat Widgets</h3>
+                <p className="mt-1 max-w-2xl text-sm text-gray-500">
+                  Your embeddable voice chat widgets with real-time analytics
+                </p>
+              </div>
+              <button
+                onClick={() => router.push('/widgets')}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                View All Widgets
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-medium text-gray-900">Main Website Widget</h4>
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Active
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">Primary voice chat widget for homepage</p>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <div className="text-lg font-bold text-blue-600">1.2k</div>
+                    <div className="text-xs text-gray-500">Interactions</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-green-600">23%</div>
+                    <div className="text-xs text-gray-500">Conversion</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-purple-600">4:05</div>
+                    <div className="text-xs text-gray-500">Avg Session</div>
+                  </div>
+                </div>
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-medium text-gray-900">Support Page Widget</h4>
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Active
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">Specialized widget for customer support</p>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <div className="text-lg font-bold text-blue-600">856</div>
+                    <div className="text-xs text-gray-500">Interactions</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-green-600">31%</div>
+                    <div className="text-xs text-gray-500">Conversion</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-purple-600">3:22</div>
+                    <div className="text-xs text-gray-500">Avg Session</div>
+                  </div>
+                </div>
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-medium text-gray-900">Product Demo Widget</h4>
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    Testing
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">Widget for product demonstration pages</p>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <div className="text-lg font-bold text-blue-600">342</div>
+                    <div className="text-xs text-gray-500">Interactions</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-green-600">18%</div>
+                    <div className="text-xs text-gray-500">Conversion</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-purple-600">2:45</div>
+                    <div className="text-xs text-gray-500">Avg Session</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </DashboardLayout>
   );

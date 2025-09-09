@@ -227,7 +227,9 @@ export class CallsService {
       setTimeout(() => {
         const callIndex = demoCallsData.findIndex(c => c.id === callId);
         if (callIndex !== -1) {
-          demoCallsData[callIndex].status = nextState as any;
+          demoCallsData[callIndex].status = nextState === 'ended' ? 'completed' :
+                                                    nextState === 'connecting' ? 'active' :
+                                                    nextState as 'active' | 'completed' | 'escalated' | 'failed' | 'initiated' | 'ringing';
 
           // Update transcript
           if (transcriptUpdates[currentStateIndex + 1]) {

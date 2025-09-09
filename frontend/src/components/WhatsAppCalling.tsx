@@ -27,11 +27,10 @@ import {
 } from '@ant-design/icons';
 import { CallsService } from '@/services/calls';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  DEMO_WHATSAPP_CONFIG, 
-  DEMO_WHATSAPP_CALL_HISTORY, 
-  DEMO_WHATSAPP_TEMPLATES,
-  isDemoMode 
+import {
+  DEMO_WHATSAPP_CONFIG,
+  DEMO_WHATSAPP_CALL_HISTORY,
+  isDemoMode
 } from '@/demo';
 
 const { Title, Text } = Typography;
@@ -349,7 +348,7 @@ export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProp
           </Space>
         </div>
 
-        {!configured && (
+        {!configured && !isDemoMode() && (
           <Alert
             message="WhatsApp Not Configured"
             description="Please configure your WhatsApp Business API credentials to start making calls."
@@ -364,7 +363,22 @@ export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProp
           />
         )}
 
-        {configured && whatsappConfig && (
+        {isDemoMode() && (
+          <Alert
+            message="WhatsApp Demo Mode Active"
+            description="Demo mode is active. All WhatsApp calls will be simulated using demo data from VoxAssist Demo Business (+1-555-WHATSAPP)."
+            type="success"
+            showIcon
+            style={{ marginBottom: 16 }}
+            action={
+              <Button size="small" onClick={() => window.open('/whatsapp/analytics', '_blank')}>
+                View Analytics
+              </Button>
+            }
+          />
+        )}
+
+        {configured && whatsappConfig && !isDemoMode() && (
           <Alert
             message="WhatsApp Configured"
             description={`Connected to ${whatsappConfig.phoneNumber} (${whatsappConfig.verifiedName})`}
@@ -378,7 +392,7 @@ export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProp
           form={form}
           layout="vertical"
           onFinish={initiateWhatsAppCall}
-          disabled={!configured}
+          disabled={!configured && !isDemoMode()}
         >
           <Row gutter={16}>
             <Col xs={24} md={12}>
