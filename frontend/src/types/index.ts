@@ -35,7 +35,7 @@ export interface Call {
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
-  status: 'active' | 'completed' | 'escalated' | 'failed' | 'initiated';
+  status: 'active' | 'completed' | 'escalated' | 'failed' | 'initiated' | 'ringing';
   startTime: string;
   endTime?: string;
   duration?: number;

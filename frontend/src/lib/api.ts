@@ -9,8 +9,8 @@ class ApiClient {
   constructor() {
     this.baseURL = process.env.NEXT_PUBLIC_API_URL || 
       (process.env.NODE_ENV === 'production' 
-        ? 'https://voxassist.onrender.com/api' 
-        : 'http://localhost:3001/api');
+        ? 'https://voxassist.onrender.com/api'
+        : 'http://localhost:5000/api');
     
     this.client = axios.create({
       baseURL: this.baseURL,

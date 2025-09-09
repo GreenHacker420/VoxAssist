@@ -21,7 +21,7 @@ export default function SupportTopicsPage() {
       setIsLoading(true);
       const data = await SettingsService.getSupportTopics();
       setTopics(data);
-    } catch (error) {
+    } catch {
       toast.error('Failed to load support topics.');
     } finally {
       setIsLoading(false);
@@ -39,7 +39,7 @@ export default function SupportTopicsPage() {
       }
       setIsModalOpen(false);
       loadTopics();
-    } catch (error) {
+    } catch {
       toast.error('Failed to save support topic.');
     }
   };
@@ -55,7 +55,7 @@ export default function SupportTopicsPage() {
         await SettingsService.deleteSupportTopic(id);
         toast.success('Support topic deleted.');
         loadTopics();
-      } catch (error) {
+      } catch {
         toast.error('Failed to delete support topic.');
       }
     }

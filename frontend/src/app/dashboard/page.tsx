@@ -1,19 +1,37 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import UserLayout from '@/components/UserLayout';
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import StatsGrid from '@/components/dashboard/StatsGrid';
-import WidgetsList from '@/components/dashboard/WidgetsList';
-import RecentActivity from '@/components/dashboard/RecentActivity';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import DashboardLayout from '@/components/Layout/DashboardLayout';
+import CallConfiguration from '@/components/CallConfiguration';
+import WhatsAppCalling from '@/components/WhatsAppCalling';
+import SelfDemoCall from '@/components/SelfDemoCall';
+import { ExclamationTriangleIcon, ArrowUpIcon, ArrowDownIcon, PhoneIcon, CheckCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { ResponsiveContainer, BarChart, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Line } from 'recharts';
+import { AnalyticsService } from '@/services/analytics';
+import { DashboardAnalytics } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+
+// Utility functions
+const calculatePercentageChange = (current: number, previous: number): number => {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return ((current - previous) / previous) * 100;
+};
+
+const formatPercentage = (value: number): string => {
+  return `${(value * 100).toFixed(1)}%`;
+};
+
+const formatDuration = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
 
 export default function DashboardPage() {
+  const { isDemoMode } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [widgets, setWidgets] = useState([]);
+  const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -29,10 +47,6 @@ export default function DashboardPage() {
 
     fetchAnalytics();
   }, []);
-
-  const handleCreateWidget = () => {
-    router.push('/widgets/create');
-  };
 
   if (isLoading) {
     return (
@@ -75,34 +89,34 @@ export default function DashboardPage() {
   const stats = [
     {
       name: 'Total Calls',
-      stat: analytics?.overview.totalCalls || 0,
+      stat: isDemoMode ? 247 : (analytics?.overview?.totalCalls || 0),
       icon: PhoneIcon,
-      change: calculatePercentageChange(
-        analytics?.callVolume.thisWeek || 0,
-        analytics?.callVolume.lastWeek || 0
+      change: isDemoMode ? 12.3 : calculatePercentageChange(
+        analytics?.callVolume?.thisWeek || 0,
+        analytics?.callVolume?.lastWeek || 0
       ),
-      changeType: (analytics?.callVolume.thisWeek || 0) >= (analytics?.callVolume.lastWeek || 0) ? 'increase' : 'decrease',
+      changeType: 'increase' as const,
     },
     {
       name: 'Resolution Rate',
-      stat: formatPercentage(analytics?.overview.resolutionRate || 0),
+      stat: isDemoMode ? '94.2%' : formatPercentage(analytics?.overview?.resolutionRate || 0),
       icon: CheckCircleIcon,
-      change: 2.1,
+      change: isDemoMode ? 2.8 : 2.1,
       changeType: 'increase' as const,
     },
     {
       name: 'Avg Duration',
-      stat: formatDuration(analytics?.overview.avgCallDuration || 0),
+      stat: isDemoMode ? '3:42' : formatDuration(analytics?.overview?.avgCallDuration || 0),
       icon: ClockIcon,
-      change: -1.2,
+      change: isDemoMode ? -0.8 : -1.2,
       changeType: 'decrease' as const,
     },
     {
       name: 'Escalated',
-      stat: analytics?.overview.escalatedCalls || 0,
+      stat: isDemoMode ? 14 : (analytics?.overview?.escalatedCalls || 0),
       icon: ExclamationTriangleIcon,
-      change: 0.5,
-      changeType: 'increase' as const,
+      change: isDemoMode ? -1.2 : 0.5,
+      changeType: isDemoMode ? 'decrease' : 'increase' as const,
     },
   ];
 
@@ -117,13 +131,18 @@ export default function DashboardPage() {
           </p>
         </div>
 
+        {/* Self Demo Call - Only show in demo mode */}
+        {isDemoMode && (
+          <SelfDemoCall />
+        )}
+
         {/* Call Configuration using Ant Design */}
-        <CallConfiguration 
-          onStartCall={(config: CallConfig) => {
+        <CallConfiguration
+          onStartCall={(config) => {
             console.log('Starting call with config:', config);
             // Handle call initiation
           }}
-          onCreateWidget={(config: CallConfig) => {
+          onCreateWidget={(config) => {
             console.log('Creating widget with config:', config);
             // Handle widget creation
           }}
@@ -148,24 +167,29 @@ export default function DashboardPage() {
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">{item.name}</dt>
+                      <dt className="text-sm font-medium text-gray-500 truncate">
+                        {item.name}
+                        {isDemoMode && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">Demo</span>}
+                      </dt>
                       <dd>
-                        <div className="flex items-baseline">
-                          <div className="text-2xl font-semibold text-gray-900">{item.stat}</div>
-                          <div className="ml-2 flex items-baseline text-sm font-semibold">
-                            {item.changeType === 'increase' ? (
-                              <ArrowUpIcon className="self-center flex-shrink-0 h-5 w-5 text-green-500" aria-hidden="true" />
-                            ) : (
-                              <ArrowDownIcon className="self-center flex-shrink-0 h-5 w-5 text-red-500" aria-hidden="true" />
-                            )}
-                            <span className={item.changeType === 'increase' ? 'text-green-600' : 'text-red-600'}>
-                              {Math.abs(item.change).toFixed(1)}%
-                            </span>
-                            <span className="text-gray-500 ml-1">vs last week</span>
-                          </div>
-                        </div>
+                        <div className="text-lg font-medium text-gray-900">{item.stat}</div>
                       </dd>
                     </dl>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-5 py-3">
+                <div className="text-sm">
+                  <div className="flex items-center">
+                    {item.changeType === 'increase' ? (
+                      <ArrowUpIcon className="h-4 w-4 text-green-500 mr-1" />
+                    ) : (
+                      <ArrowDownIcon className="h-4 w-4 text-red-500 mr-1" />
+                    )}
+                    <span className={item.changeType === 'increase' ? 'text-green-600' : 'text-red-600'}>
+                      {Math.abs(item.change).toFixed(1)}%
+                    </span>
+                    <span className="text-gray-500 ml-1">from last week</span>
                   </div>
                 </div>
               </div>
@@ -174,43 +198,21 @@ export default function DashboardPage() {
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Call Volume Chart */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Hourly Distribution */}
           <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Hourly Call Distribution</h3>
-            <div className="h-80">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Call Volume by Hour
+              {isDemoMode && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">Demo Data</span>}
+            </h3>
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={analytics?.hourlyDistribution || []}
-                  onMouseMove={(state: any) => {
-                    if (state && typeof state.chartX === 'number' && typeof state.chartY === 'number') {
-                      setBarMouse({ x: state.chartX, y: state.chartY });
-                    }
-                  }}
-                  onMouseLeave={() => setBarMouse(null)}
-                >
+                <BarChart data={analytics?.hourlyDistribution || []}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="hour" 
-                    tickFormatter={(value) => `${value}:00`}
-                  />
+                  <XAxis dataKey="hour" />
                   <YAxis />
-                  <Tooltip 
-                    labelFormatter={(value) => `${value}:00`}
-                    formatter={(value) => [value, 'Calls']}
-                  />
-                  {/* Interactive grid shine overlay */}
-                  <Customized
-                    component={(props: any) => (
-                      <GridShineOverlay
-                        {...props}
-                        mouse={barMouse}
-                        radius={GRID_SHINE_RADIUS}
-                        color="#60a5fa" // blue-400
-                      />
-                    )}
-                  />
-                  <Bar dataKey="calls" fill="#4F46E5" />
+                  <Tooltip />
+                  <Bar dataKey="calls" fill={isDemoMode ? "#8B5CF6" : "#3B82F6"} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -218,54 +220,20 @@ export default function DashboardPage() {
 
           {/* Sentiment Trends */}
           <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Sentiment Trends</h3>
-            <div className="h-80">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Sentiment Trends
+              {isDemoMode && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">Demo Data</span>}
+            </h3>
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={analytics?.sentimentTrends || []}
-                  onMouseMove={(state: any) => {
-                    if (state && typeof state.chartX === 'number' && typeof state.chartY === 'number') {
-                      setLineMouse({ x: state.chartX, y: state.chartY });
-                    }
-                  }}
-                  onMouseLeave={() => setLineMouse(null)}
-                >
+                <LineChart data={analytics?.sentimentTrends || []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
                   <Tooltip />
-                  {/* Interactive grid shine overlay */}
-                  <Customized
-                    component={(props: any) => (
-                      <GridShineOverlay
-                        {...props}
-                        mouse={lineMouse}
-                        radius={GRID_SHINE_RADIUS}
-                        color="#60a5fa" // blue-400
-                      />
-                    )}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="positive" 
-                    stroke="#10B981" 
-                    strokeWidth={2}
-                    name="Positive"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="neutral" 
-                    stroke="#6B7280" 
-                    strokeWidth={2}
-                    name="Neutral"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="negative" 
-                    stroke="#EF4444" 
-                    strokeWidth={2}
-                    name="Negative"
-                  />
+                  <Line type="monotone" dataKey="positive" stroke="#10B981" strokeWidth={2} />
+                  <Line type="monotone" dataKey="neutral" stroke="#6B7280" strokeWidth={2} />
+                  <Line type="monotone" dataKey="negative" stroke="#EF4444" strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -275,14 +243,16 @@ export default function DashboardPage() {
         {/* Recent Activity */}
         <div className="bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Recent Activity {isDemoMode && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">Demo Data</span>}
+            </h3>
             <div className="flow-root">
               <ul role="list" className="-mb-8">
                 {[
                   {
                     id: 1,
-                    content: 'Call completed with high satisfaction score',
-                    target: 'Customer #1234',
+                    content: isDemoMode ? 'Self-demo call completed successfully' : 'Call completed with high satisfaction score',
+                    target: isDemoMode ? 'Demo User (Self)' : 'Customer #1234',
                     href: '#',
                     date: '2 hours ago',
                     datetime: '2023-01-23T15:56',
@@ -291,8 +261,8 @@ export default function DashboardPage() {
                   },
                   {
                     id: 2,
-                    content: 'New lead generated from campaign',
-                    target: 'Campaign: Q1 Outreach',
+                    content: isDemoMode ? 'WhatsApp demo call initiated' : 'New lead generated from campaign',
+                    target: isDemoMode ? 'WhatsApp User +1-555-0123' : 'Campaign: Q1 Outreach',
                     href: '#',
                     date: '4 hours ago',
                     datetime: '2023-01-23T13:23',
@@ -301,13 +271,13 @@ export default function DashboardPage() {
                   },
                   {
                     id: 3,
-                    content: 'Call escalated to human agent',
-                    target: 'Customer #5678',
+                    content: isDemoMode ? 'Demo call with advanced analysis' : 'Call escalated to human agent',
+                    target: isDemoMode ? 'Customer +1-555-0456' : 'Customer #5678',
                     href: '#',
                     date: '6 hours ago',
                     datetime: '2023-01-23T11:03',
                     icon: ExclamationTriangleIcon,
-                    iconBackground: 'bg-yellow-500',
+                    iconBackground: isDemoMode ? 'bg-purple-500' : 'bg-yellow-500',
                   },
                 ].map((activityItem, activityItemIdx) => (
                   <li key={activityItem.id}>

@@ -25,6 +25,14 @@ import {
   CheckCircleOutlined,
   ExclamationCircleOutlined
 } from '@ant-design/icons';
+import { CallsService } from '@/services/calls';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  DEMO_WHATSAPP_CONFIG, 
+  DEMO_WHATSAPP_CALL_HISTORY, 
+  DEMO_WHATSAPP_TEMPLATES,
+  isDemoMode 
+} from '@/demo';
 
 const { Title, Text } = Typography;
 
@@ -70,12 +78,21 @@ export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProp
   const [callHistory, setCallHistory] = useState<CallHistoryItem[]>([]);
   const [whatsappConfig, setWhatsappConfig] = useState<WhatsAppAccountConfig | null>(null);
 
+  const { isDemoMode: isDemo } = useAuth();
+
   useEffect(() => {
     checkConfiguration();
   }, []);
 
   const checkConfiguration = async () => {
     try {
+      if (isDemoMode()) {
+        // Use demo configuration
+        setConfigured(true);
+        setWhatsappConfig(DEMO_WHATSAPP_CONFIG);
+        return;
+      }
+
       const response = await fetch('/api/whatsapp/config', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -96,6 +113,22 @@ export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProp
   const handleConfigureWhatsApp = async (values: WhatsAppConfig) => {
     setConfigLoading(true);
     try {
+      if (isDemoMode()) {
+        // Simulate configuration in demo mode
+        setTimeout(() => {
+          message.success('WhatsApp configured successfully! (Demo Mode)');
+          setConfigured(true);
+          setWhatsappConfig({
+            ...DEMO_WHATSAPP_CONFIG,
+            ...values
+          });
+          setConfigModalVisible(false);
+          configForm.resetFields();
+          setConfigLoading(false);
+        }, 1500);
+        return;
+      }
+
       const response = await fetch('/api/whatsapp/configure', {
         method: 'POST',
         headers: {
@@ -134,6 +167,15 @@ export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProp
 
     setTestLoading(true);
     try {
+      if (isDemoMode()) {
+        // Simulate connection test in demo mode
+        setTimeout(() => {
+          message.success(`Connection successful! Phone: ${DEMO_WHATSAPP_CONFIG.phoneNumber}, Name: ${DEMO_WHATSAPP_CONFIG.verifiedName} (Demo)`);
+          setTestLoading(false);
+        }, 1000);
+        return;
+      }
+
       const response = await fetch('/api/whatsapp/test', {
         method: 'POST',
         headers: {
@@ -164,6 +206,16 @@ export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProp
   const initiateWhatsAppCall = async (values: { phoneNumber: string; message?: string }) => {
     setLoading(true);
     try {
+      if (isDemoMode()) {
+        // Use demo WhatsApp call service
+        const call = await CallsService.initiateWhatsAppDemoCall(values.phoneNumber);
+        message.success('WhatsApp demo call initiated successfully!');
+        form.resetFields();
+        onCallInitiated?.(values.phoneNumber);
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch('/api/whatsapp/call', {
         method: 'POST',
         headers: {
@@ -234,6 +286,13 @@ export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProp
 
   const loadCallHistory = async () => {
     try {
+      if (isDemoMode()) {
+        // Use demo call history
+        setCallHistory(DEMO_WHATSAPP_CALL_HISTORY);
+        setHistoryModalVisible(true);
+        return;
+      }
+
       const response = await fetch('/api/whatsapp/call-history', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

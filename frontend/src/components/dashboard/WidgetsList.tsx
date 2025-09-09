@@ -1,7 +1,7 @@
 import { CogIcon, PlusIcon } from '@heroicons/react/24/outline';
-import Card from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
-import EmptyState from '@/components/ui/EmptyState';
+import Card from '@/components/UI/Card';
+import Button from '@/components/UI/Button';
+import EmptyState from '@/components/UI/EmptyState';
 
 interface Widget {
   id: string;

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@/types';
 import { AuthService } from '@/services/auth';
+import { DEMO_USER, enableDemoMode as enableDemo, disableDemoMode as disableDemo } from '@/demo';
 import toast from 'react-hot-toast';
 
 interface AuthContextType {
@@ -32,13 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const demoMode = localStorage.getItem('voxassist_demo_mode') === 'true';
         if (demoMode) {
           setIsDemoMode(true);
-          setUser({
-            id: 999999,
-            name: 'Demo User',
-            email: 'demo@voxassist.com',
-            role: 'user',
-            createdAt: new Date().toISOString()
-          });
+          setUser(DEMO_USER);
         } else if (AuthService.isAuthenticated()) {
           const userData = await AuthService.getProfile();
           setUser(userData);
@@ -81,8 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       if (isDemoMode) {
+        disableDemo();
         setIsDemoMode(false);
-        localStorage.removeItem('voxassist_demo_mode');
         setUser(null);
         toast.success('Demo session ended');
       } else {
@@ -115,20 +110,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const enableDemoMode = () => {
-    localStorage.setItem('voxassist_demo_mode', 'true');
+    enableDemo();
     setIsDemoMode(true);
-    setUser({
-      id: 999999,
-      name: 'Demo User',
-      email: 'demo@voxassist.com',
-      role: 'user',
-      createdAt: new Date().toISOString()
-    });
+    setUser(DEMO_USER);
     toast.success('Demo mode enabled!');
   };
 
   const disableDemoMode = () => {
-    localStorage.removeItem('voxassist_demo_mode');
+    disableDemo();
     setIsDemoMode(false);
     setUser(null);
     toast.success('Demo mode disabled');

@@ -1,50 +1,21 @@
 import apiClient from '@/lib/api';
-import { Call, CallDetails, AIResponse } from '@/types';
+import { Call, AIResponse } from '@/types';
+import { 
+  DEMO_CALLS, 
+  DEMO_CALL_TEMPLATES, 
+  isDemoMode, 
+  DEMO_CONFIG 
+} from '@/demo';
 
-// Demo data for demo mode
-const DEMO_CALLS: Call[] = [
-  {
-    id: 'demo-call-1',
-    customerName: 'John Smith',
-    customerEmail: 'john.smith@example.com',
-    customerPhone: '+1-555-0123',
-    status: 'completed',
-    startTime: new Date(Date.now() - 3600000).toISOString(),
-    endTime: new Date(Date.now() - 3000000).toISOString(),
-    duration: 600,
-    sentiment: 'positive',
-    sentimentScore: 0.8,
-    callSid: 'demo-sid-1',
-    transcript: 'Customer called about product inquiry. Resolved successfully.',
-    aiInsights: 'Customer showed high interest in premium features.'
-  },
-  {
-    id: 'demo-call-2',
-    customerName: 'Sarah Johnson',
-    customerEmail: 'sarah.j@example.com',
-    customerPhone: '+1-555-0456',
-    status: 'active',
-    startTime: new Date(Date.now() - 300000).toISOString(),
-    sentiment: 'neutral',
-    sentimentScore: 0.5,
-    callSid: 'demo-sid-2',
-    transcript: 'Ongoing support call regarding billing question.',
-    aiInsights: 'Customer needs clarification on billing cycle.'
-  }
-];
-
-// Check if we're in demo mode
-function isDemoMode(): boolean {
-  if (typeof window === 'undefined') return false;
-  return localStorage.getItem('voxassist_demo_mode') === 'true';
-}
+// Mutable demo calls array for runtime modifications
+const demoCallsData = [...DEMO_CALLS];
 
 export class CallsService {
   // Get all calls
   static async getCalls(): Promise<Call[]> {
     if (isDemoMode()) {
       // Return demo data in demo mode
-      return Promise.resolve(DEMO_CALLS);
+      return Promise.resolve(demoCallsData);
     }
 
     const response = await apiClient.get<Call[]>('/calls');
@@ -59,7 +30,7 @@ export class CallsService {
   static async getCall(callId: string): Promise<Call> {
     if (isDemoMode()) {
       // Return demo call data
-      const demoCall = DEMO_CALLS.find(call => call.id === callId);
+      const demoCall = demoCallsData.find(call => call.id === callId);
       if (demoCall) {
         return Promise.resolve(demoCall);
       }
@@ -77,21 +48,26 @@ export class CallsService {
 
   static async initiateCall(phoneNumber: string, options?: { callbackUrl?: string; enableAdvancedAnalysis?: boolean }): Promise<Call> {
     if (isDemoMode()) {
+      const isSelfCall = phoneNumber === DEMO_CONFIG.SELF_CALL_NUMBER;
+      const template = isSelfCall ? DEMO_CALL_TEMPLATES.SELF_DEMO : DEMO_CALL_TEMPLATES.REGULAR_DEMO;
+      
       // Create a new demo call
       const demoCall: Call = {
         id: `demo-call-${Date.now()}`,
+        customerName: template.customerName || `Customer ${phoneNumber}`,
+        customerEmail: template.customerEmail || `customer@example.com`,
         customerPhone: phoneNumber,
         status: 'active',
         startTime: new Date().toISOString(),
-        sentiment: 'neutral',
-        sentimentScore: 0.5,
+        sentiment: template.sentiment,
+        sentimentScore: template.sentimentScore,
         callSid: `demo-sid-${Date.now()}`,
-        transcript: 'Demo call initiated. This is a simulated call for demonstration purposes.',
-        aiInsights: 'Demo call with advanced analysis enabled: ' + (options?.enableAdvancedAnalysis ? 'Yes' : 'No')
+        transcript: template.transcript,
+        aiInsights: template.aiInsights + (options?.enableAdvancedAnalysis ? ' (Advanced Analysis Enabled)' : '')
       };
       
       // Add to demo calls array
-      DEMO_CALLS.unshift(demoCall);
+      demoCallsData.unshift(demoCall);
       
       return Promise.resolve(demoCall);
     }
@@ -112,11 +88,11 @@ export class CallsService {
   static async endCall(callId: string): Promise<void> {
     if (isDemoMode()) {
       // Update demo call status
-      const callIndex = DEMO_CALLS.findIndex(call => call.id === callId);
+      const callIndex = demoCallsData.findIndex(call => call.id === callId);
       if (callIndex !== -1) {
-        DEMO_CALLS[callIndex].status = 'completed';
-        DEMO_CALLS[callIndex].endTime = new Date().toISOString();
-        DEMO_CALLS[callIndex].duration = Math.floor((new Date().getTime() - new Date(DEMO_CALLS[callIndex].startTime).getTime()) / 1000);
+        demoCallsData[callIndex].status = 'completed';
+        demoCallsData[callIndex].endTime = new Date().toISOString();
+        demoCallsData[callIndex].duration = Math.floor((new Date().getTime() - new Date(demoCallsData[callIndex].startTime).getTime()) / 1000);
       }
       return Promise.resolve();
     }
@@ -131,10 +107,10 @@ export class CallsService {
   static async handoffToHuman(callId: string): Promise<void> {
     if (isDemoMode()) {
       // Update demo call status
-      const callIndex = DEMO_CALLS.findIndex(call => call.id === callId);
+      const callIndex = demoCallsData.findIndex(call => call.id === callId);
       if (callIndex !== -1) {
-        DEMO_CALLS[callIndex].status = 'escalated';
-        DEMO_CALLS[callIndex].escalated = true;
+        demoCallsData[callIndex].status = 'escalated';
+        demoCallsData[callIndex].escalated = true;
       }
       return Promise.resolve();
     }
@@ -172,6 +148,16 @@ export class CallsService {
 
   // Update call sentiment
   static async updateCallSentiment(callId: string, sentiment: string, confidence?: number): Promise<unknown> {
+    if (isDemoMode()) {
+      // Update demo call sentiment
+      const callIndex = demoCallsData.findIndex(call => call.id === callId);
+      if (callIndex !== -1) {
+        demoCallsData[callIndex].sentiment = sentiment as 'positive' | 'neutral' | 'negative';
+        demoCallsData[callIndex].sentimentScore = confidence || 0.5;
+      }
+      return Promise.resolve({ success: true });
+    }
+
     const response = await apiClient.post<unknown>(`/calls/${callId}/sentiment`, {
       sentiment,
       confidence,
@@ -182,5 +168,124 @@ export class CallsService {
     }
     
     throw new Error(response.error || 'Failed to update sentiment');
+  }
+
+  // Self-calling demo feature
+  static async initiateSelfDemoCall(): Promise<Call> {
+    if (isDemoMode()) {
+      const template = DEMO_CALL_TEMPLATES.SELF_DEMO;
+      const selfDemoCall: Call = {
+        id: `self-demo-${Date.now()}`,
+        customerName: template.customerName || 'Demo User (Self)',
+        customerEmail: template.customerEmail || 'demo@voxassist.com',
+        customerPhone: template.customerPhone || DEMO_CONFIG.SELF_CALL_NUMBER,
+        status: 'ringing',
+        startTime: new Date().toISOString(),
+        sentiment: 'neutral',
+        sentimentScore: 0.5,
+        callSid: `self-demo-sid-${Date.now()}`,
+        transcript: 'Initiating self-demo call...',
+        aiInsights: template.aiInsights
+      };
+      
+      // Add to demo calls array
+      demoCallsData.unshift(selfDemoCall);
+      
+      // Simulate realistic call progression
+      this.simulateRealisticCallFlow(selfDemoCall.id);
+
+      return Promise.resolve(selfDemoCall);
+    }
+    
+    throw new Error('Self-demo call only available in demo mode');
+  }
+
+  // Simulate realistic call flow with state transitions
+  private static simulateRealisticCallFlow(callId: string) {
+    const call = demoCallsData.find(c => c.id === callId);
+    if (!call) return;
+
+    let currentStateIndex = 0;
+    const states = ['ringing', 'connecting', 'active', 'ended'];
+    const transcriptUpdates = [
+      'Initiating self-demo call...',
+      'Connecting to VoxAssist AI...',
+      'Hello! Welcome to your VoxAssist self-demo. I\'m your AI assistant.',
+      'This demo showcases our real-time conversation capabilities.',
+      'You can see live transcription, sentiment analysis, and call controls.',
+      'Thank you for trying VoxAssist! This concludes your demo call.'
+    ];
+
+    const progressToNextState = () => {
+      if (currentStateIndex >= states.length - 1) return;
+
+      const nextState = states[currentStateIndex + 1];
+      const delay = currentStateIndex === 0 ? 3000 :
+                   currentStateIndex === 1 ? 2000 :
+                   currentStateIndex === 2 ? 30000 : 0; // 30s active time
+
+      setTimeout(() => {
+        const callIndex = demoCallsData.findIndex(c => c.id === callId);
+        if (callIndex !== -1) {
+          demoCallsData[callIndex].status = nextState as any;
+
+          // Update transcript
+          if (transcriptUpdates[currentStateIndex + 1]) {
+            demoCallsData[callIndex].transcript = transcriptUpdates[currentStateIndex + 1];
+          }
+
+          // Update sentiment progressively
+          if (nextState === 'active') {
+            demoCallsData[callIndex].sentiment = 'positive';
+            demoCallsData[callIndex].sentimentScore = 0.8;
+          }
+
+          // Set end time when call ends
+          if (nextState === 'ended') {
+            demoCallsData[callIndex].endTime = new Date().toISOString();
+            demoCallsData[callIndex].duration = Math.floor(
+              (new Date().getTime() - new Date(demoCallsData[callIndex].startTime).getTime()) / 1000
+            );
+          }
+
+          // Trigger custom event for UI updates
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('demoCallStateUpdate', {
+              detail: { callId, newState: nextState, call: demoCallsData[callIndex] }
+            }));
+          }
+
+          currentStateIndex++;
+          progressToNextState();
+        }
+      }, delay);
+    };
+
+    progressToNextState();
+  }
+
+  // WhatsApp demo call
+  static async initiateWhatsAppDemoCall(phoneNumber: string): Promise<Call> {
+    if (isDemoMode()) {
+      const template = DEMO_CALL_TEMPLATES.WHATSAPP_DEMO;
+      const whatsappDemoCall: Call = {
+        id: `whatsapp-demo-${Date.now()}`,
+        customerName: `WhatsApp User ${phoneNumber}`,
+        customerEmail: `whatsapp.user@example.com`,
+        customerPhone: phoneNumber,
+        status: 'active',
+        startTime: new Date().toISOString(),
+        sentiment: template.sentiment,
+        sentimentScore: template.sentimentScore,
+        callSid: `whatsapp-demo-sid-${Date.now()}`,
+        transcript: template.transcript,
+        aiInsights: template.aiInsights
+      };
+      
+      demoCallsData.unshift(whatsappDemoCall);
+      return Promise.resolve(whatsappDemoCall);
+    }
+    
+    throw new Error('WhatsApp demo call only available in demo mode');
   }
 }

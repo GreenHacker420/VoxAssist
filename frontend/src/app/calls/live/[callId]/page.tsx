@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
-import Button from '@/components/ui/Button';
+import Button from '@/components/UI/Button';
 import { CallsService } from '@/services/calls';
 import { Call } from '@/types';
 import { formatDate, formatDuration } from '@/lib/utils';
@@ -18,6 +18,9 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
 import Waveform from '@/components/Call/Waveform';
+import DemoCallControls from '@/components/CallControls/DemoCallControls';
+import DemoCallAnalytics from '@/components/Analytics/DemoCallAnalytics';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TranscriptMessage {
   id: string;
@@ -42,7 +45,8 @@ interface SentimentData {
 export default function LiveCallPage() {
   const params = useParams();
   const callId = params.callId as string;
-  
+  const { isDemoMode } = useAuth();
+
   const [call, setCall] = useState<Call | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [transcript, setTranscript] = useState<TranscriptMessage[]>([]);
@@ -52,30 +56,9 @@ export default function LiveCallPage() {
   const [callDuration, setCallDuration] = useState(0);
   const [isCustomerTalking, setIsCustomerTalking] = useState(false);
   const [isAiTalking, setIsAiTalking] = useState(false);
-  
+
   const transcriptRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
-
-  useEffect(() => {
-    loadCallData();
-    connectWebSocket();
-    
-    // Update call duration every second
-    const durationInterval = setInterval(() => {
-      if (call?.status === 'active') {
-        const startTime = new Date(call.startTime).getTime();
-        const now = new Date().getTime();
-        setCallDuration(Math.floor((now - startTime) / 1000));
-      }
-    }, 1000);
-
-    return () => {
-      clearInterval(durationInterval);
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, [callId]);
 
   useEffect(() => {
     // Auto-scroll transcript to bottom
@@ -84,7 +67,7 @@ export default function LiveCallPage() {
     }
   }, [transcript]);
 
-  const loadCallData = async () => {
+  const loadCallData = useCallback(async () => {
     try {
       const callData = await CallsService.getCall(callId);
       setCall(callData);
@@ -94,9 +77,9 @@ export default function LiveCallPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [callId]);
 
-  const connectWebSocket = () => {
+  const connectWebSocket = useCallback(() => {
     const wsUrl = `ws://localhost:3001/ws`;
     const ws = new WebSocket(wsUrl);
     
@@ -159,7 +142,7 @@ export default function LiveCallPage() {
     };
     
     wsRef.current = ws;
-  };
+  }, [callId, call?.status]);
 
   const simulateTranscriptData = () => {
     const sampleMessages: TranscriptMessage[] = [
@@ -258,6 +241,31 @@ export default function LiveCallPage() {
         return <SpeakerWaveIcon className="h-4 w-4" />;
     }
   };
+
+  // Effects
+  useEffect(() => {
+    loadCallData();
+    connectWebSocket();
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [callId, loadCallData, connectWebSocket]);
+
+  // Separate useEffect for call duration to avoid dependency issues
+  useEffect(() => {
+    if (!call?.status || call.status !== 'active') return;
+
+    const durationInterval = setInterval(() => {
+      const startTime = new Date(call.startTime).getTime();
+      const now = new Date().getTime();
+      setCallDuration(Math.floor((now - startTime) / 1000));
+    }, 1000);
+
+    return () => clearInterval(durationInterval);
+  }, [call?.status, call?.startTime]);
 
   if (isLoading) {
     return (
@@ -484,6 +492,18 @@ export default function LiveCallPage() {
               </div>
             </div>
 
+            {/* Demo Call Controls */}
+            {isDemoMode && call && (
+              <DemoCallControls
+                callId={call.id}
+                callStatus={call.status}
+                onCallEnd={() => {
+                  // Handle demo call end
+                  setCall(prev => prev ? { ...prev, status: 'completed' } : null);
+                }}
+              />
+            )}
+
             {/* Human Handoff Notice */}
             {isHandedOff && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -502,6 +522,17 @@ export default function LiveCallPage() {
             )}
           </div>
         </div>
+
+        {/* Demo Analytics Section */}
+        {isDemoMode && call && (
+          <div className="mt-8">
+            <DemoCallAnalytics
+              callId={call.id}
+              callStatus={call.status}
+              duration={callDuration}
+            />
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

@@ -8,8 +8,6 @@ import {
   HomeIcon,
   ChartBarIcon,
   CogIcon,
-  PhoneIcon,
-  Bars3Icon,
   XMarkIcon,
   BellIcon,
   UserIcon,

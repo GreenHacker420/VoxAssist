@@ -21,9 +21,7 @@ export default function WebhooksPage() {
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
   const [webhookLogs, setWebhookLogs] = useState<WebhookLog[]>([]);
-  const [_availableEvents] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_showCreateModal, setShowCreateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'webhooks' | 'logs'>('webhooks');
 
   useEffect(() => {
@@ -73,7 +71,6 @@ export default function WebhooksPage() {
         secret: ''
       });
       toast.success('Webhook created successfully');
-      setShowCreateModal(false);
       loadWebhooks();
     } catch {
       toast.error('Failed to load webhooks');
@@ -178,7 +175,7 @@ export default function WebhooksPage() {
             </p>
           </div>
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => toast.success('Webhook creation modal coming soon')}
             className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 flex items-center space-x-2"
           >
             <PlusIcon className="h-4 w-4" />
@@ -303,7 +300,7 @@ export default function WebhooksPage() {
                   <p className="mt-1 text-sm text-gray-500">Get started by creating a new webhook.</p>
                   <div className="mt-6">
                     <button
-                      onClick={() => setShowCreateModal(true)}
+                      onClick={() => toast.success('Webhook creation modal coming soon')}
                       className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700"
                     >
                       Create Webhook

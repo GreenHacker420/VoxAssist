@@ -1,46 +1,6 @@
 import apiClient from '@/lib/api';
 import { DashboardAnalytics } from '@/types';
-
-// Demo analytics data
-const DEMO_ANALYTICS: DashboardAnalytics = {
-  overview: {
-    totalCalls: 1247,
-    resolvedCalls: 1089,
-    escalatedCalls: 158,
-    avgCallDuration: 342,
-    resolutionRate: 0.87
-  },
-  callVolume: {
-    today: 45,
-    yesterday: 38,
-    thisWeek: 287,
-    lastWeek: 251
-  },
-  hourlyDistribution: [
-    { hour: 9, calls: 12 },
-    { hour: 10, calls: 18 },
-    { hour: 11, calls: 25 },
-    { hour: 12, calls: 22 },
-    { hour: 13, calls: 15 },
-    { hour: 14, calls: 28 },
-    { hour: 15, calls: 31 },
-    { hour: 16, calls: 24 },
-    { hour: 17, calls: 19 }
-  ],
-  sentimentTrends: [
-    { date: '2024-01-15', positive: 65, neutral: 25, negative: 10 },
-    { date: '2024-01-16', positive: 70, neutral: 22, negative: 8 },
-    { date: '2024-01-17', positive: 68, neutral: 24, negative: 8 },
-    { date: '2024-01-18', positive: 72, neutral: 20, negative: 8 },
-    { date: '2024-01-19', positive: 75, neutral: 18, negative: 7 }
-  ]
-};
-
-// Check if we're in demo mode
-function isDemoMode(): boolean {
-  if (typeof window === 'undefined') return false;
-  return localStorage.getItem('voxassist_demo_mode') === 'true';
-}
+import { DEMO_ANALYTICS, isDemoMode } from '@/demo';
 
 export class AnalyticsService {
   // Get dashboard analytics

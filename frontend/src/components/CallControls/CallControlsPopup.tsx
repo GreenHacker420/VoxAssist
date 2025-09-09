@@ -66,7 +66,7 @@ export default function CallControlsPopup({
       setIsHandingOff(true);
       await onHandoffToHuman();
       toast.success('Call handed off to human agent');
-    } catch (_error) {
+    } catch {
       toast.error('Failed to handoff call');
     } finally {
       setIsHandingOff(false);

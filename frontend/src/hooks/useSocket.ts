@@ -22,8 +22,8 @@ export function useSocket(options: UseSocketOptions = {}) {
     const token = AuthService.getToken();
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 
       (process.env.NODE_ENV === 'production' 
-        ? 'https://voxassist.onrender.com' 
-        : 'http://localhost:3001');
+        ? 'https://voxassist.onrender.com'
+        : 'http://localhost:5000');
 
     socketRef.current = io(socketUrl, {
       auth: {

@@ -33,7 +33,7 @@ Production-ready Next.js frontend for the VoxAssist AI voice calling platform. B
 ### Prerequisites
 
 - Node.js 18+ and npm
-- VoxAssist backend running on port 3001
+- VoxAssist backend running on port 5000
 
 ### Installation
 
@@ -49,8 +49,8 @@ cp env.example .env.local
 
 Edit `.env.local` with your configuration:
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
-NEXT_PUBLIC_SOCKET_URL=http://localhost:3001
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
 ```
 
 3. Start the development server:
