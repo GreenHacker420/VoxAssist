@@ -1,6 +1,14 @@
 {
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
   "env": {
     "NEXT_PUBLIC_API_URL": "https://voxassist.onrender.com",
     "NEXT_PUBLIC_SOCKET_URL": "https://voxassist.onrender.com"
+  },
+  "functions": {
+    "app/**": {
+      "includeFiles": "src/**"
+    }
   }
 }

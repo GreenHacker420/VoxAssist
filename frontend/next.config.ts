@@ -17,8 +17,10 @@ const nextConfig: NextConfig = {
     domains: ['localhost'],
   },
   serverExternalPackages: ['socket.io-client'],
-  turbopack: {
-    root: __dirname,
+  experimental: {
+    turbo: {
+      root: __dirname,
+    },
   },
 };
 
