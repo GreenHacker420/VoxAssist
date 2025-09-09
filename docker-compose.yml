@@ -92,3 +92,8 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  widget_uploads:
+
+networks:
+  voxassist-network:
+    driver: bridge

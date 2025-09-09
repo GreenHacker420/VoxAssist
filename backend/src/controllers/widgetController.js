@@ -268,6 +268,28 @@ class WidgetController {
         }
     }
 
+    // Get widgets by organization
+    async getWidgetsByOrganization(req, res) {
+        try {
+            const { organizationId } = req.query;
+
+            if (!organizationId) {
+                return res.status(400).json({ error: 'Organization ID is required' });
+            }
+
+            const widgets = await prisma.widget.findMany({
+                where: { organizationId: parseInt(organizationId) },
+                orderBy: { createdAt: 'desc' }
+            });
+
+            res.json(widgets);
+
+        } catch (error) {
+            console.error('Widget retrieval error:', error);
+            res.status(500).json({ error: 'Failed to get widgets' });
+        }
+    }
+
     // Create new widget
     async createWidget(req, res) {
         try {
@@ -294,6 +316,41 @@ class WidgetController {
         } catch (error) {
             console.error('Widget creation error:', error);
             res.status(500).json({ error: 'Failed to create widget' });
+        }
+    }
+
+    // Delete widget
+    async deleteWidget(req, res) {
+        try {
+            const { widgetId } = req.params;
+
+            // Delete related data first
+            await prisma.widgetInteraction.deleteMany({
+                where: {
+                    session: {
+                        widgetId
+                    }
+                }
+            });
+
+            await prisma.widgetSession.deleteMany({
+                where: { widgetId }
+            });
+
+            await prisma.contextExtract.deleteMany({
+                where: { widgetId }
+            });
+
+            // Delete the widget
+            await prisma.widget.delete({
+                where: { id: widgetId }
+            });
+
+            res.json({ message: 'Widget deleted successfully' });
+
+        } catch (error) {
+            console.error('Widget deletion error:', error);
+            res.status(500).json({ error: 'Failed to delete widget' });
         }
     }
 

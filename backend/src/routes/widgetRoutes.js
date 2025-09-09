@@ -26,13 +26,15 @@ router.post('/session', widgetController.initializeSession);
 router.post('/message', widgetController.handleTextMessage);
 router.post('/voice', upload.single('audio'), widgetController.handleVoiceMessage);
 
+// CRUD operations for widgets
+router.get('/configs', widgetController.getWidgetsByOrganization);
+router.post('/create', widgetController.createWidget);
+router.put('/update/:widgetId', widgetController.updateWidget);
+router.delete('/update/:widgetId', widgetController.deleteWidget);
+
 // Get widget configuration
 router.get('/:id/config', widgetController.getWidgetConfig);
 router.get('/configs/:id', widgetController.getWidgetConfig);
-
-// Get widget analytics
-router.get('/:id/analytics', widgetController.getWidgetAnalytics);
-router.put('/update/:widgetId', widgetController.updateWidget);
 
 // Analytics
 router.get('/analytics/:widgetId', widgetController.getWidgetAnalytics);

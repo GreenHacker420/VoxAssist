@@ -1,5 +1,5 @@
 # VoxAssist Backend Dockerfile
-FROM node:18-alpine
+FROM node:24.6.0-alpine
 
 # Set working directory
 WORKDIR /app
