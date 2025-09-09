@@ -195,8 +195,10 @@ export default function ProviderSettings({ onSave, onTest }: ProviderSettingsPro
         {renderProviderFields()}
 
         <Form.Item name="enabled" valuePropName="checked">
-          <Switch />
-          <Text style={{ marginLeft: 8 }}>Enable this provider</Text>
+          <div className="flex items-center">
+            <Switch />
+            <Text style={{ marginLeft: 8 }}>Enable this provider</Text>
+          </div>
         </Form.Item>
 
         <Form.Item>

@@ -35,7 +35,7 @@ export default function Modal({
       footer={footer}
       width={widthMap[maxWidth]}
       confirmLoading={confirmLoading}
-      destroyOnClose
+      destroyOnHidden
       centered
     >
       {children}

@@ -128,93 +128,95 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Page header */}
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Overview of your voice calling operations and performance metrics.
-          </p>
+        {/* Simplified Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Dashboard
+              {isDemoMode && (
+                <span className="ml-3 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                  Demo Mode
+                </span>
+              )}
+            </h1>
+            <p className="mt-2 text-gray-600">
+              Monitor your call performance and analytics
+            </p>
+          </div>
         </div>
 
-        {/* Self Demo Call - Only show in demo mode */}
-        {isDemoMode && (
-          <SelfDemoCall />
+        {error && (
+          <div className="rounded-lg bg-red-50 p-4 border border-red-200">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <ExclamationTriangleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Unable to load dashboard data</h3>
+                <p className="mt-1 text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
         )}
 
-        {/* Call Configuration using Ant Design */}
-        <CallConfiguration
-          onStartCall={(config) => {
-            console.log('Starting call with config:', config);
-            // Handle call initiation
-          }}
-          onCreateWidget={(config) => {
-            console.log('Creating widget with config:', config);
-            // Handle widget creation
-          }}
-        />
+        {/* Demo Components - Simplified Layout */}
+        {isDemoMode && (
+          <div className="space-y-6">
+            <SelfDemoCall />
 
-        {/* WhatsApp Calling Interface */}
-        <WhatsAppCalling 
-          onCallInitiated={(phoneNumber: string) => {
-            console.log('WhatsApp call initiated to:', phoneNumber);
-            // Handle WhatsApp call tracking
-          }}
-        />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <CallConfiguration
+                onStartCall={(config) => {
+                  console.log('Starting call with config:', config);
+                }}
+                onCreateWidget={(config) => {
+                  console.log('Creating widget with config:', config);
+                }}
+              />
 
-        {/* Enhanced Stats with Ant Design */}
+              <WhatsAppCalling
+                onCallInitiated={(phoneNumber: string) => {
+                  console.log('WhatsApp call initiated to:', phoneNumber);
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Simplified Stats Cards */}
         <Row gutter={[24, 24]}>
           {stats.map((item) => (
             <Col key={item.name} xs={24} sm={12} lg={6}>
-              <Card
-                className="h-full hover:shadow-lg transition-shadow duration-200"
-                bodyStyle={{ padding: '24px' }}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-blue-50 rounded-lg mr-3">
-                      <item.icon className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500 mb-1">
-                        {item.name}
-                        {isDemoMode && (
-                          <Tag color="blue" className="ml-2 text-xs">
-                            Demo
-                          </Tag>
-                        )}
-                      </div>
-                    </div>
+              <Card className="text-center hover:shadow-md transition-shadow duration-200">
+                <div className="flex flex-col items-center space-y-3">
+                  <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-full">
+                    <item.icon className="h-6 w-6 text-blue-600" />
                   </div>
-                </div>
 
-                <Statistic
-                  value={item.stat}
-                  valueStyle={{
-                    fontSize: '24px',
-                    fontWeight: 600,
-                    color: '#1f2937'
-                  }}
-                />
-
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <div className="flex items-center">
+                  <div>
                     <Statistic
-                      value={Math.abs(item.change)}
-                      precision={1}
-                      suffix="%"
-                      prefix={
-                        item.changeType === 'increase' ? (
-                          <ArrowUpOutlined style={{ color: '#10b981' }} />
-                        ) : (
-                          <ArrowDownOutlined style={{ color: '#ef4444' }} />
-                        )
-                      }
+                      value={item.stat}
                       valueStyle={{
-                        fontSize: '14px',
-                        color: item.changeType === 'increase' ? '#10b981' : '#ef4444'
+                        fontSize: '28px',
+                        fontWeight: 700,
+                        color: '#1f2937'
                       }}
                     />
-                    <span className="text-gray-500 text-sm ml-2">from last week</span>
+                    <p className="text-sm text-gray-600 mt-1">{item.name}</p>
+                  </div>
+
+                  <div className="flex items-center text-sm">
+                    {item.changeType === 'increase' ? (
+                      <ArrowUpOutlined className="text-green-500 mr-1" />
+                    ) : (
+                      <ArrowDownOutlined className="text-red-500 mr-1" />
+                    )}
+                    <span className={`font-medium ${
+                      item.changeType === 'increase' ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {Math.abs(item.change).toFixed(1)}%
+                    </span>
+                    <span className="text-gray-500 ml-1">vs last week</span>
                   </div>
                 </div>
               </Card>
@@ -222,48 +224,42 @@ export default function DashboardPage() {
           ))}
         </Row>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Hourly Distribution */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Call Volume by Hour
-              {isDemoMode && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">Demo Data</span>}
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analytics?.hourlyDistribution || []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="hour" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="calls" fill={isDemoMode ? "#8B5CF6" : "#3B82F6"} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+        {/* Simplified Charts Section */}
+        <Row gutter={[24, 24]}>
+          <Col xs={24} lg={12}>
+            <Card title="Call Volume by Hour" className="h-full">
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={analytics?.hourlyDistribution || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="hour" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="calls" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </Col>
 
-          {/* Sentiment Trends */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Sentiment Trends
-              {isDemoMode && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">Demo Data</span>}
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={analytics?.sentimentTrends || []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="positive" stroke="#10B981" strokeWidth={2} />
-                  <Line type="monotone" dataKey="neutral" stroke="#6B7280" strokeWidth={2} />
-                  <Line type="monotone" dataKey="negative" stroke="#EF4444" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
+          <Col xs={24} lg={12}>
+            <Card title="Sentiment Trends" className="h-full">
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={analytics?.sentimentTrends || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="positive" stroke="#10B981" strokeWidth={3} dot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="neutral" stroke="#6B7280" strokeWidth={3} dot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="negative" stroke="#EF4444" strokeWidth={3} dot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </Col>
+        </Row>
 
         {/* Enhanced Recent Activity with Timeline */}
         <Card

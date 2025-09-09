@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { AuthService } from '@/services/auth';
-import { toast } from 'react-hot-toast';
+import { message } from 'antd';
 
 function ResetPasswordForm() {
   const [password, setPassword] = useState('');
@@ -19,24 +19,24 @@ function ResetPasswordForm() {
     if (tokenParam) {
       setToken(tokenParam);
     } else {
-      toast.error('Invalid reset link');
+      message.error('Invalid reset link');
       router.push('/forgot-password');
     }
   }, [searchParams, router]);
 
   const validateForm = () => {
     if (!password) {
-      toast.error('Please enter a new password');
+      message.error('Please enter a new password');
       return false;
     }
     
     if (password.length < 8) {
-      toast.error('Password must be at least 8 characters long');
+      message.error('Password must be at least 8 characters long');
       return false;
     }
     
     if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
+      message.error('Passwords do not match');
       return false;
     }
     
@@ -51,10 +51,10 @@ function ResetPasswordForm() {
     setIsLoading(true);
     try {
       await AuthService.resetPassword(token, password);
-      toast.success('Password reset successfully');
+      message.success('Password reset successfully');
       router.push('/login');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to reset password');
+      message.error(error instanceof Error ? error.message : 'Failed to reset password');
     } finally {
       setIsLoading(false);
     }

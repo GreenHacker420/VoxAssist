@@ -15,7 +15,7 @@ import {
   CheckCircleIcon,
   ClockIcon
 } from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
+import { message } from 'antd';
 
 export default function WebhooksPage() {
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
@@ -36,7 +36,7 @@ export default function WebhooksPage() {
       setWebhooks(data);
     } catch (_error) {
       console.error('Error creating webhook:', _error);
-      toast.error('Failed to create webhook');
+      message.error('Failed to load webhooks');
     } finally {
       setLoading(false);
     }
@@ -56,7 +56,7 @@ export default function WebhooksPage() {
       setWebhookLogs(response.logs);
     } catch (error) {
       console.error('Error loading webhook logs:', error);
-      toast.error('Failed to load webhook logs');
+      message.error('Failed to load webhook logs');
     }
   };
 
@@ -70,20 +70,20 @@ export default function WebhooksPage() {
         isActive: true,
         secret: ''
       });
-      toast.success('Webhook created successfully');
+      message.success('Webhook created successfully');
       loadWebhooks();
     } catch {
-      toast.error('Failed to load webhooks');
+      message.error('Failed to create webhook');
     }
   };
 
   const handleToggleWebhook = async (webhookId: string, isActive: boolean) => {
     try {
       await WebhooksService.toggleWebhook(webhookId, isActive);
-      toast.success(`Webhook ${isActive ? 'enabled' : 'disabled'} successfully`);
+      message.success(`Webhook ${isActive ? 'enabled' : 'disabled'} successfully`);
       loadWebhooks();
     } catch {
-      toast.error(`Failed to ${isActive ? 'enable' : 'disable'} webhook`);
+      message.error(`Failed to ${isActive ? 'enable' : 'disable'} webhook`);
     }
   };
 
@@ -92,13 +92,13 @@ export default function WebhooksPage() {
 
     try {
       await WebhooksService.deleteWebhook(webhookId);
-      toast.success('Webhook deleted successfully');
+      message.success('Webhook deleted successfully');
       loadWebhooks();
       if (selectedWebhook?.id === webhookId) {
         setSelectedWebhook(null);
       }
     } catch {
-      toast.error('Failed to delete webhook');
+      message.error('Failed to delete webhook');
     }
   };
 
@@ -106,18 +106,18 @@ export default function WebhooksPage() {
     try {
       const result = await WebhooksService.testWebhook(webhookId, { test: true });
       if (result.success) {
-        toast.success('Webhook test successful');
+        message.success('Webhook test successful');
       } else {
-        toast.error(`Webhook test failed: ${result.errorMessage}`);
+        message.error(`Webhook test failed: ${result.errorMessage}`);
       }
     } catch {
-      toast.error('Failed to test webhook');
+      message.error('Failed to test webhook');
     }
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard');
+    message.success('Copied to clipboard');
   };
 
   const getStatusIcon = (status: string) => {
@@ -175,7 +175,7 @@ export default function WebhooksPage() {
             </p>
           </div>
           <button
-            onClick={() => toast.success('Webhook creation modal coming soon')}
+            onClick={() => message.success('Webhook creation modal coming soon')}
             className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 flex items-center space-x-2"
           >
             <PlusIcon className="h-4 w-4" />
@@ -300,7 +300,7 @@ export default function WebhooksPage() {
                   <p className="mt-1 text-sm text-gray-500">Get started by creating a new webhook.</p>
                   <div className="mt-6">
                     <button
-                      onClick={() => toast.success('Webhook creation modal coming soon')}
+                      onClick={() => message.success('Webhook creation modal coming soon')}
                       className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700"
                     >
                       Create Webhook

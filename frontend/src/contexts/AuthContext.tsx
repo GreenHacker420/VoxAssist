@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@/types';
 import { AuthService } from '@/services/auth';
 import { DEMO_USER, enableDemoMode as enableDemo, disableDemoMode as disableDemo } from '@/demo';
-import toast from 'react-hot-toast';
+import { message } from 'antd';
 
 interface AuthContextType {
   user: User | null;
@@ -53,10 +53,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await AuthService.login({ email, password });
       setUser(response.data.user);
-      toast.success('Login successful!');
+      message.success('Login successful!');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
-      toast.error(errorMessage);
+      message.error(errorMessage);
       throw error;
     }
   };
@@ -65,10 +65,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await AuthService.register({ name, email, password });
       setUser(response.data.user);
-      toast.success('Registration successful!');
+      message.success('Registration successful!');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
-      toast.error(errorMessage);
+      message.error(errorMessage);
       throw error;
     }
   };
@@ -79,15 +79,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         disableDemo();
         setIsDemoMode(false);
         setUser(null);
-        toast.success('Demo session ended');
+        message.success('Demo session ended');
       } else {
         await AuthService.logout();
         setUser(null);
-        toast.success('Logged out successfully');
+        message.success('Logged out successfully');
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Logout failed';
-      toast.error(errorMessage);
+      message.error(errorMessage);
     }
   };
 
@@ -96,15 +96,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (isDemoMode) {
         // In demo mode, just update the local user state
         setUser(prev => prev ? { ...prev, ...data } : null);
-        toast.success('Profile updated (demo mode)');
+        message.success('Profile updated (demo mode)');
         return;
       }
       const updatedUser = await AuthService.updateProfile(data);
       setUser(updatedUser);
-      toast.success('Profile updated successfully');
+      message.success('Profile updated successfully');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
-      toast.error(errorMessage);
+      message.error(errorMessage);
       throw error;
     }
   };
@@ -113,14 +113,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     enableDemo();
     setIsDemoMode(true);
     setUser(DEMO_USER);
-    toast.success('Demo mode enabled!');
+    message.success('Demo mode enabled!');
   };
 
   const disableDemoMode = () => {
     disableDemo();
     setIsDemoMode(false);
     setUser(null);
-    toast.success('Demo mode disabled');
+    message.success('Demo mode disabled');
   };
 
   const value: AuthContextType = {

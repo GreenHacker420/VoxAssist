@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { AuthService } from '@/services/auth';
-import { toast } from 'react-hot-toast';
+import { message } from 'antd';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -14,23 +14,23 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     
     if (!email) {
-      toast.error('Please enter your email address');
+      message.error('Please enter your email address');
       return;
     }
 
     setIsLoading(true);
     try {
       const result = await AuthService.forgotPassword(email);
-      toast.success(result.message);
+      message.success(result.message);
       setIsSubmitted(true);
       
       // In development, show the reset token
       if (result.resetToken) {
         console.log('Reset token (development only):', result.resetToken);
-        toast.success('Check console for reset token (development mode)');
+        message.success('Check console for reset token (development mode)');
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to send reset email');
+      message.error(error instanceof Error ? error.message : 'Failed to send reset email');
     } finally {
       setIsLoading(false);
     }

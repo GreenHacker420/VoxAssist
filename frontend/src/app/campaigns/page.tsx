@@ -5,15 +5,29 @@ import DashboardLayout from '@/components/Layout/DashboardLayout';
 import { Campaign } from '@/types';
 import { formatDate, formatPercentage } from '@/lib/utils';
 import {
-  MegaphoneIcon,
-  PlusIcon,
-  PlayIcon,
-  PauseIcon,
-  StopIcon,
-  EyeIcon,
-  PencilIcon,
-} from '@heroicons/react/24/outline';
-import { cn } from '@/lib/utils';
+  Card,
+  Button,
+  Typography,
+  Tag,
+  Progress,
+  Space,
+  Row,
+  Col,
+  Spin,
+  Alert,
+  Empty
+} from 'antd';
+import {
+  PlusOutlined,
+  PlayCircleOutlined,
+  PauseCircleOutlined,
+  StopOutlined,
+  EyeOutlined,
+  EditOutlined,
+  SoundOutlined,
+} from '@ant-design/icons';
+
+const { Title, Text, Paragraph } = Typography;
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -65,46 +79,36 @@ export default function CampaignsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-green-100 text-green-800';
+        return 'success';
       case 'paused':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'warning';
       case 'completed':
-        return 'bg-blue-100 text-blue-800';
+        return 'processing';
       case 'draft':
-        return 'bg-gray-100 text-gray-800';
+        return 'default';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'default';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active':
-        return PlayIcon;
+        return PlayCircleOutlined;
       case 'paused':
-        return PauseIcon;
+        return PauseCircleOutlined;
       case 'completed':
-        return StopIcon;
+        return StopOutlined;
       default:
-        return PencilIcon;
+        return EditOutlined;
     }
   };
 
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="animate-pulse">
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-white shadow rounded-lg p-6">
-                <div className="space-y-3">
-                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                  <div className="h-2 bg-gray-200 rounded w-full"></div>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="flex justify-center items-center min-h-64">
+          <Spin size="large" />
         </div>
       </DashboardLayout>
     );
@@ -114,163 +118,172 @@ export default function CampaignsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Page header */}
-        <div className="sm:flex sm:items-center">
-          <div className="sm:flex-auto">
-            <h1 className="text-2xl font-semibold text-gray-900">Campaigns</h1>
-            <p className="mt-2 text-sm text-gray-700">
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <Title level={2} className="!mb-2">Campaigns</Title>
+            <Paragraph className="!mb-0 text-gray-600">
               Create and manage voice calling campaigns for outreach and lead generation.
-            </p>
+            </Paragraph>
           </div>
-          <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
-            <button
-              type="button"
-              className="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-            >
-              <PlusIcon className="h-4 w-4 inline mr-2" />
-              New Campaign
-            </button>
-          </div>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            size="large"
+          >
+            New Campaign
+          </Button>
         </div>
 
         {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="text-sm text-red-700">{error}</div>
-          </div>
+          <Alert
+            message="Error"
+            description={error}
+            type="error"
+            showIcon
+            className="mb-6"
+          />
         )}
 
         {/* Campaigns grid */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+        <Row gutter={[24, 24]}>
           {campaigns.length === 0 ? (
-            <div className="col-span-full text-center py-12">
-              <MegaphoneIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No campaigns</h3>
-              <p className="mt-1 text-sm text-gray-500">Get started by creating your first campaign.</p>
-              <div className="mt-6">
-                <button
-                  type="button"
-                  className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                >
-                  <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5" aria-hidden="true" />
+            <Col span={24}>
+              <Empty
+                image={<SoundOutlined style={{ fontSize: 64, color: '#d9d9d9' }} />}
+                description={
+                  <div>
+                    <Text strong>No campaigns</Text>
+                    <br />
+                    <Text type="secondary">Get started by creating your first campaign.</Text>
+                  </div>
+                }
+              >
+                <Button type="primary" icon={<PlusOutlined />}>
                   New Campaign
-                </button>
-              </div>
-            </div>
+                </Button>
+              </Empty>
+            </Col>
           ) : (
             campaigns.map((campaign) => {
               const StatusIcon = getStatusIcon(campaign.status);
               const progress = campaign.targetCount ? (campaign.completedCount / campaign.targetCount) * 100 : 0;
-              
+
               return (
-                <div key={campaign.id} className="bg-white shadow rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center">
-                      <StatusIcon className="h-5 w-5 text-gray-400 mr-2" />
-                      <h3 className="text-lg font-medium text-gray-900">{campaign.name}</h3>
-                    </div>
-                    <span
-                      className={cn(
-                        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                        getStatusColor(campaign.status)
+                <Col key={campaign.id} xs={24} lg={12} xl={8}>
+                  <Card
+                    className="h-full"
+                    title={
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <StatusIcon className="mr-2" />
+                          <Text strong>{campaign.name}</Text>
+                        </div>
+                        <Tag color={getStatusColor(campaign.status)}>
+                          {campaign.status}
+                        </Tag>
+                      </div>
+                    }
+                  >
+
+                    <Space direction="vertical" size="middle" className="w-full">
+                      {campaign.description && (
+                        <Paragraph className="!mb-0" type="secondary">
+                          {campaign.description}
+                        </Paragraph>
                       )}
-                    >
-                      {campaign.status}
-                    </span>
-                  </div>
 
-                  {campaign.description && (
-                    <p className="text-sm text-gray-600 mb-4">{campaign.description}</p>
-                  )}
+                      {/* Progress */}
+                      {campaign.targetCount && (
+                        <div>
+                          <div className="flex justify-between mb-2">
+                            <Text strong>Progress</Text>
+                            <Text>{campaign.completedCount} / {campaign.targetCount}</Text>
+                          </div>
+                          <Progress
+                            percent={Math.min(progress, 100)}
+                            strokeColor="#3b82f6"
+                            showInfo={false}
+                          />
+                          <div className="flex justify-between mt-1">
+                            <Text type="secondary" className="text-sm">
+                              {formatPercentage(progress, 0)} complete
+                            </Text>
+                            {campaign.successRate && (
+                              <Text type="secondary" className="text-sm">
+                                {formatPercentage(campaign.successRate)} success rate
+                              </Text>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
-                  {/* Progress */}
-                  {campaign.targetCount && (
-                    <div className="mb-4">
-                      <div className="flex justify-between text-sm font-medium text-gray-900 mb-1">
-                        <span>Progress</span>
-                        <span>{campaign.completedCount} / {campaign.targetCount}</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-indigo-600 h-2 rounded-full"
-                          style={{ width: `${Math.min(progress, 100)}%` }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-500 mt-1">
-                        <span>{formatPercentage(progress, 0)} complete</span>
-                        {campaign.successRate && (
-                          <span>{formatPercentage(campaign.successRate)} success rate</span>
+                      {/* Dates */}
+                      <div>
+                        {campaign.startDate && (
+                          <div className="flex justify-between mb-1">
+                            <Text type="secondary">Start Date:</Text>
+                            <Text>{formatDate(campaign.startDate)}</Text>
+                          </div>
                         )}
+                        {campaign.endDate && (
+                          <div className="flex justify-between mb-1">
+                            <Text type="secondary">End Date:</Text>
+                            <Text>{formatDate(campaign.endDate)}</Text>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <Text type="secondary">Created:</Text>
+                          <Text>{formatDate(campaign.createdAt)}</Text>
+                        </div>
                       </div>
-                    </div>
-                  )}
 
-                  {/* Dates */}
-                  <div className="space-y-2 mb-4">
-                    {campaign.startDate && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Start Date:</span>
-                        <span className="text-gray-900">{formatDate(campaign.startDate)}</span>
-                      </div>
-                    )}
-                    {campaign.endDate && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">End Date:</span>
-                        <span className="text-gray-900">{formatDate(campaign.endDate)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Created:</span>
-                      <span className="text-gray-900">{formatDate(campaign.createdAt)}</span>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex space-x-2">
-                    {campaign.status === 'draft' && (
-                      <button
-                        type="button"
-                        className="flex-1 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
-                      >
-                        <PlayIcon className="h-4 w-4 inline mr-1" />
-                        Start
-                      </button>
-                    )}
-                    {campaign.status === 'active' && (
-                      <button
-                        type="button"
-                        className="flex-1 rounded-md bg-yellow-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yellow-500"
-                      >
-                        <PauseIcon className="h-4 w-4 inline mr-1" />
-                        Pause
-                      </button>
-                    )}
-                    {campaign.status === 'paused' && (
-                      <button
-                        type="button"
-                        className="flex-1 rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500"
-                      >
-                        <PlayIcon className="h-4 w-4 inline mr-1" />
-                        Resume
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="flex-1 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                    >
-                      <EyeIcon className="h-4 w-4 inline mr-1" />
-                      View
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                    >
-                      <PencilIcon className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
+                      {/* Actions */}
+                      <Space.Compact block>
+                        {campaign.status === 'draft' && (
+                          <Button
+                            type="primary"
+                            icon={<PlayCircleOutlined />}
+                            className="flex-1"
+                          >
+                            Start
+                          </Button>
+                        )}
+                        {campaign.status === 'active' && (
+                          <Button
+                            type="primary"
+                            danger
+                            icon={<PauseCircleOutlined />}
+                            className="flex-1"
+                          >
+                            Pause
+                          </Button>
+                        )}
+                        {campaign.status === 'paused' && (
+                          <Button
+                            type="primary"
+                            icon={<PlayCircleOutlined />}
+                            className="flex-1"
+                          >
+                            Resume
+                          </Button>
+                        )}
+                        <Button
+                          icon={<EyeOutlined />}
+                          className="flex-1"
+                        >
+                          View
+                        </Button>
+                        <Button
+                          icon={<EditOutlined />}
+                        />
+                      </Space.Compact>
+                    </Space>
+                  </Card>
+                </Col>
               );
             })
           )}
-        </div>
+        </Row>
       </div>
     </DashboardLayout>
   );

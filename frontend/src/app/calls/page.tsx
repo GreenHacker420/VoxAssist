@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Call } from '@/types';
 import { CallsService } from '@/services/calls';
 // import { formatDistanceToNow } from 'date-fns';
-import toast from 'react-hot-toast';
+import { message } from 'antd';
 import Modal from '@/components/UI/Modal';
 import Button from '@/components/UI/Button';
 import Input from '@/components/UI/Input';
@@ -72,7 +72,7 @@ export default function CallsPage() {
     e.preventDefault();
     
     if (!phoneNumber.trim()) {
-      toast.error('Please enter a phone number');
+      message.error('Please enter a phone number');
       return;
     }
 
@@ -83,7 +83,7 @@ export default function CallsPage() {
       const callData = await CallsService.initiateCall(fullPhoneNumber, {
         enableAdvancedAnalysis
       });
-      toast.success('Call initiated successfully');
+      message.success('Call initiated successfully');
       setIsNewCallModalOpen(false);
       setCountryCode('+1');
       setPhoneNumber('');
@@ -98,7 +98,7 @@ export default function CallsPage() {
       refreshCalls();
     } catch (error) {
       console.error('Failed to initiate call:', error);
-      toast.error('Failed to initiate call');
+      message.error('Failed to initiate call');
     } finally {
       setIsInitiating(false);
     }
@@ -124,11 +124,11 @@ export default function CallsPage() {
   const handleHandoffToHuman = async (callId: string) => {
     try {
       await CallsService.handoffToHuman(callId);
-      toast.success('Call handed off to human agent');
+      message.success('Call handed off to human agent');
       refreshCalls();
     } catch (error) {
       console.error('Failed to handoff call:', error);
-      toast.error('Failed to handoff call');
+      message.error('Failed to handoff call');
     }
   };
 
@@ -159,11 +159,11 @@ export default function CallsPage() {
   const handleEndCall = async (callId: string) => {
     try {
       await CallsService.endCall(callId);
-      toast.success('Call ended successfully');
+      message.success('Call ended successfully');
       refreshCalls();
     } catch (err) {
       console.error('Failed to end call:', err);
-      toast.error('Failed to end call. Please try again.');
+      message.error('Failed to end call. Please try again.');
     }
   };
 

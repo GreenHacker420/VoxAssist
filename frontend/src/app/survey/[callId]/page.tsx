@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { StarIcon } from '@heroicons/react/24/solid';
-import { toast } from 'react-hot-toast';
+import { message } from 'antd';
 
 export default function SurveyPage() {
   const params = useParams();
@@ -15,12 +15,12 @@ export default function SurveyPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (rating === 0) {
-      toast.error('Please select a rating.');
+      message.error('Please select a rating.');
       return;
     }
     // Here you would typically send the survey data to your backend
     console.log({ callId, rating, comment });
-    toast.success('Thank you for your feedback!');
+    message.success('Thank you for your feedback!');
     setSubmitted(true);
   };
 
