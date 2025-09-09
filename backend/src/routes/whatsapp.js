@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticate, authorizeUser } = require('../middleware/auth');
+const { authenticateToken, authorizeUser } = require('../middleware/auth');
 const WhatsAppService = require('../services/whatsappService');
 const { PrismaClient } = require('@prisma/client');
 const crypto = require('crypto');
@@ -25,7 +25,7 @@ function encryptCredentials(credentials) {
 /**
  * Configure WhatsApp provider settings
  */
-router.post('/configure', authenticate, authorizeUser, async (req, res) => {
+router.post('/configure', authenticateToken, authorizeUser, async (req, res) => {
   try {
     const { accessToken, phoneNumberId, webhookVerifyToken, businessAccountId } = req.body;
     const userId = req.user.id;
@@ -128,7 +128,7 @@ router.post('/configure', authenticate, authorizeUser, async (req, res) => {
 /**
  * Initiate WhatsApp voice call
  */
-router.post('/call', authenticate, authorizeUser, async (req, res) => {
+router.post('/call', authenticateToken, authorizeUser, async (req, res) => {
   try {
     const { phoneNumber, callOptions } = req.body;
     const userId = req.user.id;
@@ -169,7 +169,7 @@ router.post('/call', authenticate, authorizeUser, async (req, res) => {
 /**
  * Send WhatsApp message with call button
  */
-router.post('/send-call-message', authenticate, authorizeUser, async (req, res) => {
+router.post('/send-call-message', authenticateToken, authorizeUser, async (req, res) => {
   try {
     const { phoneNumber, messageOptions } = req.body;
     const userId = req.user.id;
@@ -201,7 +201,7 @@ router.post('/send-call-message', authenticate, authorizeUser, async (req, res) 
 /**
  * Get WhatsApp configuration
  */
-router.get('/config', authenticate, authorizeUser, async (req, res) => {
+router.get('/config', authenticateToken, authorizeUser, async (req, res) => {
   try {
     const userId = req.user.id;
 
@@ -251,7 +251,7 @@ router.get('/config', authenticate, authorizeUser, async (req, res) => {
 /**
  * Test WhatsApp connection
  */
-router.post('/test', authenticate, authorizeUser, async (req, res) => {
+router.post('/test', authenticateToken, authorizeUser, async (req, res) => {
   try {
     const { accessToken, phoneNumberId } = req.body;
 
@@ -281,7 +281,7 @@ router.post('/test', authenticate, authorizeUser, async (req, res) => {
 /**
  * Get call history
  */
-router.get('/call-history', authenticate, authorizeUser, async (req, res) => {
+router.get('/call-history', authenticateToken, authorizeUser, async (req, res) => {
   try {
     const userId = req.user.id;
     const { limit, offset, phoneNumber } = req.query;
@@ -372,7 +372,7 @@ router.get('/webhook', (req, res) => {
 /**
  * Delete WhatsApp configuration
  */
-router.delete('/config', authenticate, authorizeUser, async (req, res) => {
+router.delete('/config', authenticateToken, authorizeUser, async (req, res) => {
   try {
     const userId = req.user.id;
 
