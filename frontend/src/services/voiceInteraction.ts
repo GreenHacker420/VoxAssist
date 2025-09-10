@@ -35,77 +35,76 @@ export interface VoiceControlResponse {
   error?: string;
 }
 
-export class VoiceInteractionService {
-  /**
-   * Process customer speech input
-   */
-  static async processSpeech(
-    callId: string,
-    transcript: string,
-    isInterim: boolean = false,
-    audioData?: Blob
-  ): Promise<VoiceInteractionResponse> {
-    try {
-      const formData = new FormData();
-      formData.append('transcript', transcript);
-      formData.append('isInterim', isInterim.toString());
-      
-      if (audioData) {
-        formData.append('audioData', audioData, 'speech.wav');
-      }
+/**
+ * Process customer speech input
+ */
+export const processSpeech = async (
+  callId: string,
+  transcript: string,
+  isInterim: boolean = false,
+  audioData?: Blob
+): Promise<VoiceInteractionResponse> => {
+  try {
+    const formData = new FormData();
+    formData.append('transcript', transcript);
+    formData.append('isInterim', isInterim.toString());
 
-      const response = await apiClient.post(`/demo-calls/${callId}/speech`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      return response.data;
-    } catch (error: any) {
-      console.error('Error processing speech:', error);
-      return {
-        success: false,
-        error: error.response?.data?.error || 'Failed to process speech'
-      };
+    if (audioData) {
+      formData.append('audioData', audioData, 'speech.wav');
     }
-  }
 
-  /**
-   * Enable voice interaction for a demo call
-   */
-  static async enableVoiceInteraction(callId: string): Promise<VoiceControlResponse> {
-    try {
-      const response = await apiClient.post(`/demo-calls/${callId}/enable-voice`);
-      return response.data;
-    } catch (error: any) {
-      console.error('Error enabling voice interaction:', error);
-      return {
-        success: false,
-        error: error.response?.data?.error || 'Failed to enable voice interaction'
-      };
-    }
-  }
+    const response = await apiClient.post(`/demo-calls/${callId}/speech`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
 
-  /**
-   * Disable voice interaction for a demo call
-   */
-  static async disableVoiceInteraction(callId: string): Promise<VoiceControlResponse> {
-    try {
-      const response = await apiClient.post(`/demo-calls/${callId}/disable-voice`);
-      return response.data;
-    } catch (error: any) {
-      console.error('Error disabling voice interaction:', error);
-      return {
-        success: false,
-        error: error.response?.data?.error || 'Failed to disable voice interaction'
-      };
-    }
+    return response.data;
+  } catch (error: any) {
+    console.error('Error processing speech:', error);
+    return {
+      success: false,
+      error: error.response?.data?.error || 'Failed to process speech'
+    };
   }
+};
 
-  /**
-   * Play audio response
-   */
-  static async playAudioResponse(audioUrl: string): Promise<HTMLAudioElement> {
+/**
+ * Enable voice interaction for a demo call
+ */
+export const enableVoiceInteraction = async (callId: string): Promise<VoiceControlResponse> => {
+  try {
+    const response = await apiClient.post(`/demo-calls/${callId}/enable-voice`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error enabling voice interaction:', error);
+    return {
+      success: false,
+      error: error.response?.data?.error || 'Failed to enable voice interaction'
+    };
+  }
+};
+
+/**
+ * Disable voice interaction for a demo call
+ */
+export const disableVoiceInteraction = async (callId: string): Promise<VoiceControlResponse> => {
+  try {
+    const response = await apiClient.post(`/demo-calls/${callId}/disable-voice`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error disabling voice interaction:', error);
+    return {
+      success: false,
+      error: error.response?.data?.error || 'Failed to disable voice interaction'
+    };
+  }
+};
+
+/**
+ * Play audio response
+ */
+export const playAudioResponse = async (audioUrl: string): Promise<HTMLAudioElement> => {
     return new Promise((resolve, reject) => {
       const audio = new Audio(audioUrl);
       
@@ -126,47 +125,47 @@ export class VoiceInteractionService {
       // Start loading the audio
       audio.load();
     });
+};
+
+/**
+ * Check if audio is supported
+ */
+export const isAudioSupported = (): boolean => {
+  return typeof Audio !== 'undefined';
+};
+
+/**
+ * Get supported audio formats
+ */
+export const getSupportedAudioFormats = (): string[] => {
+  if (!isAudioSupported()) {
+    return [];
   }
 
-  /**
-   * Check if audio is supported
-   */
-  static isAudioSupported(): boolean {
-    return typeof Audio !== 'undefined';
+  const audio = new Audio();
+  const formats = [];
+
+  // Check common audio formats
+  if (audio.canPlayType('audio/mpeg')) {
+    formats.push('mp3');
+  }
+  if (audio.canPlayType('audio/wav')) {
+    formats.push('wav');
+  }
+  if (audio.canPlayType('audio/ogg')) {
+    formats.push('ogg');
+  }
+  if (audio.canPlayType('audio/mp4')) {
+    formats.push('mp4');
   }
 
-  /**
-   * Get supported audio formats
-   */
-  static getSupportedAudioFormats(): string[] {
-    if (!this.isAudioSupported()) {
-      return [];
-    }
+  return formats;
+};
 
-    const audio = new Audio();
-    const formats = [];
-
-    // Check common audio formats
-    if (audio.canPlayType('audio/mpeg')) {
-      formats.push('mp3');
-    }
-    if (audio.canPlayType('audio/wav')) {
-      formats.push('wav');
-    }
-    if (audio.canPlayType('audio/ogg')) {
-      formats.push('ogg');
-    }
-    if (audio.canPlayType('audio/mp4')) {
-      formats.push('mp4');
-    }
-
-    return formats;
-  }
-
-  /**
-   * Create audio queue for managing multiple audio responses
-   */
-  static createAudioQueue() {
+/**
+ * Create audio queue for managing multiple audio responses
+ */
+export const createAudioQueue = () => {
     const queue: HTMLAudioElement[] = [];
     let isPlaying = false;
 
@@ -195,7 +194,7 @@ export class VoiceInteractionService {
     return {
       add: async (audioUrl: string) => {
         try {
-          const audio = await this.playAudioResponse(audioUrl);
+          const audio = await playAudioResponse(audioUrl);
           queue.push(audio);
           playNext();
         } catch (error) {
@@ -214,12 +213,12 @@ export class VoiceInteractionService {
       getQueueLength: () => queue.length,
       isPlaying: () => isPlaying
     };
-  }
+};
 
-  /**
-   * Validate microphone permissions
-   */
-  static async checkMicrophonePermission(): Promise<boolean> {
+/**
+ * Validate microphone permissions
+ */
+export const checkMicrophonePermission = async (): Promise<boolean> => {
     try {
       const result = await navigator.permissions.query({ name: 'microphone' as PermissionName });
       return result.state === 'granted';
@@ -234,42 +233,41 @@ export class VoiceInteractionService {
         return false;
       }
     }
-  }
+};
 
-  /**
-   * Request microphone permission
-   */
-  static async requestMicrophonePermission(): Promise<boolean> {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop());
-      return true;
-    } catch (error) {
-      console.error('Microphone permission denied:', error);
-      return false;
-    }
+/**
+ * Request microphone permission
+ */
+export const requestMicrophonePermission = async (): Promise<boolean> => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(track => track.stop());
+    return true;
+  } catch (error) {
+    console.error('Microphone permission denied:', error);
+    return false;
   }
+};
 
-  /**
-   * Check if speech recognition is supported
-   */
-  static isSpeechRecognitionSupported(): boolean {
-    return typeof window !== 'undefined' && 
-           ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window);
-  }
+/**
+ * Check if speech recognition is supported
+ */
+export const isSpeechRecognitionSupported = (): boolean => {
+  return typeof window !== 'undefined' &&
+         ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window);
+};
 
-  /**
-   * Get browser capabilities for voice interaction
-   */
-  static getBrowserCapabilities() {
-    return {
-      speechRecognition: this.isSpeechRecognitionSupported(),
-      audioPlayback: this.isAudioSupported(),
-      supportedAudioFormats: this.getSupportedAudioFormats(),
-      mediaDevices: typeof navigator !== 'undefined' && 'mediaDevices' in navigator,
-      getUserMedia: typeof navigator !== 'undefined' && 
-                   navigator.mediaDevices && 
-                   'getUserMedia' in navigator.mediaDevices
-    };
-  }
-}
+/**
+ * Get browser capabilities for voice interaction
+ */
+export const getBrowserCapabilities = () => {
+  return {
+    speechRecognition: isSpeechRecognitionSupported(),
+    audioPlayback: isAudioSupported(),
+    supportedAudioFormats: getSupportedAudioFormats(),
+    mediaDevices: typeof navigator !== 'undefined' && 'mediaDevices' in navigator,
+    getUserMedia: typeof navigator !== 'undefined' &&
+                 navigator.mediaDevices &&
+                 'getUserMedia' in navigator.mediaDevices
+  };
+};

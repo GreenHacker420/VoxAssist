@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { message } from 'antd';
 import { useVoiceInteraction } from '@/hooks/useVoiceInteraction';
-import { VoiceInteractionService } from '@/services/voiceInteraction';
+import * as voiceInteractionService from '@/services/voiceInteraction';
 import VoiceControls from './VoiceControls';
 import VoiceTranscript from './VoiceTranscript';
 import AudioPlayback from './AudioPlayback';
@@ -45,7 +45,7 @@ export default function VoiceInteractionManager({
 
   // Initialize audio queue
   useEffect(() => {
-    audioQueueRef.current = VoiceInteractionService.createAudioQueue();
+    audioQueueRef.current = voiceInteractionService.createAudioQueue();
     return () => {
       if (audioQueueRef.current) {
         audioQueueRef.current.clear();
@@ -59,7 +59,7 @@ export default function VoiceInteractionManager({
 
     try {
       // Process speech with backend
-      const response = await VoiceInteractionService.processSpeech(callId, transcriptText, isInterim);
+      const response = await voiceInteractionService.processSpeech(callId, transcriptText, isInterim);
       
       if (response.success && response.data) {
         // Handle interim results
@@ -159,7 +159,7 @@ export default function VoiceInteractionManager({
   useEffect(() => {
     const enableVoice = async () => {
       try {
-        const response = await VoiceInteractionService.enableVoiceInteraction(callId);
+        const response = await voiceInteractionService.enableVoiceInteraction(callId);
         if (response.success) {
           setIsVoiceEnabled(true);
           message.success('Voice interaction enabled');
@@ -179,7 +179,7 @@ export default function VoiceInteractionManager({
     return () => {
       // Cleanup: disable voice interaction
       if (callId && isVoiceEnabled) {
-        VoiceInteractionService.disableVoiceInteraction(callId).catch(console.error);
+        voiceInteractionService.disableVoiceInteraction(callId).catch(console.error);
       }
     };
   }, [callId, disabled]);

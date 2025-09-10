@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface TranscriptEntry {
@@ -43,9 +43,48 @@ interface UseDemoCallWebSocketReturn extends DemoCallWebSocketData {
   disconnectFromCall: () => void;
   addTranscriptEntry: (entry: TranscriptEntry) => void;
   updateSentiment: (sentiment: SentimentData) => void;
+  sendVoiceInput: (audioData: string, format?: string) => void;
 }
 
-export function useDemoCallWebSocket(): UseDemoCallWebSocketReturn {
+interface VoiceAnalysisData {
+  sentiment: {
+    overall: string;
+    score: number;
+    confidence: number;
+  };
+  emotion: {
+    primary: string;
+    intensity: string;
+    confidence: number;
+  };
+  intent: {
+    category: string;
+    specific: string;
+    urgency: string;
+    confidence: number;
+  };
+  keywords: string[];
+  summary: string;
+  recommendedResponse: string;
+  audioMetrics: {
+    volume: number;
+    clarity: number;
+    duration: number;
+    sampleRate: number;
+    bitRate: number;
+    overallQuality: string;
+  };
+}
+
+interface UseDemoCallWebSocketOptions {
+  onAudioResponse?: (audioUrl: string, transcriptId?: string) => void;
+  onAudioStream?: (audioData: string, transcriptId?: string, metadata?: { speaker?: string; messageId?: string }) => void;
+  onVoiceTranscribed?: (transcript: string) => void;
+  onVoiceAnalysis?: (analysis: VoiceAnalysisData) => void;
+}
+
+export function useDemoCallWebSocket(options: UseDemoCallWebSocketOptions = {}): UseDemoCallWebSocketReturn {
+  const { onAudioResponse, onAudioStream, onVoiceTranscribed, onVoiceAnalysis } = options;
   const { isDemoMode } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
@@ -173,7 +212,7 @@ export function useDemoCallWebSocket(): UseDemoCallWebSocketReturn {
     reconnectAttempts.current = 0;
   };
 
-  const handleWebSocketMessage = (data: Record<string, any>) => {
+  const handleWebSocketMessage = (data: Record<string, unknown>) => {
     console.log('Received WebSocket message:', data);
 
     switch (data.type) {
@@ -185,25 +224,26 @@ export function useDemoCallWebSocket(): UseDemoCallWebSocketReturn {
 
       case 'demo_transcript_update':
         console.log('Received transcript update:', data.transcript);
-        if (data.transcript) {
+        if (data.transcript && typeof data.transcript === 'object') {
+          const transcript = data.transcript as TranscriptEntry;
           setTranscript(prev => {
             // Avoid duplicates
-            const exists = prev.some(entry => entry.id === data.transcript.id);
+            const exists = prev.some(entry => entry.id === transcript.id);
             if (!exists) {
-              return [...prev, data.transcript];
+              return [...prev, transcript];
             }
             return prev;
           });
         }
-        if (data.sentiment) {
-          setCurrentSentiment(data.sentiment);
+        if (data.sentiment && typeof data.sentiment === 'object') {
+          setCurrentSentiment(data.sentiment as SentimentData);
         }
         break;
 
       case 'demo_sentiment_update':
         console.log('Received sentiment update:', data.sentiment);
-        if (data.sentiment) {
-          setCurrentSentiment(data.sentiment);
+        if (data.sentiment && typeof data.sentiment === 'object') {
+          setCurrentSentiment(data.sentiment as SentimentData);
         }
         break;
 
@@ -214,7 +254,34 @@ export function useDemoCallWebSocket(): UseDemoCallWebSocketReturn {
 
       case 'audio_response_ready':
         console.log('Audio response ready:', data.audioUrl);
-        // Audio response is handled by the VoiceInteractionManager
+        // Trigger audio playback for AI responses (legacy file-based)
+        if (data.audioUrl && typeof data.audioUrl === 'string' && onAudioResponse) {
+          onAudioResponse(data.audioUrl, data.transcriptId as string);
+        }
+        break;
+
+      case 'audio_stream_data':
+        console.log('Audio stream data received:', data.metadata);
+        // Trigger audio playback for AI responses (WebSocket streaming)
+        if (data.audioData && typeof data.audioData === 'string' && onAudioStream) {
+          onAudioStream(data.audioData, data.transcriptId as string, data.metadata);
+        }
+        break;
+
+      case 'voice_transcribed':
+        console.log('Voice transcribed:', data.transcript);
+        // Handle voice transcription result
+        if (data.transcript && typeof data.transcript === 'string' && onVoiceTranscribed) {
+          onVoiceTranscribed(data.transcript);
+        }
+        break;
+
+      case 'voice_analysis':
+        console.log('Voice analysis received:', data);
+        // Handle comprehensive voice analysis results
+        if (data && typeof data === 'object' && onVoiceAnalysis) {
+          onVoiceAnalysis(data as unknown as VoiceAnalysisData);
+        }
         break;
 
       case 'demo_call_ended':
@@ -225,7 +292,7 @@ export function useDemoCallWebSocket(): UseDemoCallWebSocketReturn {
 
       case 'error':
         console.error('Demo call WebSocket error:', data.message);
-        setError(data.message);
+        setError(typeof data.message === 'string' ? data.message : 'Unknown error');
         setCallStatus('idle');
         break;
 
@@ -256,6 +323,23 @@ export function useDemoCallWebSocket(): UseDemoCallWebSocketReturn {
     }
   }, [isDemoMode, isConnected]);
 
+  const sendVoiceInput = useCallback((audioData: string, format: string = 'webm', audioMetrics?: { volume: number; clarity: number; duration: number; sampleRate: number; bitRate: number }) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && currentCallIdRef.current) {
+      const message = {
+        type: 'voice_input',
+        callId: currentCallIdRef.current,
+        audioData,
+        format,
+        audioMetrics
+      };
+
+      wsRef.current.send(JSON.stringify(message));
+      console.log('Sent voice input:', { format, size: audioData.length, audioMetrics });
+    } else {
+      console.warn('Cannot send voice input: WebSocket not connected or no active call');
+    }
+  }, []);
+
   return {
     isConnected,
     transcript,
@@ -265,6 +349,7 @@ export function useDemoCallWebSocket(): UseDemoCallWebSocketReturn {
     connectToCall,
     disconnectFromCall,
     addTranscriptEntry,
-    updateSentiment
+    updateSentiment,
+    sendVoiceInput
   };
 }

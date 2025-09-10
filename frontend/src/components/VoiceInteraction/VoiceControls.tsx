@@ -98,7 +98,7 @@ export default function VoiceControls({
               Speech Recognition Not Supported
             </h3>
             <p className="text-sm text-yellow-700 mt-1">
-              Your browser doesn't support speech recognition. Please use Chrome, Edge, or Safari.
+              Your browser doesn&apos;t support speech recognition. Please use Chrome, Edge, or Safari.
             </p>
           </div>
         </div>

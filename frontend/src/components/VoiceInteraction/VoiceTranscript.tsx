@@ -18,6 +18,13 @@ interface TranscriptEntry {
   confidence?: number;
   sentiment?: 'positive' | 'negative' | 'neutral';
   sentimentScore?: number;
+  emotions?: {
+    joy: number;
+    anger: number;
+    fear: number;
+    sadness: number;
+    surprise: number;
+  };
   isInterim?: boolean;
 }
 

@@ -24,11 +24,16 @@ import {
   RobotOutlined,
   FrownOutlined,
   SmileOutlined,
-  MehOutlined
+  MehOutlined,
+  AudioOutlined,
+  AudioMutedOutlined
 } from '@ant-design/icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { CallsService } from '@/services/calls';
 import { useDemoCallWebSocket } from '@/hooks/useDemoCallWebSocket';
+import { ttsService } from '@/services/ttsService';
+import VoiceInputButton from './VoiceInputButton';
+import VoiceAnalysisDisplay, { VoiceAnalysisData } from './VoiceAnalysisDisplay';
 
 const { Text } = Typography;
 
@@ -61,9 +66,105 @@ export default function DemoCallInterface() {
   const [isAiTalking, setIsAiTalking] = useState(false);
   const [callId, setCallId] = useState<string>('');
   const [useBackendDemo, setUseBackendDemo] = useState(true);
+  const [isTTSEnabled, setIsTTSEnabled] = useState(true);
+  const [ttsVolume, setTtsVolume] = useState(0.8);
+  const [currentVoiceAnalysis, setCurrentVoiceAnalysis] = useState<VoiceAnalysisData | null>(null);
+  const [lastTranscription, setLastTranscription] = useState<{ text: string; confidence: number } | null>(null);
 
   const transcriptRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Handle TTS audio responses
+  const handleAudioResponse = async (audioUrl: string, transcriptId?: string) => {
+    if (!isTTSEnabled) {
+      console.log('TTS disabled, skipping audio playback');
+      return;
+    }
+
+    console.log('Received audio response:', { audioUrl, transcriptId });
+
+    // Find the corresponding transcript entry for context
+    const transcriptEntry = wsTranscript.find(entry => entry.id === transcriptId);
+    const text = transcriptEntry?.text || 'AI Response';
+
+    try {
+      await ttsService.queueAudio(audioUrl, transcriptId, text, {
+        volume: ttsVolume,
+        autoPlay: true,
+        onPlay: () => {
+          console.log('TTS playback started for:', text);
+          setIsAiTalking(true);
+        },
+        onEnded: () => {
+          console.log('TTS playback ended for:', text);
+          setIsAiTalking(false);
+        },
+        onError: (error) => {
+          console.error('TTS playback error:', error);
+          setIsAiTalking(false);
+        }
+      });
+    } catch (error) {
+      console.error('Error queueing TTS audio:', error);
+    }
+  };
+
+  // Handle TTS audio streaming (WebSocket-based)
+  const handleAudioStream = async (audioData: string, transcriptId?: string, metadata?: { speaker?: string; messageId?: string; text?: string; format?: string }) => {
+    if (!isTTSEnabled) {
+      console.log('TTS disabled, skipping audio stream playback');
+      return;
+    }
+
+    console.log('Received audio stream:', { size: audioData.length, transcriptId, metadata });
+
+    // Find the corresponding transcript entry for context
+    const transcriptEntry = wsTranscript.find(entry => entry.id === transcriptId);
+    const text = transcriptEntry?.text || metadata?.text || 'AI Response';
+
+    try {
+      const format = metadata?.format || 'mp3';
+      await ttsService.queueAudioData(audioData, transcriptId, text, format, {
+        volume: ttsVolume,
+        autoPlay: true,
+        onPlay: () => {
+          console.log('TTS stream playback started for:', text);
+          setIsAiTalking(true);
+        },
+        onEnded: () => {
+          console.log('TTS stream playback ended for:', text);
+          setIsAiTalking(false);
+        },
+        onError: (error) => {
+          console.error('TTS stream playback error:', error);
+          setIsAiTalking(false);
+        }
+      });
+    } catch (error) {
+      console.error('Error queueing TTS audio stream:', error);
+    }
+  };
+
+  // Handle voice transcription results
+  const handleVoiceTranscribed = (transcript: string) => {
+    console.log('Voice transcribed:', transcript);
+    // The transcript will be automatically added to the conversation via WebSocket
+  };
+
+  // Handle comprehensive voice analysis results
+  const handleVoiceAnalysis = (analysis: VoiceAnalysisData) => {
+    console.log('Voice analysis received:', analysis);
+    setCurrentVoiceAnalysis(analysis);
+
+    // Extract transcription info if available - analysis contains the data directly
+    // The transcription will be handled separately via transcript updates
+  };
+
+  // Handle voice input from user
+  const handleVoiceInput = (audioData: string, format: string, metrics?: { volume: number; clarity: number; duration: number; sampleRate: number; bitRate: number }) => {
+    console.log('Sending voice input:', { format, size: audioData.length, metrics });
+    sendVoiceInput(audioData, format);
+  };
 
   // Use WebSocket hook for real-time demo call features
   const {
@@ -73,8 +174,14 @@ export default function DemoCallInterface() {
     callStatus: wsCallStatus,
     error: wsError,
     connectToCall,
-    disconnectFromCall
-  } = useDemoCallWebSocket();
+    disconnectFromCall,
+    sendVoiceInput
+  } = useDemoCallWebSocket({
+    onAudioResponse: handleAudioResponse,
+    onAudioStream: handleAudioStream,
+    onVoiceTranscribed: handleVoiceTranscribed,
+    onVoiceAnalysis: handleVoiceAnalysis
+  });
 
   // Local state for fallback mode
   const [localCallStatus, setLocalCallStatus] = useState<'idle' | 'connecting' | 'active' | 'ended'>('idle');
@@ -161,6 +268,12 @@ export default function DemoCallInterface() {
     }
   }, [transcript]);
 
+  // Initialize TTS settings
+  useEffect(() => {
+    ttsService.setVolume(ttsVolume);
+    ttsService.setMuted(!isTTSEnabled);
+  }, [ttsVolume, isTTSEnabled]);
+
   // Call duration timer
   useEffect(() => {
     if (callStatus === 'active') {
@@ -179,6 +292,14 @@ export default function DemoCallInterface() {
       }
     };
   }, [callStatus]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Stop TTS playback and clear queue
+      ttsService.stop();
+    };
+  }, []);
 
   const startDemoCall = async () => {
     if (!isDemoMode) {
@@ -229,6 +350,9 @@ export default function DemoCallInterface() {
   const endDemoCall = async () => {
     setIsCustomerTalking(false);
     setIsAiTalking(false);
+
+    // Stop TTS playback immediately
+    ttsService.stop();
 
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -379,15 +503,24 @@ export default function DemoCallInterface() {
                   <div style={{ textAlign: 'center', fontSize: '24px', fontWeight: 'bold' }}>
                     {formatDuration(callDuration)}
                   </div>
-                  <Button
-                    danger
-                    icon={<StopOutlined />}
-                    onClick={endDemoCall}
-                    block
-                    size="large"
-                  >
-                    End Call
-                  </Button>
+
+                  <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                    <VoiceInputButton
+                      onVoiceInput={handleVoiceInput}
+                      disabled={!useBackendDemo || !wsConnected}
+                      className="demo-voice-input"
+                    />
+
+                    <Button
+                      danger
+                      icon={<StopOutlined />}
+                      onClick={endDemoCall}
+                      block
+                      size="large"
+                    >
+                      End Call
+                    </Button>
+                  </Space>
                 </>
               )}
 
@@ -418,6 +551,41 @@ export default function DemoCallInterface() {
                   showIcon
                 />
               )}
+
+              {/* TTS Controls */}
+              <Divider />
+              <div>
+                <Text strong style={{ marginBottom: '8px', display: 'block' }}>
+                  Voice Settings
+                </Text>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text>Text-to-Speech</Text>
+                    <Button
+                      type={isTTSEnabled ? 'primary' : 'default'}
+                      icon={isTTSEnabled ? <AudioOutlined /> : <AudioMutedOutlined />}
+                      onClick={() => setIsTTSEnabled(!isTTSEnabled)}
+                      size="small"
+                    >
+                      {isTTSEnabled ? 'On' : 'Off'}
+                    </Button>
+                  </div>
+                  {isTTSEnabled && (
+                    <div>
+                      <Text style={{ fontSize: '12px', color: '#666' }}>Volume: {Math.round(ttsVolume * 100)}%</Text>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={ttsVolume}
+                        onChange={(e) => setTtsVolume(parseFloat(e.target.value))}
+                        style={{ width: '100%', marginTop: '4px' }}
+                      />
+                    </div>
+                  )}
+                </Space>
+              </div>
             </Space>
           </Card>
 
@@ -534,6 +702,19 @@ export default function DemoCallInterface() {
           </Card>
         </Col>
       </Row>
+
+      {/* Voice Analysis Display */}
+      {currentVoiceAnalysis && (
+        <Row style={{ marginTop: 16 }}>
+          <Col span={24}>
+            <VoiceAnalysisDisplay
+              analysis={currentVoiceAnalysis}
+              transcription={lastTranscription || undefined}
+              className="voice-analysis-display"
+            />
+          </Col>
+        </Row>
+      )}
     </Card>
   );
 }

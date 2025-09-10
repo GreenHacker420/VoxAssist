@@ -8,3 +8,7 @@ frontend/.next
 frontend/out
 
 frontend/build
+
+./idea
+.DS_Store
+*.log

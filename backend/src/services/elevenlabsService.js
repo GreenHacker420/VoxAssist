@@ -26,10 +26,10 @@ const textToSpeech = async (text, voiceId = null, options = {}) => {
     if (!apiKey) {
       initializeElevenLabs();
     }
-    
+
     const voice = voiceId || defaultVoiceId;
     const url = `${baseURL}/text-to-speech/${voice}`;
-    
+
     const payload = {
       text: text,
       model_id: options.model || 'eleven_monolingual_v1',
@@ -51,7 +51,7 @@ const textToSpeech = async (text, voiceId = null, options = {}) => {
     });
 
     logger.info(`Generated speech for text: ${text.substring(0, 50)}...`);
-    
+
     return {
       audioBuffer: response.data,
       contentType: 'audio/mpeg',
@@ -60,6 +60,19 @@ const textToSpeech = async (text, voiceId = null, options = {}) => {
   } catch (error) {
     logger.error(`ElevenLabs TTS error: ${error.message}`);
     throw new Error('Failed to generate speech');
+  }
+};
+
+/**
+ * Convert text to speech and return buffer directly (for WebSocket streaming)
+ */
+const textToSpeechBuffer = async (text, voiceId = null, options = {}) => {
+  try {
+    const result = await textToSpeech(text, voiceId, options);
+    return Buffer.from(result.audioBuffer);
+  } catch (error) {
+    logger.error(`ElevenLabs TTS buffer error: ${error.message}`);
+    throw error;
   }
 };
 
@@ -207,6 +220,7 @@ initializeElevenLabs();
 module.exports = {
   initializeElevenLabs,
   textToSpeech,
+  textToSpeechBuffer,
   getVoices,
   cloneVoice,
   streamTextToSpeech,

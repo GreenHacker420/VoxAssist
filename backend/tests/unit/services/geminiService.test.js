@@ -1,12 +1,6 @@
-const GeminiService = require('../../../src/services/geminiService');
+const geminiService = require('../../../src/services/geminiService');
 
 describe('GeminiService', () => {
-  let geminiService;
-
-  beforeEach(() => {
-    geminiService = new GeminiService();
-  });
-
   describe('processCustomerQuery', () => {
     it('should process a simple customer query', async () => {
       const query = 'How do I reset my password?';

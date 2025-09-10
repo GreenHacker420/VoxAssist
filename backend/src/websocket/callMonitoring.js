@@ -48,6 +48,9 @@ function initializeWebSocketServer(server) {
           case 'end_demo_call':
             await handleEndDemoCall(ws, data.callId);
             break;
+          case 'voice_input':
+            await handleVoiceInput(ws, data);
+            break;
         }
       } catch (error) {
         logger.error('WebSocket message error:', error);
@@ -264,7 +267,8 @@ async function handleJoinDemoCall(ws, callId, token, isDemoMode = false) {
     logger.info(`Attempting to join demo call: ${callId}, isDemoMode: ${isDemoMode}, token: ${token}`);
 
     // For demo calls, we use a simpler verification
-    if (!callId || !callId.startsWith('demo-call-')) {
+    // Accept both 'demo-call-' and 'interactive-demo-' prefixes
+    if (!callId || (!callId.startsWith('demo-call-') && !callId.startsWith('interactive-demo-'))) {
       logger.warn(`Invalid demo call ID format: ${callId}`);
       ws.send(JSON.stringify({
         type: 'error',
@@ -430,7 +434,7 @@ function broadcastVoiceInteractionStatus(callId, status) {
 }
 
 /**
- * Broadcast audio response ready
+ * Broadcast audio response ready (deprecated - use broadcastAudioStream)
  */
 function broadcastAudioResponse(callId, audioUrl, transcriptId) {
   logger.info(`Broadcasting audio response ready for call: ${callId}, audio: ${audioUrl}`);
@@ -443,6 +447,86 @@ function broadcastAudioResponse(callId, audioUrl, transcriptId) {
   });
 }
 
+/**
+ * Broadcast audio stream data directly via WebSocket
+ */
+function broadcastAudioStream(callId, audioBuffer, transcriptId, metadata = {}) {
+  logger.info(`Broadcasting audio stream for call: ${callId}, size: ${audioBuffer.length} bytes`);
+
+  const clients = global.wsClients.get(callId);
+  if (clients) {
+    // Convert audio buffer to base64 for JSON transmission
+    const audioBase64 = audioBuffer.toString('base64');
+
+    const message = {
+      type: 'audio_stream_data',
+      callId: callId,
+      audioData: audioBase64,
+      transcriptId,
+      metadata: {
+        format: 'mp3',
+        encoding: 'base64',
+        size: audioBuffer.length,
+        ...metadata
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(message));
+      }
+    });
+  }
+}
+
+/**
+ * Handle voice input from client
+ */
+async function handleVoiceInput(ws, data) {
+  try {
+    const { callId, audioData, format = 'webm', audioMetrics = {} } = data;
+
+    logger.info(`Received voice input for call: ${callId}, format: ${format}, metrics:`, audioMetrics);
+
+    // Convert base64 audio data to buffer
+    const audioBuffer = Buffer.from(audioData, 'base64');
+
+    // Process voice input with comprehensive analysis
+    const demoCallService = require('../services/demoCallService');
+    const result = await demoCallService.processVoiceInput(callId, audioBuffer, format, audioMetrics);
+
+    if (result) {
+      // The voice analysis is already broadcasted by the service
+      logger.info(`Voice input processed successfully for call: ${callId}`);
+    }
+
+  } catch (error) {
+    logger.error('Error handling voice input:', error);
+    ws.send(JSON.stringify({
+      type: 'error',
+      message: 'Failed to process voice input'
+    }));
+  }
+}
+
+/**
+ * Broadcast comprehensive voice analysis results
+ */
+function broadcastVoiceAnalysis(callId, analysis) {
+  const message = {
+    type: 'voice_analysis',
+    callId,
+    data: {
+      ...analysis,
+      timestamp: new Date().toISOString()
+    }
+  };
+
+  broadcastToCall(callId, message);
+  logger.info(`Voice analysis broadcasted for call ${callId}: sentiment=${analysis.sentiment.overall}, emotion=${analysis.emotion.primary}`);
+}
+
 module.exports = {
   initializeWebSocketServer,
   broadcastToCall,
@@ -453,5 +537,8 @@ module.exports = {
   broadcastDemoCallTranscript,
   broadcastDemoCallSentiment,
   broadcastVoiceInteractionStatus,
-  broadcastAudioResponse
+  broadcastAudioResponse,
+  broadcastAudioStream,
+  handleVoiceInput,
+  broadcastVoiceAnalysis
 };

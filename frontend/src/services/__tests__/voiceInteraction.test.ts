@@ -1,4 +1,4 @@
-import { VoiceInteractionService } from '../voiceInteraction';
+import * as voiceInteractionService from '../voiceInteraction';
 import { apiClient } from '../api';
 
 // Mock the API client
@@ -63,7 +63,7 @@ describe('VoiceInteractionService', () => {
 
       (apiClient.post as jest.Mock).mockResolvedValue(mockResponse);
 
-      const result = await VoiceInteractionService.processSpeech('test-call-id', 'Hello', false);
+      const result = await voiceInteractionService.processSpeech('test-call-id', 'Hello', false);
 
       expect(apiClient.post).toHaveBeenCalledWith(
         '/demo-calls/test-call-id/speech',
@@ -89,7 +89,7 @@ describe('VoiceInteractionService', () => {
 
       (apiClient.post as jest.Mock).mockRejectedValue(mockError);
 
-      const result = await VoiceInteractionService.processSpeech('test-call-id', 'Hello', false);
+      const result = await voiceInteractionService.processSpeech('test-call-id', 'Hello', false);
 
       expect(result).toEqual({
         success: false,
@@ -111,7 +111,7 @@ describe('VoiceInteractionService', () => {
 
       (apiClient.post as jest.Mock).mockResolvedValue(mockResponse);
 
-      await VoiceInteractionService.processSpeech('test-call-id', 'Hello', false, mockBlob);
+      await voiceInteractionService.processSpeech('test-call-id', 'Hello', false, mockBlob);
 
       const formData = (apiClient.post as jest.Mock).mock.calls[0][1];
       expect(formData.get('audioData')).toBe(mockBlob);
@@ -133,7 +133,7 @@ describe('VoiceInteractionService', () => {
 
       (apiClient.post as jest.Mock).mockResolvedValue(mockResponse);
 
-      const result = await VoiceInteractionService.enableVoiceInteraction('test-call-id');
+      const result = await voiceInteractionService.enableVoiceInteraction('test-call-id');
 
       expect(apiClient.post).toHaveBeenCalledWith('/demo-calls/test-call-id/enable-voice');
       expect(result).toEqual(mockResponse.data);
@@ -155,7 +155,7 @@ describe('VoiceInteractionService', () => {
 
       (apiClient.post as jest.Mock).mockResolvedValue(mockResponse);
 
-      const result = await VoiceInteractionService.disableVoiceInteraction('test-call-id');
+      const result = await voiceInteractionService.disableVoiceInteraction('test-call-id');
 
       expect(apiClient.post).toHaveBeenCalledWith('/demo-calls/test-call-id/disable-voice');
       expect(result).toEqual(mockResponse.data);
@@ -166,7 +166,7 @@ describe('VoiceInteractionService', () => {
     it('should create and load audio element', async () => {
       const audioUrl = '/audio/test.mp3';
       
-      const audioPromise = VoiceInteractionService.playAudioResponse(audioUrl);
+      const audioPromise = voiceInteractionService.playAudioResponse(audioUrl);
       
       // Simulate successful load
       if (mockAudio.onloadeddata) {
@@ -182,7 +182,7 @@ describe('VoiceInteractionService', () => {
     it('should handle audio loading errors', async () => {
       const audioUrl = '/audio/test.mp3';
       
-      const audioPromise = VoiceInteractionService.playAudioResponse(audioUrl);
+      const audioPromise = voiceInteractionService.playAudioResponse(audioUrl);
       
       // Simulate error
       if (mockAudio.onerror) {
@@ -195,14 +195,14 @@ describe('VoiceInteractionService', () => {
 
   describe('isAudioSupported', () => {
     it('should return true when Audio is available', () => {
-      expect(VoiceInteractionService.isAudioSupported()).toBe(true);
+      expect(voiceInteractionService.isAudioSupported()).toBe(true);
     });
 
     it('should return false when Audio is not available', () => {
       const originalAudio = global.Audio;
       delete (global as any).Audio;
       
-      expect(VoiceInteractionService.isAudioSupported()).toBe(false);
+      expect(voiceInteractionService.isAudioSupported()).toBe(false);
       
       global.Audio = originalAudio;
     });
@@ -216,7 +216,7 @@ describe('VoiceInteractionService', () => {
         return '';
       });
 
-      const formats = VoiceInteractionService.getSupportedAudioFormats();
+      const formats = voiceInteractionService.getSupportedAudioFormats();
       
       expect(formats).toContain('mp3');
       expect(formats).toContain('wav');
@@ -227,7 +227,7 @@ describe('VoiceInteractionService', () => {
       const originalAudio = global.Audio;
       delete (global as any).Audio;
       
-      const formats = VoiceInteractionService.getSupportedAudioFormats();
+      const formats = voiceInteractionService.getSupportedAudioFormats();
       
       expect(formats).toEqual([]);
       
@@ -241,7 +241,7 @@ describe('VoiceInteractionService', () => {
         state: 'granted'
       });
 
-      const hasPermission = await VoiceInteractionService.checkMicrophonePermission();
+      const hasPermission = await voiceInteractionService.checkMicrophonePermission();
       
       expect(hasPermission).toBe(true);
     });
@@ -252,7 +252,7 @@ describe('VoiceInteractionService', () => {
         getTracks: () => [{ stop: jest.fn() }]
       });
 
-      const hasPermission = await VoiceInteractionService.checkMicrophonePermission();
+      const hasPermission = await voiceInteractionService.checkMicrophonePermission();
       
       expect(hasPermission).toBe(true);
     });
@@ -264,7 +264,7 @@ describe('VoiceInteractionService', () => {
         getTracks: () => [{ stop: jest.fn() }]
       });
 
-      const hasPermission = await VoiceInteractionService.requestMicrophonePermission();
+      const hasPermission = await voiceInteractionService.requestMicrophonePermission();
       
       expect(hasPermission).toBe(true);
     });
@@ -272,7 +272,7 @@ describe('VoiceInteractionService', () => {
     it('should return false when permission is denied', async () => {
       (navigator.mediaDevices.getUserMedia as jest.Mock).mockRejectedValue(new Error('Permission denied'));
 
-      const hasPermission = await VoiceInteractionService.requestMicrophonePermission();
+      const hasPermission = await voiceInteractionService.requestMicrophonePermission();
       
       expect(hasPermission).toBe(false);
     });
@@ -280,7 +280,7 @@ describe('VoiceInteractionService', () => {
 
   describe('createAudioQueue', () => {
     it('should create audio queue with correct methods', () => {
-      const queue = VoiceInteractionService.createAudioQueue();
+      const queue = voiceInteractionService.createAudioQueue();
       
       expect(queue).toHaveProperty('add');
       expect(queue).toHaveProperty('clear');
@@ -294,7 +294,7 @@ describe('VoiceInteractionService', () => {
     });
 
     it('should manage queue length correctly', () => {
-      const queue = VoiceInteractionService.createAudioQueue();
+      const queue = voiceInteractionService.createAudioQueue();
       
       expect(queue.getQueueLength()).toBe(0);
       expect(queue.isPlaying()).toBe(false);

@@ -1,10 +1,15 @@
 const request = require('supertest');
 const express = require('express');
 const authRoutes = require('../../../src/routes/auth');
-const { db } = require('../../../src/database/connection');
 
 // Mock database
-jest.mock('../../../src/database/connection');
+jest.mock('../../../src/database/connection', () => ({
+  db: {
+    query: jest.fn()
+  }
+}));
+
+const { db } = require('../../../src/database/connection');
 
 const app = express();
 app.use(express.json());

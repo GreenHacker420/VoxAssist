@@ -76,6 +76,9 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files (widget.js)
 app.use('/static', express.static('src/public'));
 
+// Serve audio files for voice interaction
+app.use('/audio', express.static('public/audio'));
+
 // Health check
 app.get('/health', (req, res) => {
   res.status(200).json({ 

@@ -1,10 +1,26 @@
 const express = require('express');
+const multer = require('multer');
 const router = express.Router();
 const logger = require('../utils/logger');
 const { authenticateToken } = require('../middleware/auth');
 const { authenticateTokenOrDemo, isDemoRequest } = require('../middleware/demoAuth');
 const emotionDetection = require('../services/emotionDetection');
 const geminiService = require('../services/geminiService');
+
+// Configure multer for audio file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('audio/') || file.mimetype === 'application/octet-stream') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only audio files are allowed'), false);
+    }
+  }
+});
 
 // In-memory storage for demo calls (in production, use Redis or database)
 const demoCallSessions = new Map();
@@ -361,10 +377,14 @@ router.get('/', authenticateTokenOrDemo, async (req, res) => {
 });
 
 // POST /api/demo-calls/:id/speech - Process customer speech input for real-time voice interaction
-router.post('/:id/speech', authenticateTokenOrDemo, async (req, res) => {
+router.post('/:id/speech', upload.single('audioData'), authenticateTokenOrDemo, async (req, res) => {
   try {
     const { id: callId } = req.params;
-    const { transcript, audioData, isInterim = false } = req.body;
+    const { transcript, isInterim = 'false' } = req.body;
+    const audioFile = req.file;
+
+    // Convert string to boolean
+    const isInterimBool = isInterim === 'true' || isInterim === true;
 
     if (!callId || !transcript) {
       return res.status(400).json({
@@ -390,11 +410,11 @@ router.post('/:id/speech', authenticateTokenOrDemo, async (req, res) => {
       });
     }
 
-    logger.info(`Processing speech for demo call: ${callId}, transcript: "${transcript}", interim: ${isInterim}`);
+    logger.info(`Processing speech for demo call: ${callId}, transcript: "${transcript}", interim: ${isInterimBool}, hasAudio: ${!!audioFile}`);
 
     // Process customer speech with AI
     const demoCallService = require('../services/demoCallService');
-    const result = await demoCallService.processCustomerSpeech(callId, transcript, isInterim);
+    const result = await demoCallService.processCustomerSpeech(callId, transcript, isInterimBool, audioFile);
 
     res.json({
       success: true,
@@ -406,7 +426,8 @@ router.post('/:id/speech', authenticateTokenOrDemo, async (req, res) => {
         sentiment: result.sentiment,
         isProcessing: result.isProcessing,
         transcriptId: result.transcriptId,
-        isInterim: result.isInterim || false
+        isInterim: result.isInterim || false,
+        hasAudioFile: !!audioFile
       }
     });
 

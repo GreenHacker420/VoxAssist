@@ -4,10 +4,12 @@ const {
   broadcastDemoCallTranscript,
   broadcastDemoCallSentiment,
   broadcastVoiceInteractionStatus,
-  broadcastAudioResponse
+  broadcastAudioResponse,
+  broadcastAudioStream
 } = require('../websocket/callMonitoring');
 const geminiService = require('./geminiService');
 const elevenLabsService = require('./elevenLabsService');
+const voiceAnalysisService = require('./voiceAnalysisService');
 const fs = require('fs').promises;
 const path = require('path');
 
@@ -160,6 +162,11 @@ class DemoCallService {
       // Broadcast sentiment update
       broadcastDemoCallSentiment(callId, demoCall.overallSentiment);
 
+      // Generate audio for AI responses
+      if (message.speaker === 'ai') {
+        this.generateAudioForMessage(callId, message.text, transcriptEntry.id);
+      }
+
       logger.info(`Demo call ${callId} - Message sent: ${message.speaker}`);
 
       // Schedule next message with realistic delay
@@ -287,7 +294,7 @@ class DemoCallService {
   /**
    * Process customer speech input for real-time voice interaction
    */
-  async processCustomerSpeech(callId, transcript, isInterim = false) {
+  async processCustomerSpeech(callId, transcript, isInterim = false, audioFile = null) {
     try {
       const demoCall = this.activeDemoCalls.get(callId);
       if (!demoCall) {
@@ -431,7 +438,50 @@ class DemoCallService {
   }
 
   /**
-   * Generate audio response using ElevenLabs TTS
+   * Generate audio for demo call messages (async, non-blocking)
+   */
+  async generateAudioForMessage(callId, text, transcriptId) {
+    try {
+      // Generate audio asynchronously without blocking the conversation flow
+      const audioBuffer = await this.generateAudioBuffer(text, callId);
+
+      if (audioBuffer) {
+        // Stream audio directly via WebSocket
+        broadcastAudioStream(callId, audioBuffer, transcriptId, {
+          text: text.substring(0, 50) + '...' // Include preview text
+        });
+        logger.info(`Streamed audio for demo call ${callId}, transcript: ${transcriptId}, size: ${audioBuffer.length} bytes`);
+      }
+    } catch (error) {
+      logger.error(`Error generating audio for demo call ${callId}: ${error.message}`);
+      // Don't throw error - audio generation failure shouldn't stop the demo
+    }
+  }
+
+  /**
+   * Generate audio buffer using ElevenLabs TTS (for WebSocket streaming)
+   */
+  async generateAudioBuffer(text, callId) {
+    try {
+      logger.info(`Generating audio buffer for text: ${text.substring(0, 50)}...`);
+
+      const audioBuffer = await elevenLabsService.textToSpeechBuffer(text);
+
+      if (audioBuffer) {
+        logger.info(`Generated audio buffer for demo call ${callId}: ${audioBuffer.length} bytes`);
+        return audioBuffer;
+      } else {
+        logger.warn(`No audio buffer generated for demo call ${callId}`);
+        return null;
+      }
+    } catch (error) {
+      logger.error(`Error generating audio buffer for demo call ${callId}: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Generate audio response using ElevenLabs TTS (deprecated - use generateAudioBuffer)
    */
   async generateAudioResponse(text, callId) {
     try {
@@ -538,6 +588,161 @@ class DemoCallService {
    */
   isVoiceInteractionEnabled(callId) {
     return this.voiceInteractionMode.has(callId);
+  }
+
+  /**
+   * Process voice input from user (STT + Analysis)
+   */
+  async processVoiceInput(callId, audioBuffer, format = 'webm', audioMetrics = {}) {
+    try {
+      logger.info(`Processing voice input for demo call ${callId}, format: ${format}, size: ${audioBuffer.length} bytes`);
+
+      const demoCall = this.activeDemoCalls.get(callId);
+      if (!demoCall) {
+        logger.warn(`Demo call not found: ${callId}`);
+        return null;
+      }
+
+      // Process voice input with comprehensive analysis
+      const voiceResult = await voiceAnalysisService.processVoiceInput(audioBuffer, format, audioMetrics);
+
+      if (voiceResult && voiceResult.transcription) {
+        // Add user input to transcript with analysis data
+        const transcriptEntry = {
+          id: `msg-${Date.now()}-${demoCall.transcript.length}`,
+          speaker: 'customer',
+          text: voiceResult.transcription.text,
+          timestamp: new Date().toISOString(),
+          confidence: voiceResult.transcription.confidence / 100,
+          sentiment: voiceResult.analysis.sentiment,
+          emotion: voiceResult.analysis.emotion,
+          intent: voiceResult.analysis.intent,
+          audioMetrics: voiceResult.analysis.audioMetrics,
+          keywords: voiceResult.analysis.keywords,
+          summary: voiceResult.analysis.summary
+        };
+
+        demoCall.transcript.push(transcriptEntry);
+
+        // Broadcast comprehensive transcript update
+        broadcastDemoCallTranscript(callId, transcriptEntry, demoCall.overallSentiment);
+
+        // Broadcast voice analysis results
+        this.broadcastVoiceAnalysis(callId, voiceResult.analysis);
+
+        // Generate AI response to user input with context
+        await this.generateAIResponseToInput(callId, voiceResult.transcription.text, voiceResult.analysis);
+
+        logger.info(`Processed voice input for demo call ${callId}: "${voiceResult.transcription.text}" (${voiceResult.analysis.sentiment.overall})`);
+        return {
+          transcriptEntry,
+          analysis: voiceResult.analysis
+        };
+      }
+
+      return null;
+    } catch (error) {
+      logger.error(`Error processing voice input for demo call ${callId}: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Broadcast voice analysis results to connected clients
+   */
+  broadcastVoiceAnalysis(callId, analysis) {
+    try {
+      const { broadcastVoiceAnalysis } = require('../websocket/callMonitoring');
+      broadcastVoiceAnalysis(callId, analysis);
+      logger.info(`Voice analysis broadcasted for call ${callId}: sentiment=${analysis.sentiment.overall}, emotion=${analysis.emotion.primary}`);
+    } catch (error) {
+      logger.error(`Error broadcasting voice analysis for call ${callId}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Transcribe audio buffer to text
+   */
+  async transcribeAudio(audioBuffer, format) {
+    try {
+      // For demo purposes, return a simulated transcription
+      // In production, integrate with Google Speech-to-Text, OpenAI Whisper, etc.
+      const sampleResponses = [
+        "I need help with my account",
+        "Can you help me reset my password?",
+        "I'm having trouble logging in",
+        "What are your business hours?",
+        "Thank you for your help"
+      ];
+
+      // Simulate processing delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      return sampleResponses[Math.floor(Math.random() * sampleResponses.length)];
+    } catch (error) {
+      logger.error(`Error transcribing audio: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Generate AI response to user input
+   */
+  async generateAIResponseToInput(callId, userInput) {
+    try {
+      const demoCall = this.activeDemoCalls.get(callId);
+      if (!demoCall) return;
+
+      // Generate contextual AI response
+      const aiResponse = await this.generateContextualResponse(userInput, demoCall);
+
+      // Add AI response to transcript
+      const transcriptEntry = {
+        id: `msg-${Date.now()}-${demoCall.transcript.length}`,
+        speaker: 'ai',
+        text: aiResponse,
+        timestamp: new Date().toISOString(),
+        confidence: 1.0
+      };
+
+      demoCall.transcript.push(transcriptEntry);
+
+      // Update sentiment
+      this.updateOverallSentiment(demoCall, { speaker: 'ai', text: aiResponse });
+
+      // Broadcast transcript update
+      broadcastDemoCallTranscript(callId, transcriptEntry, demoCall.overallSentiment);
+
+      // Generate and stream audio response
+      await this.generateAudioForMessage(callId, aiResponse, transcriptEntry.id);
+
+    } catch (error) {
+      logger.error(`Error generating AI response: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate contextual AI response based on user input
+   */
+  async generateContextualResponse(userInput, demoCall) {
+    // Simple contextual responses for demo
+    const responses = {
+      'account': "I'd be happy to help you with your account. Can you please provide your account number or email address?",
+      'password': "I can help you reset your password. For security purposes, I'll send a reset link to your registered email address.",
+      'login': "I understand you're having trouble logging in. Let me help you troubleshoot this issue step by step.",
+      'hours': "Our customer support is available 24/7. You can reach us anytime through this chat or by calling our support line.",
+      'help': "I'm here to help! Please let me know what specific issue you're experiencing and I'll do my best to assist you.",
+      'thank': "You're very welcome! Is there anything else I can help you with today?"
+    };
+
+    const input = userInput.toLowerCase();
+    for (const [keyword, response] of Object.entries(responses)) {
+      if (input.includes(keyword)) {
+        return response;
+      }
+    }
+
+    return "I understand your concern. Let me connect you with the right information to help resolve this issue.";
   }
 
   /**

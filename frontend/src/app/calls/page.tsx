@@ -224,7 +224,7 @@ export default function CallsPage() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-1">Test VoxAssist Features</h3>
                 <p className="text-sm text-gray-600">
-                  Experience VoxAssist's calling capabilities with real-time transcript and sentiment analysis
+                  Experience VoxAssist&apos;s calling capabilities with real-time transcript and sentiment analysis
                 </p>
               </div>
             </div>

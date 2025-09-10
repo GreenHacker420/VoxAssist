@@ -1,30 +1,35 @@
-const BaseProvider = require('./BaseProvider');
+const { createBaseProvider, validatePhoneNumber, formatPhoneNumber, formatSuccessResponse, handleProviderError } = require('./BaseProvider');
 const twilio = require('twilio');
 
-class TwilioProvider extends BaseProvider {
-    constructor(config) {
-        super(config);
-        this.client = twilio(this.credentials.accountSid, this.credentials.authToken);
-    }
+/**
+ * Create a Twilio provider instance
+ */
+const createTwilioProvider = (config) => {
+  const baseProvider = createBaseProvider(config);
+  const client = twilio(baseProvider.credentials.accountSid, baseProvider.credentials.authToken);
+
+  return {
+    ...baseProvider,
+    client,
 
     async initiateCall(fromNumber, toNumber, callbackUrl) {
-        try {
-            const formattedFrom = this.formatPhoneNumber(fromNumber);
-            const formattedTo = this.formatPhoneNumber(toNumber);
+      try {
+        const formattedFrom = formatPhoneNumber(fromNumber);
+        const formattedTo = formatPhoneNumber(toNumber);
 
-            if (!this.validatePhoneNumber(formattedFrom) || !this.validatePhoneNumber(formattedTo)) {
-                throw new Error('Invalid phone number format');
-            }
+        if (!validatePhoneNumber(formattedFrom) || !validatePhoneNumber(formattedTo)) {
+          throw new Error('Invalid phone number format');
+        }
 
-            let callOptions = {
-                from: formattedFrom,
-                to: formattedTo,
-                statusCallback: callbackUrl,
-                statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
-                statusCallbackMethod: 'POST',
-                record: this.settings.recordCalls || false,
-                timeout: this.settings.timeout || 30
-            };
+        let callOptions = {
+          from: formattedFrom,
+          to: formattedTo,
+          statusCallback: callbackUrl,
+          statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
+          statusCallbackMethod: 'POST',
+          record: baseProvider.settings.recordCalls || false,
+          timeout: baseProvider.settings.timeout || 30
+        };
 
             if (this.type === 'phone') {
                 // Traditional phone call with TwiML
@@ -50,7 +55,7 @@ class TwilioProvider extends BaseProvider {
         }
     }
 
-    async initiateWhatsAppInteraction(fromNumber, toNumber, callbackUrl) {
+    initiateWhatsAppInteraction: async function(fromNumber, toNumber, callbackUrl) {
         try {
             // For WhatsApp, we start with a message and then can escalate to voice
             const whatsappFrom = `whatsapp:${fromNumber}`;
@@ -77,7 +82,7 @@ class TwilioProvider extends BaseProvider {
         }
     }
 
-    async sendMessage(fromNumber, toNumber, message) {
+    sendMessage: async function(fromNumber, toNumber, message) {
         try {
             const formattedFrom = this.formatPhoneNumber(fromNumber);
             const formattedTo = this.formatPhoneNumber(toNumber);
@@ -102,7 +107,7 @@ class TwilioProvider extends BaseProvider {
         }
     }
 
-    async sendWhatsAppAudio(fromNumber, toNumber, audioUrl) {
+    sendWhatsAppAudio: async function(fromNumber, toNumber, audioUrl) {
         try {
             const whatsappFrom = `whatsapp:${this.formatPhoneNumber(fromNumber)}`;
             const whatsappTo = `whatsapp:${this.formatPhoneNumber(toNumber)}`;
@@ -124,7 +129,7 @@ class TwilioProvider extends BaseProvider {
         }
     }
 
-    async getCallStatus(externalCallId) {
+    getCallStatus: async function(externalCallId) {
         try {
             const call = await this.client.calls(externalCallId).fetch();
 
@@ -143,7 +148,7 @@ class TwilioProvider extends BaseProvider {
         }
     }
 
-    async endCall(externalCallId) {
+    endCall: async function(externalCallId) {
         try {
             const call = await this.client.calls(externalCallId).update({
                 status: 'completed'
@@ -160,7 +165,7 @@ class TwilioProvider extends BaseProvider {
         }
     }
 
-    async handleWebhook(webhookData) {
+    handleWebhook: async function(webhookData) {
         try {
             const { CallSid, MessageSid, CallStatus, MessageStatus, From, To, Body, MediaUrl0 } = webhookData;
 
@@ -195,7 +200,7 @@ class TwilioProvider extends BaseProvider {
         }
     }
 
-    async handleCallWebhook(data) {
+    handleCallWebhook: async function(data) {
         const statusMapping = {
             'initiated': 'initiated',
             'ringing': 'ringing',
@@ -216,7 +221,7 @@ class TwilioProvider extends BaseProvider {
         });
     }
 
-    async handleMessageWebhook(data) {
+    handleMessageWebhook: async function(data) {
         const isWhatsApp = data.from?.includes('whatsapp:') || data.to?.includes('whatsapp:');
         
         // Handle incoming WhatsApp messages
@@ -273,7 +278,7 @@ class TwilioProvider extends BaseProvider {
     }
 
     // Get available phone numbers from Twilio
-    async getAvailableNumbers(countryCode = 'US') {
+    getAvailableNumbers: async function(countryCode = 'US') {
         try {
             const numbers = await this.client.availablePhoneNumbers(countryCode)
                 .local
@@ -293,7 +298,7 @@ class TwilioProvider extends BaseProvider {
     }
 
     // Purchase a phone number
-    async purchaseNumber(phoneNumber) {
+    purchaseNumber: async function(phoneNumber) {
         try {
             const number = await this.client.incomingPhoneNumbers.create({
                 phoneNumber: phoneNumber,
