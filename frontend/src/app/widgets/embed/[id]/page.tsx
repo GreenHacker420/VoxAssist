@@ -6,6 +6,8 @@ import { Card, Typography, Button, Space, Tabs, Alert, Input, Switch, Divider, T
 import { CopyOutlined, CodeOutlined, GlobalOutlined, SettingOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { WidgetsService } from '@/services/widgets';
 import type { WidgetDTO } from '@/services/widgets';
+import DashboardLayout from '@/components/Layout/DashboardLayout';
+import WidgetPreview from '@/components/widgets/WidgetPreview';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -86,56 +88,8 @@ export default function WidgetEmbedPage() {
   };
 
   const getEmbedCode = (type: 'script' | 'iframe' | 'react') => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-    const baseUrl = apiUrl.replace('/api', '');
     const domain = customDomain || 'your-domain.com';
-    
-    switch (type) {
-      case 'script':
-        return `<!-- VoxAssist Widget -->
-<script>
-  (function() {
-    var script = document.createElement('script');
-    script.src = '${baseUrl}/embed/widget.js?id=${widgetId}&v=1.0';
-    script.async = true;
-    document.head.appendChild(script);
-  })();
-</script>`;
-
-      case 'iframe':
-        return `<!-- VoxAssist Widget (iframe) -->
-<iframe 
-  src="${baseUrl}/embed/widget/${widgetId}/iframe?origin=${encodeURIComponent(`https://${domain}`)}"
-  width="350" 
-  height="500"
-  frameborder="0"
-  style="position: fixed; bottom: 20px; right: 20px; z-index: 999999; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
-</iframe>`;
-
-      case 'react':
-        return `// VoxAssist React Component
-import { useEffect } from 'react';
-
-export function VoxAssistWidget() {
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = '${baseUrl}/embed/widget.js?id=${widgetId}&v=1.0';
-    script.async = true;
-    document.head.appendChild(script);
-    
-    return () => {
-      // Cleanup widget on unmount
-      const widget = document.getElementById('voxassist-widget-container');
-      if (widget) widget.remove();
-    };
-  }, []);
-
-  return null; // Widget renders itself
-}`;
-
-      default:
-        return '';
-    }
+    return WidgetsService.generateEmbedCode(widgetId, type, domain);
   };
 
   const getTestUrl = () => {
@@ -146,29 +100,25 @@ export function VoxAssistWidget() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading widget configuration...</p>
-          </div>
+      <DashboardLayout>
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading widget configuration...</p>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (!widget) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
-        <div className="max-w-6xl mx-auto">
-          <Alert
-            message="Widget Not Found"
-            description="The requested widget could not be found or you don't have permission to access it."
-            type="error"
-            showIcon
-          />
-        </div>
-      </div>
+      <DashboardLayout>
+        <Alert
+          message="Widget Not Found"
+          description="The requested widget could not be found or you don't have permission to access it."
+          type="error"
+          showIcon
+        />
+      </DashboardLayout>
     );
   }
 
@@ -281,8 +231,8 @@ export function VoxAssistWidget() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <DashboardLayout>
+      <div className="space-y-6">
         {/* Header */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between">
@@ -402,6 +352,24 @@ export function VoxAssistWidget() {
           </div>
         </div>
 
+        {/* Live Preview */}
+        <Card title="Live Preview">
+          <div className="space-y-4">
+            <Alert
+              message="Interactive Preview"
+              description="This is a live preview of how your widget will appear and behave on your website. Click the widget button to test the interaction."
+              type="info"
+              showIcon
+            />
+            <div className="relative bg-gray-100 rounded-lg p-8 min-h-[400px]">
+              <div className="text-center text-gray-500 mb-4">
+                <Text>Your website content would appear here</Text>
+              </div>
+              <WidgetPreview widget={widget} />
+            </div>
+          </div>
+        </Card>
+
         {/* Integration Instructions */}
         <Card title="Integration Instructions">
           <div className="space-y-4">
@@ -440,6 +408,6 @@ export function VoxAssistWidget() {
           </div>
         </Card>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

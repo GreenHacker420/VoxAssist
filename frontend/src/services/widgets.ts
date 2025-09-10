@@ -84,6 +84,59 @@ const toggleActive = async (widgetId: string, isActive: boolean) => {
   return res.data;
 };
 
+const generateEmbedCode = (widgetId: string, type: 'script' | 'iframe' | 'react' = 'script', domain?: string) => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+  switch (type) {
+    case 'script':
+      return `<!-- VoxAssist Widget -->
+<script>
+  (function() {
+    var script = document.createElement('script');
+    script.src = '${baseUrl}/embed/widget.js?id=${widgetId}&v=1.0';
+    script.async = true;
+    document.head.appendChild(script);
+  })();
+</script>`;
+
+    case 'iframe':
+      return `<!-- VoxAssist Widget (iframe) -->
+<iframe
+  src="${baseUrl}/embed/widget/${widgetId}/iframe?origin=${encodeURIComponent(`https://${domain || 'example.com'}`)}"
+  width="350"
+  height="500"
+  frameborder="0"
+  style="position: fixed; bottom: 20px; right: 20px; z-index: 999999; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+</iframe>`;
+
+    case 'react':
+      return `// VoxAssist React Component
+import { useEffect } from 'react';
+
+export default function VoxAssistWidget() {
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = '${baseUrl}/embed/widget.js?id=${widgetId}&v=1.0';
+    script.async = true;
+    document.head.appendChild(script);
+
+    return () => {
+      // Cleanup script on unmount
+      const existingScript = document.querySelector(\`script[src*="${widgetId}"]\`);
+      if (existingScript) {
+        existingScript.remove();
+      }
+    };
+  }, []);
+
+  return null; // Widget renders itself
+}`;
+
+    default:
+      return '';
+  }
+};
+
 export const WidgetsService = {
   list,
   analytics,
@@ -92,4 +145,5 @@ export const WidgetsService = {
   update,
   remove,
   toggleActive,
+  generateEmbedCode,
 };

@@ -176,13 +176,47 @@ export function useDemoCallWebSocket(options: UseDemoCallWebSocketOptions = {}):
       };
 
       wsRef.current.onerror = (error) => {
-        console.error('Demo call WebSocket error:', error);
-        // Don't set error for demo mode - just log it
+        // Enhanced WebSocket error logging
+        const errorDetails = {
+          type: error.type || 'unknown',
+          target: error.target && error.target instanceof WebSocket ? {
+            readyState: error.target.readyState,
+            url: error.target.url,
+            protocol: error.target.protocol
+          } : null,
+          timestamp: new Date().toISOString(),
+          callId: callId,
+          userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'N/A',
+          connectionState: wsRef.current?.readyState,
+          wsUrl: `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001'}/demo-calls`
+        };
+
+        console.error('Demo call WebSocket error details:', errorDetails);
+        console.error('Original WebSocket error:', error);
         console.log('WebSocket connection failed, demo will work in offline mode');
+
+        // Additional debugging information
+        if (error.target && error.target instanceof WebSocket) {
+          console.log('WebSocket readyState:', error.target.readyState);
+          console.log('WebSocket URL:', error.target.url);
+        }
       };
 
     } catch (error) {
-      console.error('Error connecting to demo call WebSocket:', error);
+      // Enhanced connection error logging
+      const errorDetails = {
+        message: error instanceof Error ? error.message : 'Unknown connection error',
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : 'ConnectionError',
+        timestamp: new Date().toISOString(),
+        callId: callId,
+        wsUrl: `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001'}/demo-calls`,
+        userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'N/A',
+        networkState: typeof navigator !== 'undefined' ? navigator.onLine : 'unknown'
+      };
+
+      console.error('Error connecting to demo call WebSocket:', errorDetails);
+      console.error('Original connection error:', error);
       setError('Failed to connect to demo call');
     }
   };

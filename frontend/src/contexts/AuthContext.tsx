@@ -68,7 +68,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       } catch (error) {
-        console.error('Failed to initialize auth:', error);
+        // Enhanced error logging with detailed information
+        const errorDetails = {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          name: error instanceof Error ? error.name : 'UnknownError',
+          cause: error instanceof Error ? error.cause : undefined,
+          timestamp: new Date().toISOString(),
+          userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'N/A'
+        };
+
+        console.error('Failed to initialize auth:', errorDetails);
+        console.error('Original error object:', error);
+
+        // Clear any potentially corrupted auth state
         AuthService.logout();
       } finally {
         setIsLoading(false);
@@ -90,6 +103,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       message.success('Login successful!');
     } catch (error: unknown) {
+      // Enhanced error logging for login failures
+      const errorDetails = {
+        message: error instanceof Error ? error.message : 'Login failed',
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : 'LoginError',
+        timestamp: new Date().toISOString(),
+        email: email, // Log email for debugging (remove in production)
+        userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'N/A'
+      };
+
+      console.error('Login failed:', errorDetails);
+      console.error('Original login error:', error);
+
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
       message.error(errorMessage);
       throw error;
@@ -108,6 +134,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       message.success('Registration successful!');
     } catch (error: unknown) {
+      // Enhanced error logging for registration failures
+      const errorDetails = {
+        message: error instanceof Error ? error.message : 'Registration failed',
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : 'RegistrationError',
+        timestamp: new Date().toISOString(),
+        email: email, // Log email for debugging (remove in production)
+        userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'N/A'
+      };
+
+      console.error('Registration failed:', errorDetails);
+      console.error('Original registration error:', error);
+
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
       message.error(errorMessage);
       throw error;
