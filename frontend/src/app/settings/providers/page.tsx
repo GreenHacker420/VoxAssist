@@ -15,7 +15,7 @@ import {
   Badge,
   Tooltip,
   Modal,
-  message
+  App
 } from 'antd';
 import { 
   PhoneOutlined, 
@@ -98,6 +98,7 @@ const PROVIDER_INFO = {
 } as const;
 
 export default function ProvidersPage() {
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);

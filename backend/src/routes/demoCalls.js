@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const logger = require('../utils/logger');
 const { authenticateToken } = require('../middleware/auth');
+const { authenticateTokenOrDemo, isDemoRequest } = require('../middleware/demoAuth');
 const emotionDetection = require('../services/emotionDetection');
 const geminiService = require('../services/geminiService');
 
@@ -71,7 +72,7 @@ const DEMO_CONVERSATION_TEMPLATES = {
 };
 
 // POST /api/demo-calls - Initiate a new demo call
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateTokenOrDemo, async (req, res) => {
   try {
     const { template = 'CUSTOMER_SUPPORT', userId } = req.body;
     const callId = `demo-call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -124,7 +125,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // GET /api/demo-calls/:callId - Get demo call details
-router.get('/:callId', authenticateToken, async (req, res) => {
+router.get('/:callId', authenticateTokenOrDemo, async (req, res) => {
   try {
     const { callId } = req.params;
     const demoCall = demoCallSessions.get(callId);
@@ -171,7 +172,7 @@ router.get('/:callId', authenticateToken, async (req, res) => {
 });
 
 // POST /api/demo-calls/:callId/next-message - Get next message in demo conversation
-router.post('/:callId/next-message', authenticateToken, async (req, res) => {
+router.post('/:callId/next-message', authenticateTokenOrDemo, async (req, res) => {
   try {
     const { callId } = req.params;
     const demoCall = demoCallSessions.get(callId);
@@ -274,7 +275,7 @@ router.post('/:callId/next-message', authenticateToken, async (req, res) => {
 });
 
 // DELETE /api/demo-calls/:callId - End demo call
-router.delete('/:callId', authenticateToken, async (req, res) => {
+router.delete('/:callId', authenticateTokenOrDemo, async (req, res) => {
   try {
     const { callId } = req.params;
     const demoCall = demoCallSessions.get(callId);
@@ -322,7 +323,7 @@ router.delete('/:callId', authenticateToken, async (req, res) => {
 });
 
 // GET /api/demo-calls - Get all demo calls for user
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateTokenOrDemo, async (req, res) => {
   try {
     const userDemoCalls = Array.from(demoCallSessions.values())
       .filter(call => call.userId === req.user.userId)

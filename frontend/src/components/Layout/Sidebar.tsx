@@ -22,10 +22,10 @@ const { Text } = Typography;
 const navigation = [
   { key: 'dashboard', name: 'Dashboard', href: '/dashboard', icon: <HomeOutlined /> },
   { key: 'calls', name: 'Calls', href: '/calls', icon: <PhoneOutlined /> },
+  { key: 'widgets', name: 'Widgets', href: '/widgets', icon: <AppstoreOutlined /> },
   { key: 'contacts', name: 'Contacts', href: '/contacts', icon: <TeamOutlined /> },
   { key: 'campaigns', name: 'Campaigns', href: '/campaigns', icon: <SoundOutlined /> },
   { key: 'scripts', name: 'Scripts', href: '/scripts', icon: <FileTextOutlined /> },
-  { key: 'widgets', name: 'Widgets', href: '/widgets', icon: <AppstoreOutlined /> },
   { key: 'analytics', name: 'Analytics', href: '/analytics', icon: <BarChartOutlined /> },
   { key: 'billing', name: 'Billing', href: '/billing', icon: <CreditCardOutlined /> },
   { key: 'webhooks', name: 'Webhooks', href: '/webhooks', icon: <LinkOutlined /> },

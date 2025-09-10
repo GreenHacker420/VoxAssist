@@ -20,13 +20,22 @@ class ApiClient {
       },
     });
 
-    // Request interceptor to add auth token
+    // Request interceptor to add auth token and demo mode header
     this.client.interceptors.request.use(
       (config) => {
         const token = Cookies.get('auth-token');
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+
+        // Add demo mode header if in demo mode
+        if (typeof window !== 'undefined') {
+          const isDemoMode = localStorage.getItem('voxassist_demo_mode') === 'true';
+          if (isDemoMode) {
+            config.headers['X-Demo-Mode'] = 'true';
+          }
+        }
+
         return config;
       },
       (error) => {

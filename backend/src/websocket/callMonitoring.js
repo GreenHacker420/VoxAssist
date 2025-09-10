@@ -40,7 +40,7 @@ function initializeWebSocketServer(server) {
             await handleSentimentUpdate(data);
             break;
           case 'join_demo_call':
-            await handleJoinDemoCall(ws, data.callId, data.token);
+            await handleJoinDemoCall(ws, data.callId, data.token, data.isDemoMode);
             break;
           case 'demo_call_next_message':
             await handleDemoCallNextMessage(ws, data.callId);
@@ -259,7 +259,7 @@ function simulateTranscriptUpdates(callId) {
 /**
  * Handle client joining a demo call room
  */
-async function handleJoinDemoCall(ws, callId, token) {
+async function handleJoinDemoCall(ws, callId, token, isDemoMode = false) {
   try {
     // For demo calls, we use a simpler verification
     if (!callId || !callId.startsWith('demo-call-')) {
@@ -268,6 +268,15 @@ async function handleJoinDemoCall(ws, callId, token) {
         message: 'Invalid demo call ID'
       }));
       return;
+    }
+
+    // Accept both demo users and authenticated users for demo calls
+    if (isDemoMode || token === 'demo-token') {
+      logger.info(`Demo user joining demo call: ${callId}`);
+    } else {
+      // For authenticated users, we could verify the JWT token here
+      // For now, we'll allow any token for demo calls
+      logger.info(`Authenticated user joining demo call: ${callId}`);
     }
 
     if (!global.wsClients.has(callId)) {
@@ -279,10 +288,11 @@ async function handleJoinDemoCall(ws, callId, token) {
     ws.send(JSON.stringify({
       type: 'joined_demo_call',
       callId: callId,
-      message: 'Successfully joined demo call monitoring'
+      message: 'Successfully joined demo call monitoring',
+      isDemoMode: isDemoMode
     }));
 
-    logger.info(`Client joined demo call monitoring for call: ${callId}`);
+    logger.info(`Client joined demo call monitoring for call: ${callId} (demo mode: ${isDemoMode})`);
   } catch (error) {
     logger.error('Error joining demo call:', error);
     ws.send(JSON.stringify({

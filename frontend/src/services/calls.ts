@@ -297,8 +297,7 @@ export class CallsService {
       // Use backend API for demo calls to get real-time features
       try {
         const response = await apiClient.post<Call>('/demo-calls', {
-          template: 'CUSTOMER_SUPPORT',
-          userId: 'demo-user'
+          template: 'CUSTOMER_SUPPORT'
         });
 
         if (response.success && response.data) {

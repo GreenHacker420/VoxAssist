@@ -15,6 +15,10 @@ import {
   Spin,
   Alert,
   Empty,
+  Modal,
+  Form,
+  Select,
+  App
 } from 'antd';
 import {
   PlusOutlined,
@@ -28,10 +32,14 @@ const { Title, Text } = Typography;
 const { Search } = Input;
 
 export default function ContactsPage() {
+  const { message } = App.useApp();
   const [contacts, setContacts] = useState<(Customer | Lead)[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [form] = Form.useForm();
+  const [nextId, setNextId] = useState(3);
 
   useEffect(() => {
     // Mock data for now since we don't have a contacts endpoint
@@ -63,6 +71,30 @@ export default function ContactsPage() {
     setContacts(mockContacts);
     setIsLoading(false);
   }, []);
+
+  const handleAddContact = async (values: any) => {
+    try {
+      const newContact: Lead = {
+        id: nextId,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        phone: values.phone,
+        company: values.company || '',
+        source: values.source || 'Manual',
+        status: 'new',
+        createdAt: new Date().toISOString(),
+      };
+
+      setContacts(prev => [newContact, ...prev]);
+      setNextId(prev => prev + 1);
+      setShowAddModal(false);
+      form.resetFields();
+      message.success('Contact added successfully!');
+    } catch (error) {
+      message.error('Failed to add contact');
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -181,6 +213,7 @@ export default function ContactsPage() {
             type="primary"
             icon={<PlusOutlined />}
             size="large"
+            onClick={() => setShowAddModal(true)}
           >
             Add Contact
           </Button>
@@ -234,7 +267,7 @@ export default function ContactsPage() {
                 }
               >
                 {!searchTerm && (
-                  <Button type="primary" icon={<PlusOutlined />}>
+                  <Button type="primary" icon={<PlusOutlined />} onClick={() => setShowAddModal(true)}>
                     Add Contact
                   </Button>
                 )}
@@ -242,6 +275,81 @@ export default function ContactsPage() {
             ),
           }}
         />
+
+        {/* Add Contact Modal */}
+        <Modal
+          title="Add New Contact"
+          open={showAddModal}
+          onCancel={() => {
+            setShowAddModal(false);
+            form.resetFields();
+          }}
+          onOk={() => form.submit()}
+          okText="Add Contact"
+          cancelText="Cancel"
+        >
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleAddContact}
+            requiredMark={false}
+          >
+            <Form.Item
+              name="firstName"
+              label="First Name"
+              rules={[{ required: true, message: 'Please enter first name' }]}
+            >
+              <Input placeholder="Enter first name" />
+            </Form.Item>
+
+            <Form.Item
+              name="lastName"
+              label="Last Name"
+              rules={[{ required: true, message: 'Please enter last name' }]}
+            >
+              <Input placeholder="Enter last name" />
+            </Form.Item>
+
+            <Form.Item
+              name="email"
+              label="Email"
+              rules={[
+                { required: true, message: 'Please enter email' },
+                { type: 'email', message: 'Please enter a valid email' }
+              ]}
+            >
+              <Input placeholder="Enter email address" />
+            </Form.Item>
+
+            <Form.Item
+              name="phone"
+              label="Phone"
+              rules={[{ required: true, message: 'Please enter phone number' }]}
+            >
+              <Input placeholder="Enter phone number" />
+            </Form.Item>
+
+            <Form.Item
+              name="company"
+              label="Company"
+            >
+              <Input placeholder="Enter company name" />
+            </Form.Item>
+
+            <Form.Item
+              name="source"
+              label="Source"
+            >
+              <Select placeholder="Select source">
+                <Select.Option value="Website">Website</Select.Option>
+                <Select.Option value="Referral">Referral</Select.Option>
+                <Select.Option value="Social Media">Social Media</Select.Option>
+                <Select.Option value="Email Campaign">Email Campaign</Select.Option>
+                <Select.Option value="Manual">Manual</Select.Option>
+              </Select>
+            </Form.Item>
+          </Form>
+        </Modal>
       </div>
     </DashboardLayout>
   );

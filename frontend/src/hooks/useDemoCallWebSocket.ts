@@ -96,7 +96,8 @@ export function useDemoCallWebSocket(): UseDemoCallWebSocketReturn {
           wsRef.current.send(JSON.stringify({
             type: 'join_demo_call',
             callId: currentCallIdRef.current,
-            token: 'demo-token' // In production, use real JWT token
+            token: isDemoMode ? 'demo-token' : 'real-token', // Demo users get demo token
+            isDemoMode: isDemoMode
           }));
         }
       };
