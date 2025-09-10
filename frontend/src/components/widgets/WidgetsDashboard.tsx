@@ -1,25 +1,101 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PlusIcon, FunnelIcon, MagnifyingGlassIcon, Bars3BottomLeftIcon } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/navigation';
+import {
+  Card,
+  Row,
+  Col,
+  Button,
+  Typography,
+  Space,
+  Tag,
+  Statistic,
+  Input,
+  Select,
+  Empty,
+  Spin,
+  message,
+  Dropdown
+} from 'antd';
+import {
+  PlusOutlined,
+  SearchOutlined,
+  FilterOutlined,
+  BarChartOutlined,
+  GlobalOutlined,
+  CheckCircleOutlined,
+  MoreOutlined,
+  EyeOutlined,
+  CodeOutlined,
+  EditOutlined,
+  DeleteOutlined
+} from '@ant-design/icons';
 import { DEMO_WIDGETS, DemoWidget } from '@/demo/widgets';
 import { useAuth } from '@/contexts/AuthContext';
-import EnhancedWidgetCard from './EnhancedWidgetCard';
+import { WidgetsService, type WidgetDTO } from '@/services/widgets';
+import WidgetCreationWizard from './WidgetCreationWizard';
 import toast from 'react-hot-toast';
+
+const { Title, Text, Paragraph } = Typography;
+const { Search } = Input;
+const { Option } = Select;
+
+type Widget = DemoWidget | WidgetDTO;
 
 interface WidgetsDashboardProps {
   onCreateWidget?: () => void;
 }
 
 export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardProps) {
-  const { isDemoMode } = useAuth();
-  const [widgets, setWidgets] = useState<DemoWidget[]>([]);
-  const [filteredWidgets, setFilteredWidgets] = useState<DemoWidget[]>([]);
+  const router = useRouter();
+  const { user, isDemoMode } = useAuth();
+  const [widgets, setWidgets] = useState<WidgetDTO[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [isLoading, setIsLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<'name' | 'interactions' | 'conversion' | 'recent'>('recent');
-  const [compact, setCompact] = useState(false);
+  const [showCreateWizard, setShowCreateWizard] = useState(false);
+  const [editingWidget, setEditingWidget] = useState<WidgetDTO | null>(null);
+
+  // Convert demo widgets to WidgetDTO format
+  const convertDemoWidgets = (demoWidgets: DemoWidget[]): WidgetDTO[] => {
+    return demoWidgets.map(widget => ({
+      id: widget.id,
+      name: widget.name,
+      contextUrl: `https://example.com/${widget.id}`, // Demo URL
+      organizationId: 1,
+      isActive: widget.isActive,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      appearance: {
+        position: 'bottom-right',
+        primaryColor: '#3B82F6',
+        secondaryColor: '#1E40AF',
+        textColor: '#FFFFFF',
+        backgroundColor: '#FFFFFF',
+        borderRadius: '12px',
+        size: 'medium',
+        theme: 'light'
+      },
+      behavior: {
+        autoOpen: false,
+        autoOpenDelay: 5000,
+        greeting: 'Hi! How can I help you today?',
+        language: 'en',
+        enableVoice: true,
+        enableText: true,
+        enableFileUpload: true,
+        showBranding: true
+      },
+      permissions: {
+        collectPersonalData: false,
+        storeCookies: true,
+        recordAudio: false,
+        shareWithThirdParty: false,
+        allowedDomains: []
+      }
+    }));
+  };
 
   // Load widgets (demo data or real API call)
   useEffect(() => {
@@ -27,76 +103,58 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
       setIsLoading(true);
       try {
         if (isDemoMode) {
-          // Use demo data
-          setWidgets(DEMO_WIDGETS);
+          // Use demo data converted to WidgetDTO format
+          setWidgets(convertDemoWidgets(DEMO_WIDGETS));
+        } else if (user?.organizationId) {
+          const response = await WidgetsService.list(user.organizationId);
+          setWidgets(response);
         } else {
-          // In real implementation, fetch from API
-          // const response = await WidgetsService.list(organizationId);
-          // setWidgets(response);
           setWidgets([]);
         }
       } catch (error) {
         console.error('Failed to load widgets:', error);
-        toast.error('Failed to load widgets');
+        message.error('Failed to load widgets');
       } finally {
         setIsLoading(false);
       }
     };
 
     loadWidgets();
-  }, [isDemoMode]);
+  }, [isDemoMode, user?.organizationId]);
+
+  // Handler functions
+  const handleCreateWidget = () => {
+    setEditingWidget(null);
+    setShowCreateWizard(true);
+  };
+
+  const handleEditWidget = (widget: WidgetDTO) => {
+    setEditingWidget(widget);
+    setShowCreateWizard(true);
+  };
+
+  const handleWizardSuccess = (widget: WidgetDTO) => {
+    if (editingWidget) {
+      setWidgets(prev => prev.map(w => w.id === widget.id ? widget : w));
+      message.success('Widget updated successfully');
+    } else {
+      setWidgets(prev => [...prev, widget]);
+      message.success('Widget created successfully');
+    }
+    setShowCreateWizard(false);
+    setEditingWidget(null);
+  };
 
   // Filter widgets based on search and status
-  useEffect(() => {
-    let filtered = widgets;
-
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(widget =>
-        widget.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        widget.description.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Apply status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(widget =>
-        statusFilter === 'active' ? widget.isActive : !widget.isActive
-      );
-    }
-
-    // Apply sort
-    const sorted = [...filtered].sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'interactions':
-          return b.totalInteractions - a.totalInteractions;
-        case 'conversion':
-          return b.conversionRate - a.conversionRate;
-        case 'recent':
-        default:
-          return new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime();
-      }
-    });
-
-    setFilteredWidgets(sorted);
-  }, [widgets, searchTerm, statusFilter, sortBy]);
-
-  const handleEditWidget = (widget: DemoWidget) => {
-    toast.success(`Edit widget: ${widget.name} ${isDemoMode ? '(demo)' : ''}`);
-    // In real implementation, open edit modal or navigate to edit page
-  };
-
-  const handleDeleteWidget = (widgetId: string) => {
-    if (isDemoMode) {
-      setWidgets(prev => prev.filter(w => w.id !== widgetId));
-      toast.success('Widget deleted (demo)');
-    } else {
-      // In real implementation, call API to delete
-      toast.success('Widget deleted');
-    }
-  };
+  const filteredWidgets = widgets.filter(widget => {
+    const contextUrl = 'contextUrl' in widget ? widget.contextUrl : undefined;
+    const matchesSearch = widget.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         contextUrl?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' ||
+                         (statusFilter === 'active' && widget.isActive) ||
+                         (statusFilter === 'inactive' && !widget.isActive);
+    return matchesSearch && matchesStatus;
+  });
 
   const handleToggleStatus = (widgetId: string, isActive: boolean) => {
     setWidgets(prev =>
@@ -106,216 +164,264 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
     );
   };
 
-  const getWidgetStats = () => {
-    const totalWidgets = widgets.length;
-    const activeWidgets = widgets.filter(w => w.isActive).length;
-    const totalInteractions = widgets.reduce((sum, w) => sum + w.totalInteractions, 0);
-    const avgConversion = widgets.length > 0 
-      ? widgets.reduce((sum, w) => sum + w.conversionRate, 0) / widgets.length 
-      : 0;
-
-    return { totalWidgets, activeWidgets, totalInteractions, avgConversion };
+  const getStatusTag = (isActive: boolean) => {
+    return (
+      <Tag color={isActive ? 'success' : 'warning'} icon={<CheckCircleOutlined />}>
+        {isActive ? 'Active' : 'Inactive'}
+      </Tag>
+    );
   };
 
-  const stats = getWidgetStats();
+  const getWidgetActions = (widget: WidgetDTO) => [
+    {
+      key: 'view',
+      label: 'View Details',
+      icon: <EyeOutlined />,
+      onClick: () => router.push(`/widgets/${widget.id}`)
+    },
+    {
+      key: 'embed',
+      label: 'Get Embed Code',
+      icon: <CodeOutlined />,
+      onClick: () => router.push(`/widgets/embed/${widget.id}`)
+    },
+    {
+      key: 'edit',
+      label: 'Edit Widget',
+      icon: <EditOutlined />,
+      onClick: () => handleEditWidget(widget)
+    }
+  ];
 
-  if (isLoading) {
+  if (!user?.organizationId && !isDemoMode) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4">
+        <div className="text-center">
+          <Title level={2}>Authentication Required</Title>
+          <Paragraph className="text-lg text-gray-600 mb-6">
+            Please log in to manage your widgets.
+          </Paragraph>
+          <Button type="primary" size="large" onClick={() => router.push('/login')}>
+            Go to Login
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Voice Chat Widgets</h2>
-          <p className="text-gray-600 mt-1">
-            Manage and monitor your embeddable voice chat widgets
-            {isDemoMode && (
-              <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                Demo Mode
-              </span>
-            )}
-          </p>
-        </div>
-        <button
-          onClick={onCreateWidget}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Create Widget
-        </button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center">
-                <span className="text-blue-600 font-semibold text-sm">{stats.totalWidgets}</span>
-              </div>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <Title level={2} className="!mb-2 !text-gray-900">
+                Widget Management
+                {isDemoMode && (
+                  <Tag color="blue" className="ml-3">Demo Mode</Tag>
+                )}
+              </Title>
+              <Paragraph className="text-lg text-gray-600">
+                Create, manage, and deploy your communication widgets
+              </Paragraph>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Widgets</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalWidgets}</p>
-            </div>
+            <Button
+              type="primary"
+              size="large"
+              icon={<PlusOutlined />}
+              onClick={handleCreateWidget}
+              className="shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              Create Widget
+            </Button>
           </div>
+
+          {/* Stats Cards */}
+          <Row gutter={[24, 24]} className="mb-6">
+            <Col xs={24} sm={8}>
+              <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                <Statistic
+                  title="Total Widgets"
+                  value={widgets.length}
+                  prefix={<GlobalOutlined className="text-blue-500" />}
+                  valueStyle={{ color: '#3B82F6' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                <Statistic
+                  title="Active Widgets"
+                  value={widgets.filter(w => w.isActive).length}
+                  prefix={<CheckCircleOutlined className="text-green-500" />}
+                  valueStyle={{ color: '#10B981' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                <Statistic
+                  title="Total Interactions"
+                  value={isDemoMode ? 2847 : 0}
+                  prefix={<BarChartOutlined className="text-purple-500" />}
+                  valueStyle={{ color: '#8B5CF6' }}
+                />
+              </Card>
+            </Col>
+          </Row>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-green-100 rounded-md flex items-center justify-center">
-                <span className="text-green-600 font-semibold text-sm">{stats.activeWidgets}</span>
-              </div>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Active Widgets</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.activeWidgets}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-purple-100 rounded-md flex items-center justify-center">
-                <span className="text-purple-600 font-semibold text-sm">
-                  {stats.totalInteractions > 1000 ? `${Math.floor(stats.totalInteractions / 1000)}k` : stats.totalInteractions}
-                </span>
-              </div>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Interactions</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {stats.totalInteractions.toLocaleString()}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-orange-100 rounded-md flex items-center justify-center">
-                <span className="text-orange-600 font-semibold text-sm">
-                  {Math.round(stats.avgConversion * 100)}%
-                </span>
-              </div>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Avg Conversion</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {Math.round(stats.avgConversion * 100)}%
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1">
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
+        {/* Filters and Search */}
+        <Card className="mb-6 bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg">
+          <Row gutter={[16, 16]} align="middle">
+            <Col xs={24} sm={12} lg={8}>
+              <Search
                 placeholder="Search widgets..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                prefix={<SearchOutlined />}
+                allowClear
               />
-            </div>
-          </div>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Select
+                value={statusFilter}
+                onChange={setStatusFilter}
+                className="w-full"
+                prefix={<FilterOutlined />}
+              >
+                <Option value="all">All Status</Option>
+                <Option value="active">Active Only</Option>
+                <Option value="inactive">Inactive Only</Option>
+              </Select>
+            </Col>
+          </Row>
+        </Card>
 
-          {/* Status Filter */}
-          <div className="flex items-center space-x-2">
-            <FunnelIcon className="h-4 w-4 text-gray-400" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+        {/* Widgets Grid */}
+        {isLoading ? (
+          <div className="flex justify-center items-center py-20">
+            <Spin size="large" />
+          </div>
+        ) : filteredWidgets.length === 0 ? (
+          <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg">
+            <Empty
+              description={
+                <div>
+                  <Title level={4} className="!text-gray-500">No widgets found</Title>
+                  <Text type="secondary">
+                    {widgets.length === 0
+                      ? "Get started by creating your first widget"
+                      : "Try adjusting your search or filter criteria"
+                    }
+                  </Text>
+                </div>
+              }
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
             >
-              <option value="all">All Status</option>
-              <option value="active">Active Only</option>
-              <option value="inactive">Inactive Only</option>
-            </select>
-          </div>
+              {widgets.length === 0 && (
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateWidget}>
+                  Create Your First Widget
+                </Button>
+              )}
+            </Empty>
+          </Card>
+        ) : (
+          <Row gutter={[24, 24]}>
+            {filteredWidgets.map((widget) => (
+              <Col xs={24} lg={12} xl={8} key={widget.id}>
+                <Card
+                  className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300 h-full"
+                  actions={[
+                    <Button
+                      key="view"
+                      type="text"
+                      icon={<EyeOutlined />}
+                      onClick={() => router.push(`/widgets/${widget.id}`)}
+                    >
+                      View
+                    </Button>,
+                    <Button
+                      key="embed"
+                      type="text"
+                      icon={<CodeOutlined />}
+                      onClick={() => router.push(`/widgets/embed/${widget.id}`)}
+                    >
+                      Embed
+                    </Button>,
+                    <Dropdown
+                      key="more"
+                      menu={{ items: getWidgetActions(widget) }}
+                      trigger={['click']}
+                    >
+                      <Button type="text" icon={<MoreOutlined />}>
+                        More
+                      </Button>
+                    </Dropdown>
+                  ]}
+                >
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Title level={4} className="!mb-0 !text-gray-900">
+                        {widget.name}
+                      </Title>
+                      {getStatusTag(widget.isActive ?? false)}
+                    </div>
+                    <Text type="secondary" className="text-sm">
+                      {'contextUrl' in widget ? widget.contextUrl || 'No URL specified' : 'Demo Widget'}
+                    </Text>
+                  </div>
 
-          {/* Sort By */}
-          <div className="flex items-center space-x-2">
-            <span className="text-xs text-gray-500">Sort</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="recent">Recently Used</option>
-              <option value="name">Name (A-Z)</option>
-              <option value="interactions">Interactions (High-Low)</option>
-              <option value="conversion">Conversion (High-Low)</option>
-            </select>
-          </div>
-
-          {/* Density Toggle */}
-          <button
-            type="button"
-            onClick={() => setCompact((c) => !c)}
-            className={`inline-flex items-center px-3 py-2 border rounded-md text-sm ${compact ? 'bg-gray-100 text-gray-700 border-gray-300' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
-            title={compact ? 'Compact view enabled' : 'Enable compact view'}
-          >
-            <Bars3BottomLeftIcon className="h-4 w-4 mr-2" />
-            {compact ? 'Compact' : 'Comfortable'}
-          </button>
-        </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Text className="text-sm text-gray-600">Position:</Text>
+                      <Tag>
+                        {'appearance' in widget
+                          ? widget.appearance?.position
+                          : (widget as DemoWidget).configuration?.position
+                        }
+                      </Tag>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Text className="text-sm text-gray-600">Theme:</Text>
+                      <Tag>
+                        {'appearance' in widget
+                          ? widget.appearance?.theme
+                          : (widget as DemoWidget).configuration?.theme
+                        }
+                      </Tag>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Text className="text-sm text-gray-600">Status:</Text>
+                      <Tag color={widget.isActive ? 'success' : 'default'}>
+                        {widget.isActive ? 'Active' : 'Inactive'}
+                      </Tag>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Text className="text-sm text-gray-600">Created:</Text>
+                      <Text className="text-sm text-gray-500">
+                        {new Date(widget.createdAt!).toLocaleDateString()}
+                      </Text>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )}
       </div>
 
-      {/* Widgets Grid */}
-      {filteredWidgets.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="mx-auto h-12 w-12 text-gray-400">
-            <PlusIcon className="h-12 w-12" />
-          </div>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No widgets found</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            {searchTerm || statusFilter !== 'all' 
-              ? 'Try adjusting your search or filter criteria.'
-              : 'Get started by creating your first voice chat widget.'
-            }
-          </p>
-          {!searchTerm && statusFilter === 'all' && (
-            <div className="mt-6">
-              <button
-                onClick={onCreateWidget}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-              >
-                <PlusIcon className="h-4 w-4 mr-2" />
-                Create Your First Widget
-              </button>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${compact ? 'gap-4' : 'gap-6'}`}>
-          {filteredWidgets.map((widget) => (
-            <EnhancedWidgetCard
-              key={widget.id}
-              widget={widget}
-              isDemoMode={isDemoMode}
-              onEdit={handleEditWidget}
-              onDelete={handleDeleteWidget}
-              onToggleStatus={handleToggleStatus}
-            />
-          ))}
-        </div>
-      )}
+      {/* Widget Creation Wizard */}
+      <WidgetCreationWizard
+        open={showCreateWizard}
+        onClose={() => {
+          setShowCreateWizard(false);
+          setEditingWidget(null);
+        }}
+        onSuccess={handleWizardSuccess}
+        editWidget={editingWidget}
+      />
     </div>
   );
 }

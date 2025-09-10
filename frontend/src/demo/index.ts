@@ -28,6 +28,7 @@ export const DEMO_USER = {
   name: 'Demo User',
   email: 'demo@voxassist.com',
   role: 'user' as const,
+  organizationId: 1,
   createdAt: new Date().toISOString()
 };
 

@@ -39,20 +39,25 @@ export default function WidgetEmbedPage() {
           textColor: '#FFFFFF',
           backgroundColor: '#FFFFFF',
           borderRadius: '12px',
-          size: 'medium'
+          size: 'medium',
+          theme: 'light'
         },
         behavior: {
           autoOpen: false,
+          autoOpenDelay: 5000,
           greeting: 'Hi! How can I help you today?',
           language: 'en',
           enableVoice: true,
-          enableText: true
+          enableText: true,
+          enableFileUpload: true,
+          showBranding: true
         },
         permissions: {
           collectPersonalData: false,
           storeCookies: true,
           recordAudio: false,
-          shareWithThirdParty: false
+          shareWithThirdParty: false,
+          allowedDomains: []
         }
       };
       setWidget(mockWidget);
@@ -74,7 +79,8 @@ export default function WidgetEmbedPage() {
   };
 
   const getEmbedCode = (type: 'script' | 'iframe' | 'react') => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    const baseUrl = apiUrl.replace('/api', '');
     const domain = customDomain || 'your-domain.com';
     
     switch (type) {
@@ -126,7 +132,8 @@ export function VoxAssistWidget() {
   };
 
   const getTestUrl = () => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    const baseUrl = apiUrl.replace('/api', '');
     return `${baseUrl}/embed/widget/${widgetId}/iframe?test=true`;
   };
 

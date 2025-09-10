@@ -43,7 +43,7 @@ export default function WidgetCreateDialog({
   widget?: WidgetConfig | null;
   onClose: () => void;
   onSaved: () => void;
-  organizationId?: number;
+  organizationId: number; // Make required instead of optional
 }) {
   const [formData, setFormData] = useState<WidgetConfig>({
     name: widget?.name || "",

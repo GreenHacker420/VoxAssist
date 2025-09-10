@@ -51,7 +51,8 @@ export default function WidgetEmbedCard({ widget, onEdit, onDelete }: WidgetEmbe
   };
 
   const handleCopyEmbedCode = async () => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    const baseUrl = apiUrl.replace('/api', '');
     const embedCode = `<script>
   (function() {
     var script = document.createElement('script');
@@ -71,13 +72,15 @@ export default function WidgetEmbedCard({ widget, onEdit, onDelete }: WidgetEmbe
   };
 
   const handlePreviewWidget = () => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    const baseUrl = apiUrl.replace('/api', '');
     const previewUrl = `${baseUrl}/embed/widget/${widget.id}/iframe?test=true`;
     window.open(previewUrl, '_blank', 'width=400,height=600,scrollbars=yes,resizable=yes');
   };
 
   const getEmbedCode = () => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    const baseUrl = apiUrl.replace('/api', '');
     return `<script>
   (function() {
     var script = document.createElement('script');

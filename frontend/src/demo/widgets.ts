@@ -2,6 +2,8 @@ export interface DemoWidget {
   id: string;
   name: string;
   description: string;
+  contextUrl?: string;
+  status: 'active' | 'inactive';
   isActive: boolean;
   createdAt: string;
   lastUsed: string;
@@ -22,6 +24,8 @@ export const DEMO_WIDGETS: DemoWidget[] = [
     id: 'widget-1',
     name: 'Main Website Widget',
     description: 'Primary voice chat widget for homepage',
+    contextUrl: 'https://example.com',
+    status: 'active',
     isActive: true,
     createdAt: new Date(Date.now() - 2592000000).toISOString(), // 30 days ago
     lastUsed: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
@@ -40,6 +44,8 @@ export const DEMO_WIDGETS: DemoWidget[] = [
     id: 'widget-2',
     name: 'Support Page Widget',
     description: 'Specialized widget for customer support page',
+    contextUrl: 'https://example.com/support',
+    status: 'active',
     isActive: true,
     createdAt: new Date(Date.now() - 1728000000).toISOString(), // 20 days ago
     lastUsed: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
@@ -58,6 +64,8 @@ export const DEMO_WIDGETS: DemoWidget[] = [
     id: 'widget-3',
     name: 'Product Demo Widget',
     description: 'Widget for product demonstration pages',
+    contextUrl: 'https://example.com/demo',
+    status: 'inactive',
     isActive: false,
     createdAt: new Date(Date.now() - 864000000).toISOString(), // 10 days ago
     lastUsed: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
@@ -76,6 +84,8 @@ export const DEMO_WIDGETS: DemoWidget[] = [
     id: 'widget-4',
     name: 'Checkout Widget',
     description: 'Assistance widget for checkout process',
+    contextUrl: 'https://example.com/checkout',
+    status: 'active',
     isActive: true,
     createdAt: new Date(Date.now() - 432000000).toISOString(), // 5 days ago
     lastUsed: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago

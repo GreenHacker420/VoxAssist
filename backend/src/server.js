@@ -42,6 +42,7 @@ const widgetRoutes = require('./routes/widgetRoutes');
 const embedRoutes = require('./routes/embed');
 const gdprRoutes = require('./routes/gdprRoutes');
 const whatsappRoutes = require('./routes/whatsapp');
+const websiteAnalysisRoutes = require('./routes/websiteAnalysis');
 
 // Functional services
 const voiceProcessingPipeline = require('./services/voiceProcessingPipeline');
@@ -115,6 +116,7 @@ app.use('/api/widget', widgetRoutes);
 app.use('/embed', embedRoutes);
 app.use('/api/gdpr', gdprRoutes);
 app.use('/api/whatsapp', auditDataAccess('whatsapp'), whatsappRoutes);
+app.use('/api/website-analysis', auditDataAccess('website-analysis'), websiteAnalysisRoutes);
 app.use('/webhooks', webhookRoutes);
 app.use('/api/webhooks', webhookRoutes);
 

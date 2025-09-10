@@ -333,12 +333,20 @@ export default function DashboardPage() {
                   Your embeddable voice chat widgets with real-time analytics
                 </p>
               </div>
-              <button
-                onClick={() => router.push('/widgets')}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                View All Widgets
-              </button>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => router.push('/widgets/create')}
+                  className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Create Widget
+                </button>
+                <button
+                  onClick={() => router.push('/widgets')}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  View All Widgets
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">

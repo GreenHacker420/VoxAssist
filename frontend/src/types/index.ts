@@ -6,6 +6,13 @@ export interface User {
   role: 'user' | 'agent';
   organizationId?: number;
   createdAt?: string;
+  avatar?: string;
+  phone?: string;
+  company?: string;
+  totalCalls?: number;
+  plan?: string;
+  emailVerified?: boolean;
+  twoFactorEnabled?: boolean;
 }
 
 export interface AuthResponse {

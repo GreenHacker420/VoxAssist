@@ -4,6 +4,10 @@ export interface WidgetDTO {
   id?: string;
   name: string;
   contextUrl?: string;
+  organizationId?: number;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
   appearance: {
     position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
     primaryColor: string;
@@ -12,19 +16,31 @@ export interface WidgetDTO {
     backgroundColor: string;
     borderRadius: string;
     size: 'small' | 'medium' | 'large';
+    theme: 'light' | 'dark' | 'auto';
   };
   behavior: {
     autoOpen: boolean;
+    autoOpenDelay: number;
     greeting: string;
     language: string;
     enableVoice: boolean;
     enableText: boolean;
+    enableFileUpload: boolean;
+    showBranding: boolean;
   };
   permissions: {
     collectPersonalData: boolean;
     storeCookies: boolean;
     recordAudio: boolean;
     shareWithThirdParty: boolean;
+    allowedDomains: string[];
+  };
+  advanced?: {
+    customCSS: string;
+    webhookUrl: string;
+    analyticsEnabled: boolean;
+    rateLimitEnabled: boolean;
+    maxMessagesPerSession: number;
   };
 }
 
