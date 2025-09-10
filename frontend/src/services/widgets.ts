@@ -70,6 +70,11 @@ const update = async (widgetId: string, payload: Partial<WidgetDTO>): Promise<Wi
   return res.data as WidgetDTO;
 };
 
+const get = async (widgetId: string): Promise<WidgetDTO> => {
+  const res = await api.get<WidgetDTO>(`/widgets/${widgetId}`);
+  return res.data as WidgetDTO;
+};
+
 const remove = async (widgetId: string) => {
   await api.delete(`/widgets/${widgetId}`);
 };
@@ -83,6 +88,7 @@ export const WidgetsService = {
   list,
   analytics,
   create,
+  get,
   update,
   remove,
   toggleActive,

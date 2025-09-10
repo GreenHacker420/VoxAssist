@@ -27,27 +27,33 @@ export default function WidgetEmbedPage() {
   const loadWidget = async () => {
     try {
       setLoading(true);
-      // For now, we'll create a mock widget since the service might not have a get method
-      const mockWidget: WidgetDTO = {
-        id: widgetId,
-        name: 'Sample Widget',
-        contextUrl: 'https://example.com',
-        appearance: {
-          position: 'bottom-right',
-          primaryColor: '#3B82F6',
-          secondaryColor: '#1E40AF',
-          textColor: '#FFFFFF',
-          backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
-          size: 'medium',
-          theme: 'light'
-        },
-        behavior: {
-          autoOpen: false,
-          autoOpenDelay: 5000,
-          greeting: 'Hi! How can I help you today?',
-          language: 'en',
-          enableVoice: true,
+      // Try to fetch the actual widget data
+      try {
+        const widgetData = await WidgetsService.get(widgetId);
+        setWidget(widgetData);
+      } catch (error) {
+        console.warn('Failed to load widget, using mock data:', error);
+        // Fallback to mock widget for demo purposes
+        const mockWidget: WidgetDTO = {
+          id: widgetId,
+          name: 'Sample Widget',
+          contextUrl: 'https://example.com',
+          appearance: {
+            position: 'bottom-right',
+            primaryColor: '#3B82F6',
+            secondaryColor: '#1E40AF',
+            textColor: '#FFFFFF',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '12px',
+            size: 'medium',
+            theme: 'light'
+          },
+          behavior: {
+            autoOpen: false,
+            autoOpenDelay: 5000,
+            greeting: 'Hi! How can I help you today?',
+            language: 'en',
+            enableVoice: true,
           enableText: true,
           enableFileUpload: true,
           showBranding: true
@@ -61,6 +67,7 @@ export default function WidgetEmbedPage() {
         }
       };
       setWidget(mockWidget);
+      }
     } catch (error) {
       console.error('Failed to load widget:', error);
     } finally {

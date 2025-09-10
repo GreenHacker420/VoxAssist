@@ -163,6 +163,28 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
     );
   };
 
+  const handleDeleteWidget = async (widgetId: string) => {
+    // Show confirmation dialog
+    const confirmed = window.confirm('Are you sure you want to delete this widget? This action cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+      if (isDemoMode) {
+        // Demo mode - just remove from local state
+        setWidgets(prev => prev.filter(w => w.id !== widgetId));
+        message.success('Widget deleted successfully (demo mode)');
+      } else {
+        // Real mode - call API
+        await WidgetsService.remove(widgetId);
+        setWidgets(prev => prev.filter(w => w.id !== widgetId));
+        message.success('Widget deleted successfully');
+      }
+    } catch (error) {
+      console.error('Failed to delete widget:', error);
+      message.error('Failed to delete widget');
+    }
+  };
+
   const getStatusTag = (isActive: boolean) => {
     return (
       <Tag color={isActive ? 'success' : 'warning'} icon={<CheckCircleOutlined />}>
@@ -171,26 +193,35 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
     );
   };
 
-  const getWidgetActions = (widget: WidgetDTO) => [
-    {
-      key: 'view',
-      label: 'View Details',
-      icon: <EyeOutlined />,
-      onClick: () => router.push(`/widgets/${widget.id}`)
-    },
-    {
-      key: 'embed',
-      label: 'Get Embed Code',
-      icon: <CodeOutlined />,
-      onClick: () => router.push(`/widgets/embed/${widget.id}`)
-    },
-    {
-      key: 'edit',
-      label: 'Edit Widget',
-      icon: <EditOutlined />,
-      onClick: () => handleEditWidget(widget)
-    }
-  ];
+  const getWidgetActions = (widget: WidgetDTO) => ({
+    items: [
+      {
+        key: 'view',
+        label: 'View Details',
+        icon: <EyeOutlined />,
+        onClick: () => router.push(`/widgets/${widget.id}`)
+      },
+      {
+        key: 'embed',
+        label: 'Get Embed Code',
+        icon: <CodeOutlined />,
+        onClick: () => router.push(`/widgets/embed/${widget.id}`)
+      },
+      {
+        key: 'edit',
+        label: 'Edit Widget',
+        icon: <EditOutlined />,
+        onClick: () => handleEditWidget(widget)
+      },
+      {
+        key: 'delete',
+        label: 'Delete Widget',
+        icon: <DeleteOutlined />,
+        onClick: () => widget.id && handleDeleteWidget(widget.id),
+        danger: true
+      }
+    ]
+  });
 
   if (!user?.organizationId && !isDemoMode) {
     return (
@@ -351,7 +382,7 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
                     </Button>,
                     <Dropdown
                       key="more"
-                      menu={{ items: getWidgetActions(widget) }}
+                      menu={getWidgetActions(widget)}
                       trigger={['click']}
                     >
                       <Button type="text" icon={<MoreOutlined />}>

@@ -330,6 +330,10 @@ export default function WidgetCreationWizard({
     setCurrentStep(prev => prev + 1);
   };
 
+  const handleStepClick = (step: number) => {
+    setCurrentStep(step);
+  };
+
   const handlePrev = () => {
     setCurrentStep(prev => prev - 1);
   };
@@ -401,8 +405,9 @@ export default function WidgetCreationWizard({
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 w-full max-w-7xl max-h-[95vh] overflow-hidden">
-        <div className="p-8">
+      <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 w-full max-w-7xl max-h-[95vh] flex flex-col">
+        {/* Header Section - Fixed */}
+        <div className="p-8 flex-shrink-0">
           <div className="flex items-center justify-between mb-8">
             <div>
               <Title level={2} className="!mb-2 !text-gray-900">
@@ -424,13 +429,19 @@ export default function WidgetCreationWizard({
 
           <Steps
             current={currentStep}
-            items={steps}
+            items={steps.map((step, index) => ({
+              ...step,
+              onClick: () => handleStepClick(index)
+            }))}
             className="mb-8"
             size="default"
             type="default"
           />
+        </div>
 
-          <div className="h-[600px] bg-gradient-to-br from-gray-50/50 to-white/50 rounded-2xl border border-gray-200/50 backdrop-blur-sm overflow-y-auto">
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto px-8">
+          <div className="bg-gradient-to-br from-gray-50/50 to-white/50 rounded-2xl border border-gray-200/50 backdrop-blur-sm p-6">
             {currentStep === 0 && (
               <BasicInfoStep
                 formData={{ name: formData.name, contextUrl: formData.contextUrl }}
@@ -465,8 +476,11 @@ export default function WidgetCreationWizard({
               />
             )}
           </div>
+        </div>
 
-          <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200/50">
+        {/* Footer Section - Fixed */}
+        <div className="p-8 pt-6 border-t border-gray-200/50 flex-shrink-0">
+          <div className="flex justify-between items-center">
             <Button
               size="large"
               onClick={handlePrev}
@@ -488,15 +502,26 @@ export default function WidgetCreationWizard({
               >
                 Cancel
               </Button>
-              <Button
-                type="primary"
-                size="large"
-                onClick={currentStep < steps.length - 1 ? handleNext : handleSubmit}
-                loading={currentStep === steps.length - 1 ? loading : false}
-                className="min-w-[120px]"
-              >
-                {currentStep < steps.length - 1 ? 'Next Step' : (editWidget ? 'Update Widget' : 'Create Widget')}
-              </Button>
+              {currentStep < steps.length - 1 ? (
+                <Button
+                  type="primary"
+                  size="large"
+                  onClick={handleNext}
+                  className="min-w-[120px]"
+                >
+                  Next Step
+                </Button>
+              ) : (
+                <Button
+                  type="primary"
+                  size="large"
+                  loading={loading}
+                  onClick={handleSubmit}
+                  className="min-w-[140px]"
+                >
+                  {editWidget ? 'Update Widget' : 'Create Widget'}
+                </Button>
+              )}
             </Space>
           </div>
         </div>
