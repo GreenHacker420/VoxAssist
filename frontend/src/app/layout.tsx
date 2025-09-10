@@ -13,6 +13,16 @@ export const metadata: Metadata = {
   description: "Production-ready AI-powered voice calling agent platform with real-time transcription, analytics, and CRM integration.",
   keywords: "AI, voice calling, transcription, analytics, CRM, customer service",
   authors: [{ name: "VoxAssist Team" }],
+  icons: {
+    icon: [
+      { url: "/icon.png", sizes: "96x96" },
+      { url: "/favicon.png" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: [
+      { url: "/apple-icon.png" },
+    ],
+  },
 };
 
 export const viewport = {
