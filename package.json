@@ -14,10 +14,21 @@
     "start:backend": "cd backend && npm start",
     "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install"
   },
-  "keywords": ["ai", "voice", "support", "customer-service", "twilio", "elevenlabs", "gemini"],
+  "keywords": [
+    "ai",
+    "voice",
+    "support",
+    "customer-service",
+    "twilio",
+    "elevenlabs",
+    "gemini"
+  ],
   "author": "Harsh Hirawat",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "@lottiefiles/dotlottie-web": "^0.51.0"
   }
 }
