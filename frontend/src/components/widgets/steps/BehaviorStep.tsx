@@ -29,20 +29,20 @@ const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
 
+interface WidgetBehavior {
+  autoOpen: boolean;
+  autoOpenDelay: number;
+  greeting: string;
+  language: string;
+  enableVoice: boolean;
+  enableText: boolean;
+  enableFileUpload: boolean;
+  showBranding: boolean;
+}
+
 interface BehaviorStepProps {
-  formData: {
-    behavior: {
-      autoOpen: boolean;
-      autoOpenDelay: number;
-      greeting: string;
-      language: string;
-      enableVoice: boolean;
-      enableText: boolean;
-      enableFileUpload: boolean;
-      showBranding: boolean;
-    };
-  };
-  onChange: (data: any) => void;
+  formData: { behavior: WidgetBehavior };
+  onChange: (data: { behavior: WidgetBehavior }) => void;
 }
 
 const LANGUAGE_OPTIONS = [
@@ -68,7 +68,7 @@ const GREETING_TEMPLATES = [
 ];
 
 export default function BehaviorStep({ formData, onChange }: BehaviorStepProps) {
-  const updateBehavior = (key: string, value: any) => {
+  const updateBehavior = (key: string, value: string | number | boolean) => {
     onChange({
       behavior: {
         ...formData.behavior,
@@ -316,7 +316,7 @@ export default function BehaviorStep({ formData, onChange }: BehaviorStepProps) 
                 • Use auto-open sparingly to avoid interrupting user experience
               </Text>
               <Text type="secondary" className="block text-sm">
-                • Customize greeting messages to match your brand voice
+                • Customize your widget&apos;s &quot;Hello&quot; messages to match your brand voice
               </Text>
               <Text type="secondary" className="block text-sm">
                 • Consider your audience when selecting the widget language

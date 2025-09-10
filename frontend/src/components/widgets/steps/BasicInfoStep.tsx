@@ -84,10 +84,10 @@ export default function BasicInfoStep({
     <div className="p-8 space-y-8">
       <div className="text-center mb-8">
         <Title level={3} className="!mb-3 !text-gray-900">
-          Let's start with the basics
+          Let&apos;s start with the basics
         </Title>
         <Paragraph className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Tell us about your widget and where it will be used. We'll analyze your website to suggest optimal styling.
+          Tell us about your widget and where it will be used. We&apos;ll analyze your website to suggest optimal styling.
         </Paragraph>
       </div>
 
@@ -96,6 +96,7 @@ export default function BasicInfoStep({
           <Card className="h-full bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
             <Form layout="vertical">
               <Form.Item
+                name="name"
                 label={
                   <Space>
                     <Text strong>Widget Name</Text>
@@ -104,7 +105,10 @@ export default function BasicInfoStep({
                     </Tooltip>
                   </Space>
                 }
-                required
+                rules={[
+                  { required: true, message: 'Please enter a widget name' },
+                  { min: 2, message: 'Widget name must be at least 2 characters' }
+                ]}
               >
                 <Input
                   size="large"
@@ -116,6 +120,7 @@ export default function BasicInfoStep({
               </Form.Item>
 
               <Form.Item
+                name="contextUrl"
                 label={
                   <Space>
                     <Text strong>Website URL</Text>
@@ -124,6 +129,13 @@ export default function BasicInfoStep({
                     </Tooltip>
                   </Space>
                 }
+                rules={[
+                  { required: true, message: 'Please enter a website URL' },
+                  {
+                    pattern: /^https?:\/\/.+/,
+                    message: 'Please enter a valid URL starting with http:// or https://'
+                  }
+                ]}
               >
                 <Input
                   size="large"
@@ -177,7 +189,7 @@ export default function BasicInfoStep({
             <div className="space-y-4">
               <Alert
                 message="Choose a Clear Name"
-                description="Use a descriptive name that helps you identify this widget later, especially if you plan to create multiple widgets."
+                description="Use a descriptive name that helps you identify                        especially if you plan to create multiple widgets."
                 type="info"
                 showIcon
                 className="rounded-lg"

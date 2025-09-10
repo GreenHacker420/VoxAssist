@@ -459,7 +459,7 @@ export default function WidgetCreationWizard({
                 formData={{ appearance: formData.appearance }}
                 onChange={(data) => setFormData(prev => ({ ...prev, ...data }))}
                 templates={WIDGET_TEMPLATES}
-                onApplyTemplate={applyTemplate}
+                onApplyTemplate={(template) => applyTemplate(template as any)}
               />
             )}
             {currentStep === 2 && (

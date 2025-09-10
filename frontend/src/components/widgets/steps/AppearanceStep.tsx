@@ -28,27 +28,31 @@ import {
 const { Title, Text } = Typography;
 const { Option } = Select;
 
+interface WidgetAppearance {
+  position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  primaryColor: string;
+  secondaryColor: string;
+  textColor: string;
+  backgroundColor: string;
+  borderRadius: string;
+  size: 'small' | 'medium' | 'large';
+  theme: 'light' | 'dark' | 'auto';
+}
+
+interface WidgetTemplate {
+  id: string;
+  name: string;
+  description: string;
+  appearance: WidgetAppearance;
+  behavior: Record<string, unknown>;
+  permissions?: Record<string, unknown>;
+}
+
 interface AppearanceStepProps {
-  formData: {
-    appearance: {
-      position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
-      primaryColor: string;
-      secondaryColor: string;
-      textColor: string;
-      backgroundColor: string;
-      borderRadius: string;
-      size: 'small' | 'medium' | 'large';
-      theme: 'light' | 'dark' | 'auto';
-    };
-  };
-  onChange: (data: any) => void;
-  templates: Array<{
-    id: string;
-    name: string;
-    description: string;
-    appearance: any;
-  }>;
-  onApplyTemplate: (template: any) => void;
+  formData: { appearance: WidgetAppearance };
+  onChange: (data: { appearance: WidgetAppearance }) => void;
+  templates?: WidgetTemplate[];
+  onApplyTemplate?: (template: WidgetTemplate) => void;
 }
 
 const POSITION_OPTIONS = [
@@ -72,7 +76,7 @@ export default function AppearanceStep({
 }: AppearanceStepProps) {
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
 
-  const updateAppearance = (key: string, value: any) => {
+  const updateAppearance = (key: string, value: string) => {
     onChange({
       appearance: {
         ...formData.appearance,
@@ -122,13 +126,13 @@ export default function AppearanceStep({
               Quick Templates
             </Title>
             <Row gutter={[16, 16]}>
-              {templates.map((template) => (
+              {templates?.map((template) => (
                 <Col xs={24} sm={8} key={template.id}>
                   <Card
                     size="small"
                     hoverable
                     className="cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 bg-white/90 backdrop-blur-sm border-gray-200/50"
-                    onClick={() => onApplyTemplate(template)}
+                    onClick={() => onApplyTemplate?.(template)}
                   >
                     <div className="text-center">
                       <div 

@@ -29,15 +29,46 @@ import {
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
+interface WidgetAppearance {
+  position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  primaryColor: string;
+  secondaryColor: string;
+  textColor: string;
+  backgroundColor: string;
+  borderRadius: string;
+  size: 'small' | 'medium' | 'large';
+  theme: 'light' | 'dark' | 'auto';
+}
+
+interface WidgetBehavior {
+  autoOpen: boolean;
+  autoOpenDelay: number;
+  greeting: string;
+  language: string;
+  enableVoice: boolean;
+  enableText: boolean;
+  enableFileUpload: boolean;
+  showBranding: boolean;
+}
+
+interface WidgetPermissions {
+  collectPersonalData: boolean;
+  storeCookies: boolean;
+  recordAudio: boolean;
+  shareWithThirdParty: boolean;
+  allowedDomains: string[];
+}
+
+interface WidgetConfig {
+  name: string;
+  contextUrl: string;
+  appearance: WidgetAppearance;
+  behavior: WidgetBehavior;
+  permissions: WidgetPermissions;
+}
+
 interface PreviewStepProps {
-  formData: {
-    name: string;
-    contextUrl: string;
-    appearance: any;
-    behavior: any;
-    permissions: any;
-    advanced?: any;
-  };
+  formData: WidgetConfig;
 }
 
 export default function PreviewStep({ formData }: PreviewStepProps) {
@@ -362,7 +393,7 @@ add_action('wp_footer', 'add_voxassist_widget');
                 block
                 onClick={() => window.open(`${baseUrl}/widget-test.html`, '_blank')}
               >
-                Test Widget
+                Your widget's ready to go live!
               </Button>
               <Button 
                 icon={<DownloadOutlined />} 

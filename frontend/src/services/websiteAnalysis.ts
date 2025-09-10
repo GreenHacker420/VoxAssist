@@ -36,7 +36,7 @@ export interface WebsiteSuggestion {
   title: string;
   description: string;
   action: string;
-  value: any;
+  value: string | number | boolean;
 }
 
 export interface WebsiteAnalysisResponse {
@@ -252,9 +252,9 @@ class WebsiteAnalysisService {
    */
   applySuggestions(
     suggestions: WebsiteSuggestion[],
-    currentConfig: any
-  ): any {
-    let updatedConfig = { ...currentConfig };
+    currentConfig: Record<string, unknown>
+  ): Record<string, unknown> {
+    const updatedConfig = { ...currentConfig };
 
     suggestions.forEach(suggestion => {
       switch (suggestion.action) {
@@ -294,8 +294,8 @@ class WebsiteAnalysisService {
    * Generate widget configuration from analysis result
    */
   generateWidgetConfig(analysis: WebsiteAnalysisResult): {
-    appearance: any;
-    behavior: any;
+    appearance: Record<string, unknown>;
+    behavior: Record<string, unknown>;
     suggestions: WebsiteSuggestion[];
   } {
     const primaryColor = analysis.colors[0] || '#3B82F6';

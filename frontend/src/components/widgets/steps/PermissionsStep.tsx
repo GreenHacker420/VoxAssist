@@ -30,23 +30,23 @@ import { useState } from 'react';
 
 const { Title, Text, Paragraph } = Typography;
 
+interface WidgetPermissions {
+  collectPersonalData: boolean;
+  storeCookies: boolean;
+  recordAudio: boolean;
+  shareWithThirdParty: boolean;
+  allowedDomains: string[];
+}
+
 interface PermissionsStepProps {
-  formData: {
-    permissions: {
-      collectPersonalData: boolean;
-      storeCookies: boolean;
-      recordAudio: boolean;
-      shareWithThirdParty: boolean;
-      allowedDomains: string[];
-    };
-  };
-  onChange: (data: any) => void;
+  formData: { permissions: WidgetPermissions };
+  onChange: (data: { permissions: WidgetPermissions }) => void;
 }
 
 export default function PermissionsStep({ formData, onChange }: PermissionsStepProps) {
   const [newDomain, setNewDomain] = useState('');
 
-  const updatePermissions = (key: string, value: any) => {
+  const updatePermissions = (key: string, value: boolean | string[]) => {
     onChange({
       permissions: {
         ...formData.permissions,
