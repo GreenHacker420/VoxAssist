@@ -39,6 +39,15 @@ function initializeWebSocketServer(server) {
           case 'sentiment_update':
             await handleSentimentUpdate(data);
             break;
+          case 'join_demo_call':
+            await handleJoinDemoCall(ws, data.callId, data.token);
+            break;
+          case 'demo_call_next_message':
+            await handleDemoCallNextMessage(ws, data.callId);
+            break;
+          case 'end_demo_call':
+            await handleEndDemoCall(ws, data.callId);
+            break;
         }
       } catch (error) {
         logger.error('WebSocket message error:', error);
@@ -247,8 +256,132 @@ function simulateTranscriptUpdates(callId) {
   return interval;
 }
 
+/**
+ * Handle client joining a demo call room
+ */
+async function handleJoinDemoCall(ws, callId, token) {
+  try {
+    // For demo calls, we use a simpler verification
+    if (!callId || !callId.startsWith('demo-call-')) {
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Invalid demo call ID'
+      }));
+      return;
+    }
+
+    if (!global.wsClients.has(callId)) {
+      global.wsClients.set(callId, []);
+    }
+
+    global.wsClients.get(callId).push(ws);
+
+    ws.send(JSON.stringify({
+      type: 'joined_demo_call',
+      callId: callId,
+      message: 'Successfully joined demo call monitoring'
+    }));
+
+    logger.info(`Client joined demo call monitoring for call: ${callId}`);
+  } catch (error) {
+    logger.error('Error joining demo call:', error);
+    ws.send(JSON.stringify({
+      type: 'error',
+      message: 'Failed to join demo call'
+    }));
+  }
+}
+
+/**
+ * Handle demo call next message request
+ */
+async function handleDemoCallNextMessage(ws, callId) {
+  try {
+    // This would typically call the demo call API to get the next message
+    // For now, we'll simulate it
+    const axios = require('axios');
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
+
+    // Get the auth token from the WebSocket connection (simplified for demo)
+    // In production, you'd properly extract and verify the JWT token
+
+    logger.info(`Requesting next message for demo call: ${callId}`);
+
+    // Broadcast that a new message is coming
+    broadcastToCall(callId, {
+      type: 'demo_call_message_incoming',
+      callId: callId
+    });
+
+  } catch (error) {
+    logger.error('Error handling demo call next message:', error);
+    ws.send(JSON.stringify({
+      type: 'error',
+      message: 'Failed to get next demo message'
+    }));
+  }
+}
+
+/**
+ * Handle demo call end request
+ */
+async function handleEndDemoCall(ws, callId) {
+  try {
+    logger.info(`Ending demo call: ${callId}`);
+
+    // Broadcast call end to all clients in the room
+    broadcastToCall(callId, {
+      type: 'demo_call_ended',
+      callId: callId,
+      timestamp: new Date().toISOString()
+    });
+
+    // Clean up the call room
+    if (global.wsClients.has(callId)) {
+      global.wsClients.delete(callId);
+    }
+
+  } catch (error) {
+    logger.error('Error ending demo call:', error);
+    ws.send(JSON.stringify({
+      type: 'error',
+      message: 'Failed to end demo call'
+    }));
+  }
+}
+
+/**
+ * Broadcast demo call transcript update
+ */
+function broadcastDemoCallTranscript(callId, transcriptEntry, sentimentData) {
+  broadcastToCall(callId, {
+    type: 'demo_transcript_update',
+    callId: callId,
+    transcript: transcriptEntry,
+    sentiment: sentimentData,
+    timestamp: new Date().toISOString()
+  });
+}
+
+/**
+ * Broadcast demo call sentiment update
+ */
+function broadcastDemoCallSentiment(callId, sentimentData) {
+  broadcastToCall(callId, {
+    type: 'demo_sentiment_update',
+    callId: callId,
+    sentiment: sentimentData,
+    timestamp: new Date().toISOString()
+  });
+}
+
 module.exports = {
   initializeWebSocketServer,
   broadcastToCall,
-  simulateTranscriptUpdates
+  simulateTranscriptUpdates,
+  handleJoinDemoCall,
+  handleDemoCallNextMessage,
+  handleEndDemoCall,
+  broadcastDemoCallTranscript,
+  broadcastDemoCallSentiment
 };

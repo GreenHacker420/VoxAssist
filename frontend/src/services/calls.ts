@@ -283,11 +283,188 @@ export class CallsService {
         transcript: template.transcript,
         aiInsights: template.aiInsights
       };
-      
+
       demoCallsData.unshift(whatsappDemoCall);
       return Promise.resolve(whatsappDemoCall);
     }
-    
+
     throw new Error('WhatsApp demo call only available in demo mode');
+  }
+
+  // Interactive demo call with real-time features
+  static async initiateInteractiveDemoCall(): Promise<Call> {
+    if (isDemoMode()) {
+      // Use backend API for demo calls to get real-time features
+      try {
+        const response = await apiClient.post<Call>('/demo-calls', {
+          template: 'CUSTOMER_SUPPORT',
+          userId: 'demo-user'
+        });
+
+        if (response.success && response.data) {
+          const demoCall = response.data;
+
+          // Add to local demo data for consistency
+          demoCallsData.unshift({
+            ...demoCall,
+            transcript: '',
+            aiInsights: 'Interactive demo call in progress'
+          });
+
+          // Emit real-time event for demo call start
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('demo-call-started', {
+              detail: { call: demoCall }
+            }));
+          }
+
+          return demoCall;
+        }
+
+        throw new Error(response.error || 'Failed to start demo call');
+      } catch (error) {
+        console.warn('Backend demo call failed, falling back to frontend simulation:', error);
+
+        // Fallback to frontend simulation
+        const interactiveDemoCall: Call = {
+          id: `interactive-demo-${Date.now()}`,
+          customerName: 'Demo User',
+          customerEmail: 'demo.user@example.com',
+          customerPhone: '+1-555-DEMO',
+          status: 'active',
+          startTime: new Date().toISOString(),
+          sentiment: 'neutral',
+          sentimentScore: 0.5,
+          callSid: `interactive-demo-sid-${Date.now()}`,
+          transcript: '',
+          aiInsights: JSON.stringify({
+            summary: 'Interactive demo call in progress',
+            keyTopics: ['Demo', 'Real-time Features', 'Sentiment Analysis'],
+            actionItems: [],
+            escalationRecommended: false,
+            customerSatisfaction: 0.8
+          })
+        };
+
+        demoCallsData.unshift(interactiveDemoCall);
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('demo-call-started', {
+            detail: { call: interactiveDemoCall }
+          }));
+        }
+
+        return Promise.resolve(interactiveDemoCall);
+      }
+    }
+
+    throw new Error('Interactive demo call only available in demo mode');
+  }
+
+  // Update demo call with real-time transcript
+  static async updateDemoCallTranscript(callId: string, transcriptEntry: unknown): Promise<void> {
+    if (isDemoMode()) {
+      const callIndex = demoCallsData.findIndex(call => call.id === callId);
+      if (callIndex !== -1) {
+        // Parse existing transcript or initialize as empty array
+        let transcriptArray = [];
+        try {
+          transcriptArray = demoCallsData[callIndex].transcript ?
+            JSON.parse(demoCallsData[callIndex].transcript!) : [];
+        } catch {
+          transcriptArray = [];
+        }
+
+        // Add new entry
+        transcriptArray.push(transcriptEntry);
+
+        // Store back as JSON string
+        demoCallsData[callIndex].transcript = JSON.stringify(transcriptArray);
+
+        // Emit real-time event
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('demo-call-transcript-update', {
+            detail: { callId, transcriptEntry }
+          }));
+        }
+      }
+      return Promise.resolve();
+    }
+
+    throw new Error('Demo call transcript update only available in demo mode');
+  }
+
+  // End demo call
+  static async endDemoCall(callId: string): Promise<void> {
+    if (isDemoMode()) {
+      try {
+        // Try to end demo call via backend API
+        const response = await apiClient.delete(`/demo-calls/${callId}`);
+
+        if (response.success) {
+          // Update local data
+          const callIndex = demoCallsData.findIndex(call => call.id === callId);
+          if (callIndex !== -1) {
+            demoCallsData[callIndex].status = 'completed';
+            demoCallsData[callIndex].endTime = new Date().toISOString();
+          }
+
+          // Emit real-time event
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('demo-call-ended', {
+              detail: { callId, call: demoCallsData[callIndex] }
+            }));
+          }
+
+          return Promise.resolve();
+        }
+
+        throw new Error(response.error || 'Failed to end demo call');
+      } catch (error) {
+        console.warn('Backend demo call end failed, using frontend fallback:', error);
+
+        // Fallback to frontend handling
+        const callIndex = demoCallsData.findIndex(call => call.id === callId);
+        if (callIndex !== -1) {
+          demoCallsData[callIndex].status = 'completed';
+          demoCallsData[callIndex].endTime = new Date().toISOString();
+
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('demo-call-ended', {
+              detail: { callId, call: demoCallsData[callIndex] }
+            }));
+          }
+        }
+        return Promise.resolve();
+      }
+    }
+
+    throw new Error('Demo call end only available in demo mode');
+  }
+
+  // Get demo call details from backend
+  static async getDemoCall(callId: string): Promise<Call> {
+    if (isDemoMode()) {
+      try {
+        const response = await apiClient.get<Call>(`/demo-calls/${callId}`);
+
+        if (response.success && response.data) {
+          return response.data;
+        }
+
+        throw new Error(response.error || 'Failed to fetch demo call');
+      } catch (error) {
+        console.warn('Backend demo call fetch failed, using frontend fallback:', error);
+
+        // Fallback to frontend data
+        const demoCall = demoCallsData.find(call => call.id === callId);
+        if (demoCall) {
+          return Promise.resolve(demoCall);
+        }
+        throw new Error('Demo call not found');
+      }
+    }
+
+    throw new Error('Demo call fetch only available in demo mode');
   }
 }

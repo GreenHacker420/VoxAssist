@@ -16,7 +16,8 @@ import {
   Empty,
   Spin,
   Dropdown,
-  App
+  App,
+  Tabs
 } from 'antd';
 import {
   PlusOutlined,
@@ -29,13 +30,14 @@ import {
   EyeOutlined,
   CodeOutlined,
   EditOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  ExperimentOutlined
 } from '@ant-design/icons';
 import { DEMO_WIDGETS, DemoWidget } from '@/demo/widgets';
 import { useAuth } from '@/contexts/AuthContext';
 import { WidgetsService, type WidgetDTO } from '@/services/widgets';
 import WidgetCreationWizard from './WidgetCreationWizard';
-import toast from 'react-hot-toast';
+import DemoCallInterface from '@/components/DemoCall/DemoCallInterface';
 
 const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
@@ -239,13 +241,21 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
+  const tabItems = [
+    {
+      key: 'widgets',
+      label: (
+        <span>
+          <GlobalOutlined />
+          Widget Management
+        </span>
+      ),
+      children: (
+        <div>
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
               <Title level={2} className="!mb-2 !text-gray-900">
                 Widget Management
                 {isDemoMode && (
@@ -440,18 +450,59 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
             ))}
           </Row>
         )}
-      </div>
 
-      {/* Widget Creation Wizard */}
-      <WidgetCreationWizard
-        open={showCreateWizard}
-        onClose={() => {
-          setShowCreateWizard(false);
-          setEditingWidget(null);
-        }}
-        onSuccess={handleWizardSuccess}
-        editWidget={editingWidget}
-      />
+          {/* Widget Creation Wizard */}
+          <WidgetCreationWizard
+            open={showCreateWizard}
+            onClose={() => {
+              setShowCreateWizard(false);
+              setEditingWidget(null);
+            }}
+            onSuccess={handleWizardSuccess}
+            editWidget={editingWidget}
+          />
+        </div>
+      )
+    },
+    {
+      key: 'demo-call',
+      label: (
+        <span>
+          <ExperimentOutlined />
+          Demo Call
+        </span>
+      ),
+      children: (
+        <div>
+          <div className="mb-6">
+            <Title level={3}>Test VoxAssist Features</Title>
+            <Text type="secondary">
+              Experience VoxAssist&apos;s calling capabilities with real-time transcript and sentiment analysis
+            </Text>
+          </div>
+          <DemoCallInterface />
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <Title level={2}>VoxAssist Dashboard</Title>
+          <Text type="secondary">
+            Manage your voice widgets and test calling features
+          </Text>
+        </div>
+
+        <Tabs
+          defaultActiveKey="widgets"
+          items={tabItems}
+          size="large"
+          className="bg-white rounded-lg shadow-sm"
+        />
+      </div>
     </div>
   );
 }

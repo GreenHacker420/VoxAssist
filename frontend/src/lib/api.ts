@@ -95,19 +95,59 @@ class ApiClient {
     return this.request<T>({ ...config, method: 'DELETE', url });
   }
 
-  // Set auth token
+  // Set auth token with improved persistence
   setAuthToken(token: string): void {
-    Cookies.set('auth-token', token, { expires: 1 }); // 1 day
+    // Store in both cookies and localStorage for better persistence
+    Cookies.set('auth-token', token, {
+      expires: 7, // 7 days
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+
+    // Also store in localStorage as backup
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('voxassist_auth_token', token);
+      localStorage.setItem('voxassist_auth_timestamp', Date.now().toString());
+    }
   }
 
-  // Remove auth token
+  // Remove auth token from all storage locations
   removeAuthToken(): void {
     Cookies.remove('auth-token');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('voxassist_auth_token');
+      localStorage.removeItem('voxassist_auth_timestamp');
+      localStorage.removeItem('voxassist_user_data');
+    }
   }
 
-  // Get auth token
+  // Get auth token with fallback to localStorage
   getAuthToken(): string | undefined {
-    return Cookies.get('auth-token');
+    // First try cookies
+    let token = Cookies.get('auth-token');
+
+    // If not found in cookies, try localStorage
+    if (!token && typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem('voxassist_auth_token');
+      const timestamp = localStorage.getItem('voxassist_auth_timestamp');
+
+      // Check if token is not expired (7 days)
+      if (storedToken && timestamp) {
+        const tokenAge = Date.now() - parseInt(timestamp);
+        const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+
+        if (tokenAge < maxAge) {
+          token = storedToken;
+          // Restore to cookies
+          this.setAuthToken(token);
+        } else {
+          // Token expired, clean up
+          this.removeAuthToken();
+        }
+      }
+    }
+
+    return token;
   }
 }
 

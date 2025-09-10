@@ -36,8 +36,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsDemoMode(true);
           setUser(DEMO_USER);
         } else if (AuthService.isAuthenticated()) {
-          const userData = await AuthService.getProfile();
-          setUser(userData);
+          // Try to restore user data from localStorage first
+          const cachedUserData = localStorage.getItem('voxassist_user_data');
+          if (cachedUserData) {
+            try {
+              const userData = JSON.parse(cachedUserData);
+              setUser(userData);
+
+              // Verify the cached data is still valid by making a background request
+              AuthService.getProfile()
+                .then(freshUserData => {
+                  setUser(freshUserData);
+                  localStorage.setItem('voxassist_user_data', JSON.stringify(freshUserData));
+                })
+                .catch(error => {
+                  console.warn('Failed to refresh user data:', error);
+                  // Keep using cached data if refresh fails
+                });
+            } catch (parseError) {
+              console.warn('Failed to parse cached user data:', parseError);
+              // Fall back to fresh API call
+              const userData = await AuthService.getProfile();
+              setUser(userData);
+              localStorage.setItem('voxassist_user_data', JSON.stringify(userData));
+            }
+          } else {
+            // No cached data, make fresh API call
+            const userData = await AuthService.getProfile();
+            setUser(userData);
+            localStorage.setItem('voxassist_user_data', JSON.stringify(userData));
+          }
         }
       } catch (error) {
         console.error('Failed to initialize auth:', error);
@@ -54,6 +82,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await AuthService.login({ email, password });
       setUser(response.data.user);
+
+      // Cache user data for persistence
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('voxassist_user_data', JSON.stringify(response.data.user));
+      }
+
       message.success('Login successful!');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
@@ -66,6 +100,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await AuthService.register({ name, email, password });
       setUser(response.data.user);
+
+      // Cache user data for persistence
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('voxassist_user_data', JSON.stringify(response.data.user));
+      }
+
       message.success('Registration successful!');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
