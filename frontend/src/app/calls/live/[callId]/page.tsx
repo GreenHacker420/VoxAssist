@@ -284,8 +284,22 @@ export default function LiveCallPage() {
     });
   }, []);
 
-  const handleVoiceSentimentUpdate = useCallback((voiceSentiment: SentimentData) => {
-    setSentiment(voiceSentiment);
+  const handleVoiceSentimentUpdate = useCallback((voiceSentiment: { overall: string; score: number; emotions: Record<string, number> }) => {
+    // Convert the generic sentiment to our specific type
+    const convertedSentiment: SentimentData = {
+      overall: (voiceSentiment.overall === 'positive' || voiceSentiment.overall === 'negative' || voiceSentiment.overall === 'neutral')
+        ? voiceSentiment.overall
+        : 'neutral',
+      score: voiceSentiment.score,
+      emotions: {
+        joy: voiceSentiment.emotions.joy || 0,
+        anger: voiceSentiment.emotions.anger || 0,
+        fear: voiceSentiment.emotions.fear || 0,
+        sadness: voiceSentiment.emotions.sadness || 0,
+        surprise: voiceSentiment.emotions.surprise || 0
+      }
+    };
+    setSentiment(convertedSentiment);
   }, []);
 
   const handleVoiceStatusChange = useCallback((status: 'idle' | 'listening' | 'processing' | 'speaking') => {

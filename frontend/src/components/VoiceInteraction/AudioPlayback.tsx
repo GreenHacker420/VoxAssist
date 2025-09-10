@@ -202,18 +202,22 @@ export default function AudioPlayback({
         {/* Progress Bar */}
         {showControls && (
           <div className="flex-1">
-            <Progress
-              percent={getProgressPercent()}
-              showInfo={false}
-              strokeColor="#1890ff"
-              trailColor="#f0f0f0"
-              className="mb-1"
+            <div
+              className="cursor-pointer"
               onClick={(e) => {
-                const rect = (e.target as HTMLElement).getBoundingClientRect();
+                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                 const percent = ((e.clientX - rect.left) / rect.width) * 100;
                 handleSeek(percent);
               }}
-            />
+            >
+              <Progress
+                percent={getProgressPercent()}
+                showInfo={false}
+                strokeColor="#1890ff"
+                trailColor="#f0f0f0"
+                className="mb-1"
+              />
+            </div>
             <div className="flex justify-between text-xs text-gray-500">
               <span>{formatTime(currentTime)}</span>
               <span>{formatTime(duration)}</span>

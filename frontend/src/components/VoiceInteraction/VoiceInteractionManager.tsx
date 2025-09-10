@@ -22,7 +22,7 @@ interface TranscriptEntry {
 interface VoiceInteractionManagerProps {
   callId: string;
   onTranscriptUpdate?: (transcript: TranscriptEntry[]) => void;
-  onSentimentUpdate?: (sentiment: Record<string, unknown>) => void;
+  onSentimentUpdate?: (sentiment: { overall: string; score: number; emotions: Record<string, number> }) => void;
   onStatusChange?: (status: 'idle' | 'listening' | 'processing' | 'speaking') => void;
   disabled?: boolean;
   className?: string;

@@ -264,7 +264,7 @@ export function useDemoCallWebSocket(options: UseDemoCallWebSocketOptions = {}):
         console.log('Audio stream data received:', data.metadata);
         // Trigger audio playback for AI responses (WebSocket streaming)
         if (data.audioData && typeof data.audioData === 'string' && onAudioStream) {
-          onAudioStream(data.audioData, data.transcriptId as string, data.metadata);
+          onAudioStream(data.audioData, data.transcriptId as string, data.metadata as { speaker?: string; messageId?: string });
         }
         break;
 

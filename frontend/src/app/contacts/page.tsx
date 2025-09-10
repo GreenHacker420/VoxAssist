@@ -72,13 +72,13 @@ export default function ContactsPage() {
     setIsLoading(false);
   }, []);
 
-  const handleAddContact = async (values: any) => {
+  const handleAddContact = async (values: { firstName: string; lastName: string; phone: string; email?: string; company?: string; source?: string; tags?: string[] }) => {
     try {
       const newContact: Lead = {
         id: nextId,
         firstName: values.firstName,
         lastName: values.lastName,
-        email: values.email,
+        email: values.email || '',
         phone: values.phone,
         company: values.company || '',
         source: values.source || 'Manual',

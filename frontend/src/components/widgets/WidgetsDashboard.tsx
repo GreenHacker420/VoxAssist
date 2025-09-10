@@ -39,7 +39,11 @@ const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
 const { Option } = Select;
 
-export default function WidgetsDashboard() {
+interface WidgetsDashboardProps {
+  onCreateWidget?: () => void;
+}
+
+export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardProps = {}) {
   const router = useRouter();
   const { user, isDemoMode } = useAuth();
   const { message } = App.useApp();
@@ -119,6 +123,7 @@ export default function WidgetsDashboard() {
   const handleCreateWidget = () => {
     setEditingWidget(null);
     setShowCreateWizard(true);
+    onCreateWidget?.();
   };
 
   const handleEditWidget = (widget: WidgetDTO) => {
