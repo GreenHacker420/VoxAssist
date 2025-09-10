@@ -60,11 +60,11 @@ export const processSpeech = async (
     });
 
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error processing speech:', error);
     return {
       success: false,
-      error: error.response?.data?.error || 'Failed to process speech'
+      error: (error as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to process speech'
     };
   }
 };
@@ -76,11 +76,11 @@ export const enableVoiceInteraction = async (callId: string): Promise<VoiceContr
   try {
     const response = await apiClient.post(`/demo-calls/${callId}/enable-voice`);
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error enabling voice interaction:', error);
     return {
       success: false,
-      error: error.response?.data?.error || 'Failed to enable voice interaction'
+      error: (error as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to enable voice interaction'
     };
   }
 };
@@ -92,11 +92,11 @@ export const disableVoiceInteraction = async (callId: string): Promise<VoiceCont
   try {
     const response = await apiClient.post(`/demo-calls/${callId}/disable-voice`);
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error disabling voice interaction:', error);
     return {
       success: false,
-      error: error.response?.data?.error || 'Failed to disable voice interaction'
+      error: (error as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to disable voice interaction'
     };
   }
 };

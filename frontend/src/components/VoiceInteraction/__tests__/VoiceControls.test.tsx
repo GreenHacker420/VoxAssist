@@ -2,19 +2,20 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import VoiceControls from '../VoiceControls';
+import * as jest from 'jest';
 
 // Mock Ant Design components
 jest.mock('antd', () => ({
-  Button: ({ children, onClick, disabled, className }: any) => (
+  Button: ({ children, onClick, disabled, className }: { children: React.ReactNode; onClick?: () => void; disabled?: boolean; className?: string }) => (
     <button onClick={onClick} disabled={disabled} className={className}>
       {children}
     </button>
   ),
-  Tooltip: ({ children, title }: any) => (
+  Tooltip: ({ children, title }: { children: React.ReactNode; title?: string }) => (
     <div title={title}>{children}</div>
   ),
-  Space: ({ children }: any) => <div>{children}</div>,
-  Badge: ({ text, status }: any) => <span data-status={status}>{text}</span>
+  Space: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Badge: ({ text, status }: { text?: string; status?: string }) => <span data-status={status}>{text}</span>
 }));
 
 // Mock Heroicons

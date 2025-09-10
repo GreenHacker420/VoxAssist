@@ -22,7 +22,7 @@ interface TranscriptEntry {
 interface VoiceInteractionManagerProps {
   callId: string;
   onTranscriptUpdate?: (transcript: TranscriptEntry[]) => void;
-  onSentimentUpdate?: (sentiment: any) => void;
+  onSentimentUpdate?: (sentiment: Record<string, unknown>) => void;
   onStatusChange?: (status: 'idle' | 'listening' | 'processing' | 'speaking') => void;
   disabled?: boolean;
   className?: string;
@@ -40,7 +40,7 @@ export default function VoiceInteractionManager({
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
   
-  const audioQueueRef = useRef<any>(null);
+  const audioQueueRef = useRef<{ add: (url: string) => void; clear: () => void } | null>(null);
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize audio queue

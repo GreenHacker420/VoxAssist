@@ -39,7 +39,7 @@ jest.mock('../../../hooks/useDemoCallWebSocket', () => ({
   useDemoCallWebSocket: () => mockWebSocketHook
 }));
 
-const { useVoiceInteraction } = require('../../../hooks/useVoiceInteraction');
+import { useVoiceInteraction } from '../../../hooks/useVoiceInteraction';
 
 describe('VoiceInteractionManager Integration', () => {
   const defaultProps = {
