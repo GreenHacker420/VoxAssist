@@ -93,7 +93,7 @@ export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProp
         return;
       }
 
-      const response = await fetch('/api/whatsapp/config', {
+      const response = await fetch('/whatsapp/config', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -129,7 +129,7 @@ export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProp
         return;
       }
 
-      const response = await fetch('/api/whatsapp/configure', {
+      const response = await fetch('/whatsapp/configure', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProp
         return;
       }
 
-      const response = await fetch('/api/whatsapp/test', {
+      const response = await fetch('/whatsapp/test', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -216,7 +216,7 @@ export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProp
         return;
       }
 
-      const response = await fetch('/api/whatsapp/call', {
+      const response = await fetch('/whatsapp/call', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -252,7 +252,7 @@ export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProp
   const sendCallMessage = async (values: { phoneNumber: string; message?: string }) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/whatsapp/send-call-message', {
+      const response = await fetch('/whatsapp/send-call-message', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -293,7 +293,7 @@ export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProp
         return;
       }
 
-      const response = await fetch('/api/whatsapp/call-history', {
+      const response = await fetch('/whatsapp/call-history', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

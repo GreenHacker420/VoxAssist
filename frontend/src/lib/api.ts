@@ -7,10 +7,10 @@ class ApiClient {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = process.env.NEXT_PUBLIC_API_URL || 
-      (process.env.NODE_ENV === 'production' 
-        ? 'https://voxassist.onrender.com/api'
-        : 'http://localhost:5000/api');
+    this.baseURL = process.env.NEXT_PUBLIC_API_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://voxassist.onrender.com'
+        : 'http://localhost:3001');
     
     this.client = axios.create({
       baseURL: this.baseURL,
@@ -53,8 +53,18 @@ class ApiClient {
   // Generic request method
   private async request<T>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
     try {
-      const response = await this.client.request<ApiResponse<T>>(config);
-      return response.data;
+      const response = await this.client.request(config);
+
+      // Check if response is already in ApiResponse format
+      if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+        return response.data as ApiResponse<T>;
+      }
+
+      // If not, wrap the data in ApiResponse format
+      return {
+        success: true,
+        data: response.data as T
+      };
     } catch (error: unknown) {
       const axiosError = error as { response?: { data?: { error?: string } }; message?: string };
       throw {

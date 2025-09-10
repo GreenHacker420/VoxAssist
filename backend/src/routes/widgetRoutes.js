@@ -26,7 +26,14 @@ router.post('/session', widgetController.initializeSession);
 router.post('/message', widgetController.handleTextMessage);
 router.post('/voice', upload.single('audio'), widgetController.handleVoiceMessage);
 
-// CRUD operations for widgets
+// Standard REST API routes
+router.get('/', widgetController.getWidgetsByOrganization); // GET /api/widgets
+router.post('/', widgetController.createWidget); // POST /api/widgets
+router.get('/:id', widgetController.getWidgetConfig); // GET /api/widgets/:id
+router.put('/:id', widgetController.updateWidget); // PUT /api/widgets/:id
+router.delete('/:id', widgetController.deleteWidget); // DELETE /api/widgets/:id
+
+// Legacy CRUD operations for widgets (backward compatibility)
 router.get('/configs', widgetController.getWidgetsByOrganization);
 router.post('/create', widgetController.createWidget);
 router.put('/update/:widgetId', widgetController.updateWidget);
@@ -38,5 +45,9 @@ router.get('/configs/:id', widgetController.getWidgetConfig);
 
 // Analytics
 router.get('/analytics/:widgetId', widgetController.getWidgetAnalytics);
+router.get('/:id/analytics', widgetController.getWidgetAnalytics);
+
+// Widget status management
+router.patch('/:id/status', widgetController.toggleWidgetStatus);
 
 module.exports = router;

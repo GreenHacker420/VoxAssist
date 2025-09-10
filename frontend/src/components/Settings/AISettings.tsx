@@ -69,7 +69,7 @@ export default function AISettings({ onSave, onTest }: AISettingsProps) {
   const loadAIConfig = async () => {
     try {
       // TODO: Implement API call to load AI configuration
-      // const response = await fetch('/api/settings/ai');
+      // const response = await fetch('/settings/ai');
       // const data = await response.json();
       // setConfig(data);
       // form.setFieldsValue(data);
@@ -89,7 +89,7 @@ export default function AISettings({ onSave, onTest }: AISettingsProps) {
         await onSave(values);
       } else {
         // TODO: Implement default save logic
-        // await fetch('/api/settings/ai', {
+        // await fetch('/settings/ai', {
         //   method: 'POST',
         //   headers: { 'Content-Type': 'application/json' },
         //   body: JSON.stringify(values)
@@ -115,7 +115,7 @@ export default function AISettings({ onSave, onTest }: AISettingsProps) {
         testResult = await onTest(values);
       } else {
         // TODO: Implement default test logic
-        // const response = await fetch('/api/settings/ai/test', {
+        // const response = await fetch('/settings/ai/test', {
         //   method: 'POST',
         //   headers: { 'Content-Type': 'application/json' },
         //   body: JSON.stringify(values)

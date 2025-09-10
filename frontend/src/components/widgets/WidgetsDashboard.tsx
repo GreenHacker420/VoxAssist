@@ -15,8 +15,8 @@ import {
   Select,
   Empty,
   Spin,
-  message,
-  Dropdown
+  Dropdown,
+  App
 } from 'antd';
 import {
   PlusOutlined,
@@ -41,8 +41,6 @@ const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
 const { Option } = Select;
 
-type Widget = DemoWidget | WidgetDTO;
-
 interface WidgetsDashboardProps {
   onCreateWidget?: () => void;
 }
@@ -50,6 +48,7 @@ interface WidgetsDashboardProps {
 export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardProps) {
   const router = useRouter();
   const { user, isDemoMode } = useAuth();
+  const { message } = App.useApp();
   const [widgets, setWidgets] = useState<WidgetDTO[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');

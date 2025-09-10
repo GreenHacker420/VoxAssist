@@ -514,19 +514,31 @@ export default function ProvidersPage() {
 
                   <div className="space-y-4">
                     <Form.Item name="isActive" valuePropName="checked">
-                      <Switch /> Active
+                      <div className="flex items-center gap-2">
+                        <Switch />
+                        <span>Active</span>
+                      </div>
                     </Form.Item>
 
                     <Form.Item name="isPrimary" valuePropName="checked">
-                      <Switch /> Set as Primary
+                      <div className="flex items-center gap-2">
+                        <Switch />
+                        <span>Set as Primary</span>
+                      </div>
                     </Form.Item>
 
                     <Form.Item name="enableRecording" valuePropName="checked">
-                      <Switch /> Enable Recording
+                      <div className="flex items-center gap-2">
+                        <Switch />
+                        <span>Enable Recording</span>
+                      </div>
                     </Form.Item>
 
                     <Form.Item name="enableTranscription" valuePropName="checked">
-                      <Switch /> Enable Transcription
+                      <div className="flex items-center gap-2">
+                        <Switch />
+                        <span>Enable Transcription</span>
+                      </div>
                     </Form.Item>
                   </div>
                 </div>

@@ -64,7 +64,9 @@ class WidgetController {
             });
 
             // Extract context from the URL if not already cached
-            this.extractContextAsync(widget.id, contextUrl);
+            this.extractContextAsync(widget.id, contextUrl).catch(err => {
+                console.error('Context extraction failed:', err);
+            });
 
             res.json({
                 sessionId,
@@ -311,10 +313,13 @@ class WidgetController {
                 }
             });
 
-            // Start context extraction if URL provided
-            if (contextUrl) {
-                this.extractContextAsync(widget.id, contextUrl);
-            }
+            // Start context extraction if URL provided (skip for now to avoid errors)
+            // if (contextUrl) {
+            //     // Run context extraction in background (don't await)
+            //     this.extractContextAsync(widget.id, contextUrl).catch(err => {
+            //         console.error('Context extraction failed:', err);
+            //     });
+            // }
 
             res.status(201).json(widget);
 
@@ -327,13 +332,14 @@ class WidgetController {
     // Delete widget
     async deleteWidget(req, res) {
         try {
-            const { widgetId } = req.params;
+            const { id, widgetId } = req.params;
+            const widgetIdToDelete = id || widgetId;
 
             // Delete related data first
             await prisma.widgetInteraction.deleteMany({
                 where: {
                     session: {
-                        widgetId
+                        widgetId: widgetIdToDelete
                     }
                 }
             });
@@ -362,11 +368,12 @@ class WidgetController {
     // Update widget configuration
     async updateWidget(req, res) {
         try {
-            const { widgetId } = req.params;
+            const { id, widgetId } = req.params;
             const updates = req.body;
+            const widgetIdToUpdate = id || widgetId;
 
             const widget = await prisma.widget.update({
-                where: { id: widgetId },
+                where: { id: parseInt(widgetIdToUpdate) },
                 data: updates
             });
 
@@ -794,6 +801,33 @@ Response format should be natural conversational text, maximum 150 words.
             avgSentimentScore: avgSentiment._avg.sentimentScore || 0.5,
             period: { start, end }
         };
+    }
+
+    // Toggle widget status (active/inactive)
+    async toggleWidgetStatus(req, res) {
+        try {
+            const { id } = req.params;
+            const { isActive } = req.body;
+
+            if (typeof isActive !== 'boolean') {
+                return res.status(400).json({ error: 'isActive must be a boolean value' });
+            }
+
+            const widget = await prisma.widget.update({
+                where: { id: parseInt(id) },
+                data: { isActive }
+            });
+
+            res.json({
+                id: widget.id,
+                name: widget.name,
+                isActive: widget.isActive,
+                updatedAt: widget.updatedAt
+            });
+        } catch (error) {
+            console.error('Error toggling widget status:', error);
+            res.status(500).json({ error: 'Failed to toggle widget status' });
+        }
     }
 }
 

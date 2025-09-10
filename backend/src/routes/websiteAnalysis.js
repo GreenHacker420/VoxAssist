@@ -1,21 +1,8 @@
 const express = require('express');
-const rateLimit = require('express-rate-limit');
 const websiteAnalyzer = require('../services/websiteAnalyzer');
 const { body, validationResult } = require('express-validator');
 
 const router = express.Router();
-
-// Rate limiting for website analysis (expensive operation)
-const analysisRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit each IP to 10 requests per windowMs
-  message: {
-    error: 'Too many website analysis requests. Please try again later.',
-    retryAfter: '15 minutes'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
 // Validation middleware
 const validateAnalysisRequest = [
@@ -39,7 +26,7 @@ const validateAnalysisRequest = [
  * @desc Analyze a website for widget integration
  * @access Private (requires authentication)
  */
-router.post('/analyze', analysisRateLimit, validateAnalysisRequest, async (req, res) => {
+router.post('/analyze', validateAnalysisRequest, async (req, res) => {
   try {
     // Check validation results
     const errors = validationResult(req);

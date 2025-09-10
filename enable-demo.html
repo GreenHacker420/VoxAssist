@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enable Demo Mode</title>
+</head>
+<body>
+    <h1>Enabling Demo Mode...</h1>
+    <script>
+        // Enable demo mode
+        localStorage.setItem('voxassist_demo_mode', 'true');
+        console.log('Demo mode enabled');
+        
+        // Redirect to widgets page
+        setTimeout(() => {
+            window.location.href = 'http://localhost:3003/widgets';
+        }, 1000);
+    </script>
+</body>
+</html>

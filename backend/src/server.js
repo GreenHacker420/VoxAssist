@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const morgan = require('morgan');
 const { createServer } = require('http');
@@ -12,15 +11,12 @@ const logger = require('./utils/logger');
 const { initializeDatabase } = require('./database/prisma');
 const { errorHandler } = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');
-const { rateLimitConfig } = require('./middleware/security');
 const { initializeWebSocketServer } = require('./websocket/callMonitoring');
-const { 
-  securityHeaders, 
-  securityLogger, 
-  corsOptions, 
-  sanitizeInput,
-  generalLimiter,
-  authLimiter
+const {
+  securityHeaders,
+  securityLogger,
+  corsOptions,
+  sanitizeInput
 } = require('./middleware/security');
 const { auditAuth, auditDataAccess } = require('./middleware/audit');
 const authRoutes = require('./routes/auth');
@@ -56,13 +52,7 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:3004", 
-      "https://vox-assist-red.vercel.app",
-      "https://voxassist.com",
-      "https://app.voxassist.com"
-    ],
+    origin: true,
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -77,10 +67,6 @@ app.use(sanitizeInput);
 
 // Trust proxy for accurate IP addresses
 app.set('trust proxy', 1);
-
-// Rate limiting
-app.use('/api/', generalLimiter);
-app.use('/api/auth', authLimiter);
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
@@ -112,7 +98,7 @@ app.use('/api/billing', auditDataAccess('billing'), billingRoutes);
 app.use('/api/survey', surveyRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/i18n', i18nRoutes);
-app.use('/api/widget', widgetRoutes);
+app.use('/api/widgets', auditDataAccess('widgets'), widgetRoutes);
 app.use('/embed', embedRoutes);
 app.use('/api/gdpr', gdprRoutes);
 app.use('/api/whatsapp', auditDataAccess('whatsapp'), whatsappRoutes);

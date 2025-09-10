@@ -1,61 +1,61 @@
-const rateLimit = require('express-rate-limit');
-const slowDown = require('express-slow-down');
+// const rateLimit = require('express-rate-limit');
+// const slowDown = require('express-slow-down');
 const helmet = require('helmet');
 const logger = require('../utils/logger');
 
-// Rate limiting configurations
-const createRateLimit = (windowMs, max, message) => {
-  return rateLimit({
-    windowMs,
-    max,
-    message: {
-      success: false,
-      error: message
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-    handler: (req, res) => {
-      logger.warn(`Rate limit exceeded for IP: ${req.ip}`, {
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        endpoint: req.originalUrl
-      });
-      res.status(429).json({
-        success: false,
-        error: message
-      });
-    }
-  });
-};
+// Rate limiting configurations - DISABLED
+// const createRateLimit = (windowMs, max, message) => {
+//   return rateLimit({
+//     windowMs,
+//     max,
+//     message: {
+//       success: false,
+//       error: message
+//     },
+//     standardHeaders: true,
+//     legacyHeaders: false,
+//     handler: (req, res) => {
+//       logger.warn(`Rate limit exceeded for IP: ${req.ip}`, {
+//         ip: req.ip,
+//         userAgent: req.get('User-Agent'),
+//         endpoint: req.originalUrl
+//       });
+//       res.status(429).json({
+//         success: false,
+//         error: message
+//       });
+//     }
+//   });
+// };
 
-// General API rate limiting
-const generalLimiter = createRateLimit(
-  15 * 60 * 1000, // 15 minutes
-  100, // limit each IP to 100 requests per windowMs
-  'Too many requests from this IP, please try again later'
-);
+// General API rate limiting - DISABLED
+// const generalLimiter = createRateLimit(
+//   15 * 60 * 1000, // 15 minutes
+//   100, // limit each IP to 100 requests per windowMs
+//   'Too many requests from this IP, please try again later'
+// );
 
-// Strict rate limiting for auth endpoints
-const authLimiter = createRateLimit(
-  15 * 60 * 1000, // 15 minutes
-  5, // limit each IP to 5 requests per windowMs
-  'Too many authentication attempts, please try again later'
-);
+// Strict rate limiting for auth endpoints - DISABLED
+// const authLimiter = createRateLimit(
+//   15 * 60 * 1000, // 15 minutes
+//   5, // limit each IP to 5 requests per windowMs
+//   'Too many authentication attempts, please try again later'
+// );
 
-// Very strict rate limiting for password reset
-const passwordResetLimiter = createRateLimit(
-  60 * 60 * 1000, // 1 hour
-  3, // limit each IP to 3 requests per hour
-  'Too many password reset attempts, please try again later'
-);
+// Very strict rate limiting for password reset - DISABLED
+// const passwordResetLimiter = createRateLimit(
+//   60 * 60 * 1000, // 1 hour
+//   3, // limit each IP to 3 requests per hour
+//   'Too many password reset attempts, please try again later'
+// );
 
-// Speed limiter for suspicious activity
-const speedLimiter = slowDown({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  delayAfter: 50, // allow 50 requests per windowMs without delay
-  delay: (hits, req) => hits * 500, // add 500ms delay per request after delayAfter
-  maxDelayMs: 20000, // maximum delay of 20 seconds
-});
+// Speed limiter for suspicious activity - DISABLED
+// const speedLimiter = slowDown({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   delayAfter: 50, // allow 50 requests per windowMs without delay
+//   delay: (hits, req) => hits * 500, // add 500ms delay per request after delayAfter
+//   maxDelayMs: 20000, // maximum delay of 20 seconds
+// });
 
 // Security headers configuration
 const securityHeaders = helmet({
@@ -219,24 +219,9 @@ const securityLogger = (req, res, next) => {
 
 // CORS configuration for production
 const corsOptions = {
-  origin: (origin, callback) => {
-    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
-      'http://localhost:3000',
-      'http://localhost:3004',
-      'https://voxassist.com',
-      'https://app.voxassist.com',
-      'https://vox-assist-red.vercel.app'
-    ];
-
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      logger.warn(`Blocked CORS request from origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-signature', 'x-timestamp']
 };
 
@@ -278,10 +263,11 @@ const sanitizeInput = (req, res, next) => {
 };
 
 module.exports = {
-  generalLimiter,
-  authLimiter,
-  passwordResetLimiter,
-  speedLimiter,
+  // Rate limiters disabled
+  // generalLimiter,
+  // authLimiter,
+  // passwordResetLimiter,
+  // speedLimiter,
   securityHeaders,
   ipWhitelist,
   validateSignature,

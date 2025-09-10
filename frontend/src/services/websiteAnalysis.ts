@@ -73,15 +73,51 @@ class WebsiteAnalysisService {
         }
       });
 
-      return response.data;
+      console.log('Website analysis API response:', response);
+      console.log('Response type:', typeof response);
+      console.log('Response keys:', Object.keys(response || {}));
+
+      // Handle different response formats
+
+      // Case 1: Direct backend response (has success, data, url, analyzedAt)
+      if (response && typeof response === 'object' && 'success' in response && 'data' in response) {
+        console.log('Using direct backend response format');
+        return response as WebsiteAnalysisResponse;
+      }
+
+      // Case 2: API client wrapped response (has success and data properties)
+      if (response && typeof response === 'object' && response.success && response.data) {
+        console.log('Using API client wrapped format');
+        return response.data as WebsiteAnalysisResponse;
+      }
+
+      // Case 3: Simple data response
+      if (response && typeof response === 'object' && response.data) {
+        console.log('Using simple data format');
+        return response.data as WebsiteAnalysisResponse;
+      }
+
+      // Fallback - log the actual response for debugging
+      console.error('Unexpected response format:', response);
+      throw new Error(`No data received from website analysis. Response: ${JSON.stringify(response)}`);
     } catch (error: any) {
       console.error('Website analysis failed:', error);
-      
+
       // Handle different error types
       if (error.response?.data) {
         return error.response.data;
       }
-      
+
+      // Handle rate limit and other specific errors
+      if (error.error) {
+        return {
+          success: false,
+          error: error.error,
+          url,
+          analyzedAt: new Date().toISOString()
+        };
+      }
+
       return {
         success: false,
         error: error.message || 'Failed to analyze website',
@@ -100,16 +136,50 @@ class WebsiteAnalysisService {
         params: { url }
       });
 
-      return response.data;
+      console.log('URL validation API response:', response);
+      console.log('Response type:', typeof response);
+      console.log('Response keys:', Object.keys(response || {}));
+
+      // Handle different response formats
+
+      // Case 1: Direct backend response (has success, valid, url, message)
+      if (response && typeof response === 'object' && 'success' in response && 'valid' in response) {
+        console.log('Using direct backend response format');
+        return response as URLValidationResponse;
+      }
+
+      // Case 2: API client wrapped response
+      if (response && typeof response === 'object' && response.success && response.data) {
+        console.log('Using API client wrapped format');
+        return response.data as URLValidationResponse;
+      }
+
+      // Case 3: Simple data response
+      if (response && typeof response === 'object' && response.data) {
+        console.log('Using simple data format');
+        return response.data as URLValidationResponse;
+      }
+
+      // Fallback - log the actual response for debugging
+      console.error('Unexpected URL validation response format:', response);
+      throw new Error(`No data received from URL validation. Response: ${JSON.stringify(response)}`);
     } catch (error: any) {
       console.error('URL validation failed:', error);
-      
+
+      // Handle specific error messages
+      let errorMessage = 'Failed to validate URL';
+      if (error.error) {
+        errorMessage = error.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       return {
         success: false,
         valid: false,
         url,
-        message: 'Failed to validate URL',
-        error: error.message
+        message: errorMessage,
+        error: errorMessage
       };
     }
   }
@@ -126,7 +196,32 @@ class WebsiteAnalysisService {
   }> {
     try {
       const response = await api.get(`/website-analysis/suggestions/${domain}`);
-      return response.data;
+      // The backend returns the response directly with success: true/false
+      // The API client wraps it in ApiResponse format, so we need to check both formats
+
+      // If the response has success property, it's the direct backend response
+      if (response.success !== undefined) {
+        return response as unknown as {
+          success: boolean;
+          domain: string;
+          suggestions: WebsiteSuggestion[];
+          cached: boolean;
+          message?: string;
+        };
+      }
+
+      // If the response has data property, it's wrapped by API client
+      if (response.data) {
+        return response.data as {
+          success: boolean;
+          domain: string;
+          suggestions: WebsiteSuggestion[];
+          cached: boolean;
+          message?: string;
+        };
+      }
+
+      throw new Error('No data received from suggestions');
     } catch (error: any) {
       console.error('Failed to get suggestions:', error);
       

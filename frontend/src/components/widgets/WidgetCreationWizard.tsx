@@ -1,24 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Steps, 
-  Card, 
-  Form, 
-  Input, 
-  Button, 
-  Select, 
-  ColorPicker, 
-  Switch, 
-  Space, 
-  Typography, 
+import {
+  Steps,
+  Card,
+  Form,
+  Input,
+  Button,
+  Select,
+  ColorPicker,
+  Switch,
+  Space,
+  Typography,
   Alert,
   Row,
   Col,
   Divider,
   Tag,
   Tooltip,
-  message
+  App
 } from 'antd';
 import { 
   InfoCircleOutlined, 
@@ -174,13 +174,14 @@ const WIDGET_TEMPLATES = [
   }
 ];
 
-export default function WidgetCreationWizard({ 
-  open, 
-  onClose, 
-  onSuccess, 
-  editWidget 
+export default function WidgetCreationWizard({
+  open,
+  onClose,
+  onSuccess,
+  editWidget
 }: WidgetCreationWizardProps) {
   const { user, isDemoMode } = useAuth();
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);

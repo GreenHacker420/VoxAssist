@@ -51,31 +51,31 @@ export interface WidgetAnalyticsDTO {
 }
 
 const list = async (organizationId: number): Promise<WidgetDTO[]> => {
-  const res = await api.get<WidgetDTO[]>(`/api/widget/configs`, { params: { organizationId } });
+  const res = await api.get<WidgetDTO[]>(`/widgets`, { params: { organizationId } });
   return res.data || [];
 };
 
 const analytics = async (widgetId: string): Promise<WidgetAnalyticsDTO> => {
-  const res = await api.get<WidgetAnalyticsDTO>(`/api/widget/analytics/${widgetId}`);
+  const res = await api.get<WidgetAnalyticsDTO>(`/widgets/${widgetId}/analytics`);
   return res.data as WidgetAnalyticsDTO;
 };
 
 const create = async (organizationId: number, payload: WidgetDTO): Promise<WidgetDTO> => {
-  const res = await api.post<WidgetDTO>(`/api/widget/create`, { ...payload, organizationId });
+  const res = await api.post<WidgetDTO>(`/widgets`, { ...payload, organizationId });
   return res.data as WidgetDTO;
 };
 
 const update = async (widgetId: string, payload: Partial<WidgetDTO>): Promise<WidgetDTO> => {
-  const res = await api.put<WidgetDTO>(`/api/widget/update/${widgetId}`, payload);
+  const res = await api.put<WidgetDTO>(`/widgets/${widgetId}`, payload);
   return res.data as WidgetDTO;
 };
 
 const remove = async (widgetId: string) => {
-  await api.delete(`/api/widget/update/${widgetId}`);
+  await api.delete(`/widgets/${widgetId}`);
 };
 
 const toggleActive = async (widgetId: string, isActive: boolean) => {
-  const res = await api.put(`/api/widget/update/${widgetId}`, { isActive });
+  const res = await api.patch(`/widgets/${widgetId}/status`, { isActive });
   return res.data;
 };
 

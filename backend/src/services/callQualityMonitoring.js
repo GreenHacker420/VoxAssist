@@ -452,14 +452,14 @@ const analyzeRecentCalls = async () => {
 
     // Get recent calls that haven't been analyzed
     const recentCallsQuery = `
-      SELECT id, transcript, ai_responses, customer_satisfaction 
-      FROM calls 
-      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 10 MINUTE) 
+      SELECT id, transcript, ai_responses, customer_satisfaction
+      FROM calls
+      WHERE created_at >= NOW() - INTERVAL '10 minutes'
       AND quality_analyzed = FALSE
       LIMIT 50
     `;
     
-    const recentCalls = await db.query(recentCallsQuery);
+    const recentCalls = await db.query(recentCallsQuery, []);
 
     for (const call of recentCalls) {
       try {
