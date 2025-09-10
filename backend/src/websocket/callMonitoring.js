@@ -261,8 +261,11 @@ function simulateTranscriptUpdates(callId) {
  */
 async function handleJoinDemoCall(ws, callId, token, isDemoMode = false) {
   try {
+    logger.info(`Attempting to join demo call: ${callId}, isDemoMode: ${isDemoMode}, token: ${token}`);
+
     // For demo calls, we use a simpler verification
     if (!callId || !callId.startsWith('demo-call-')) {
+      logger.warn(`Invalid demo call ID format: ${callId}`);
       ws.send(JSON.stringify({
         type: 'error',
         message: 'Invalid demo call ID'
@@ -285,6 +288,9 @@ async function handleJoinDemoCall(ws, callId, token, isDemoMode = false) {
 
     global.wsClients.get(callId).push(ws);
 
+    // Store the callId on the WebSocket for cleanup
+    ws.demoCallId = callId;
+
     ws.send(JSON.stringify({
       type: 'joined_demo_call',
       callId: callId,
@@ -293,6 +299,29 @@ async function handleJoinDemoCall(ws, callId, token, isDemoMode = false) {
     }));
 
     logger.info(`Client joined demo call monitoring for call: ${callId} (demo mode: ${isDemoMode})`);
+
+    // Check if demo call service has this call and trigger initial state
+    const demoCallService = require('../services/demoCallService');
+    const demoCall = demoCallService.getDemoCall(callId);
+    if (demoCall) {
+      // Send current transcript if any
+      if (demoCall.transcript && demoCall.transcript.length > 0) {
+        demoCall.transcript.forEach(entry => {
+          ws.send(JSON.stringify({
+            type: 'demo_transcript_update',
+            transcript: entry,
+            sentiment: demoCall.overallSentiment
+          }));
+        });
+      }
+
+      // Send current sentiment
+      ws.send(JSON.stringify({
+        type: 'demo_sentiment_update',
+        sentiment: demoCall.overallSentiment
+      }));
+    }
+
   } catch (error) {
     logger.error('Error joining demo call:', error);
     ws.send(JSON.stringify({
@@ -364,6 +393,7 @@ async function handleEndDemoCall(ws, callId) {
  * Broadcast demo call transcript update
  */
 function broadcastDemoCallTranscript(callId, transcriptEntry, sentimentData) {
+  logger.info(`Broadcasting demo transcript for call: ${callId}, speaker: ${transcriptEntry.speaker}`);
   broadcastToCall(callId, {
     type: 'demo_transcript_update',
     callId: callId,
@@ -377,10 +407,38 @@ function broadcastDemoCallTranscript(callId, transcriptEntry, sentimentData) {
  * Broadcast demo call sentiment update
  */
 function broadcastDemoCallSentiment(callId, sentimentData) {
+  logger.info(`Broadcasting demo sentiment for call: ${callId}, overall: ${sentimentData.overall}`);
   broadcastToCall(callId, {
     type: 'demo_sentiment_update',
     callId: callId,
     sentiment: sentimentData,
+    timestamp: new Date().toISOString()
+  });
+}
+
+/**
+ * Broadcast voice interaction status update
+ */
+function broadcastVoiceInteractionStatus(callId, status) {
+  logger.info(`Broadcasting voice interaction status for call: ${callId}, status: ${status}`);
+  broadcastToCall(callId, {
+    type: 'voice_interaction_status',
+    callId: callId,
+    status, // 'listening', 'processing', 'speaking', 'idle'
+    timestamp: new Date().toISOString()
+  });
+}
+
+/**
+ * Broadcast audio response ready
+ */
+function broadcastAudioResponse(callId, audioUrl, transcriptId) {
+  logger.info(`Broadcasting audio response ready for call: ${callId}, audio: ${audioUrl}`);
+  broadcastToCall(callId, {
+    type: 'audio_response_ready',
+    callId: callId,
+    audioUrl,
+    transcriptId,
     timestamp: new Date().toISOString()
   });
 }
@@ -393,5 +451,7 @@ module.exports = {
   handleDemoCallNextMessage,
   handleEndDemoCall,
   broadcastDemoCallTranscript,
-  broadcastDemoCallSentiment
+  broadcastDemoCallSentiment,
+  broadcastVoiceInteractionStatus,
+  broadcastAudioResponse
 };

@@ -10,9 +10,10 @@ import Button from '@/components/UI/Button';
 import Input from '@/components/UI/Input';
 import CallControlsPopup from '@/components/CallControls/CallControlsPopup';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
+import DemoCallInterface from '@/components/DemoCall/DemoCallInterface';
 import { formatDate, formatDuration } from '@/lib/utils';
 import { Table, Card, Tag, Space, Tooltip, Badge, Drawer, Statistic, Row, Col, Select, DatePicker, Input as AntInput, Button as AntButton } from 'antd';
-import { SearchOutlined, FilterOutlined, PhoneOutlined, EyeOutlined, PlusOutlined, SettingOutlined } from '@ant-design/icons';
+import { SearchOutlined, FilterOutlined, PhoneOutlined, EyeOutlined, PlusOutlined, SettingOutlined, ExperimentOutlined } from '@ant-design/icons';
 import {
   PhoneIcon,
   StopIcon,
@@ -214,6 +215,22 @@ export default function CallsPage() {
             <div className="text-sm text-red-700">{error}</div>
           </div>
         )}
+
+        {/* Demo Call Section */}
+        <Card className="shadow-sm mb-6">
+          <div className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <ExperimentOutlined className="text-2xl text-blue-500" />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Test VoxAssist Features</h3>
+                <p className="text-sm text-gray-600">
+                  Experience VoxAssist's calling capabilities with real-time transcript and sentiment analysis
+                </p>
+              </div>
+            </div>
+            <DemoCallInterface />
+          </div>
+        </Card>
 
         {/* Enhanced Calls Table */}
         <Card className="shadow-sm">

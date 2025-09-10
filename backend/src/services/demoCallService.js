@@ -1,6 +1,15 @@
 const logger = require('../utils/logger');
 const emotionDetection = require('./emotionDetection');
-const { broadcastDemoCallTranscript, broadcastDemoCallSentiment } = require('../websocket/callMonitoring');
+const {
+  broadcastDemoCallTranscript,
+  broadcastDemoCallSentiment,
+  broadcastVoiceInteractionStatus,
+  broadcastAudioResponse
+} = require('../websocket/callMonitoring');
+const geminiService = require('./geminiService');
+const elevenLabsService = require('./elevenLabsService');
+const fs = require('fs').promises;
+const path = require('path');
 
 /**
  * Demo Call Service
@@ -10,6 +19,9 @@ const { broadcastDemoCallTranscript, broadcastDemoCallSentiment } = require('../
 class DemoCallService {
   constructor() {
     this.activeDemoCalls = new Map();
+    this.voiceInteractionMode = new Map(); // Track which calls are using voice interaction
+    this.audioQueue = new Map(); // Queue for audio playback
+    this.processingQueue = new Map(); // Track processing state
     this.conversationTemplates = {
       CUSTOMER_SUPPORT: [
         {
@@ -273,6 +285,262 @@ class DemoCallService {
   }
 
   /**
+   * Process customer speech input for real-time voice interaction
+   */
+  async processCustomerSpeech(callId, transcript, isInterim = false) {
+    try {
+      const demoCall = this.activeDemoCalls.get(callId);
+      if (!demoCall) {
+        throw new Error('Demo call not found');
+      }
+
+      // Enable voice interaction mode for this call
+      this.voiceInteractionMode.set(callId, true);
+
+      logger.info(`Processing customer speech for demo call ${callId}: "${transcript}" (interim: ${isInterim})`);
+
+      // Don't process interim results for AI response generation
+      if (isInterim) {
+        // Broadcast listening status for interim results
+        broadcastVoiceInteractionStatus(callId, 'listening');
+        return {
+          callId,
+          customerTranscript: transcript,
+          isProcessing: false,
+          isInterim: true
+        };
+      }
+
+      // Mark as processing
+      this.processingQueue.set(callId, true);
+      broadcastVoiceInteractionStatus(callId, 'processing');
+
+      // Create customer transcript entry
+      const customerTranscriptEntry = {
+        id: `customer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        speaker: 'customer',
+        text: transcript,
+        timestamp: new Date().toISOString(),
+        confidence: 0.85 + Math.random() * 0.1,
+        sentiment: await this.analyzeSentiment(transcript),
+        sentimentScore: await this.calculateSentimentScore(transcript),
+        emotions: await this.analyzeEmotions(transcript)
+      };
+
+      // Add to transcript
+      demoCall.transcript.push(customerTranscriptEntry);
+
+      // Update overall sentiment
+      this.updateOverallSentiment(demoCall, customerTranscriptEntry);
+
+      // Broadcast customer transcript update
+      broadcastDemoCallTranscript(callId, customerTranscriptEntry, demoCall.overallSentiment);
+
+      // Generate AI response using Gemini
+      const aiResponse = await this.generateAIResponse(callId, transcript, demoCall);
+
+      // Create AI transcript entry
+      const aiTranscriptEntry = {
+        id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        speaker: 'ai',
+        text: aiResponse.response,
+        timestamp: new Date().toISOString(),
+        confidence: aiResponse.confidence || 0.95,
+        sentiment: 'positive',
+        sentimentScore: 0.8,
+        emotions: { joy: 0.7, anger: 0.1, fear: 0.1, sadness: 0.1, surprise: 0.0 }
+      };
+
+      // Add AI response to transcript
+      demoCall.transcript.push(aiTranscriptEntry);
+
+      // Update overall sentiment with AI response
+      this.updateOverallSentiment(demoCall, aiTranscriptEntry);
+
+      // Generate audio for AI response
+      broadcastVoiceInteractionStatus(callId, 'speaking');
+      const audioUrl = await this.generateAudioResponse(aiResponse.response, callId);
+
+      // Broadcast AI transcript update
+      broadcastDemoCallTranscript(callId, aiTranscriptEntry, demoCall.overallSentiment);
+
+      // Broadcast audio response ready
+      if (audioUrl) {
+        broadcastAudioResponse(callId, audioUrl, aiTranscriptEntry.id);
+      }
+
+      // Clear processing state
+      this.processingQueue.delete(callId);
+      broadcastVoiceInteractionStatus(callId, 'idle');
+
+      return {
+        callId,
+        customerTranscript: transcript,
+        aiResponse: aiResponse.response,
+        audioUrl,
+        sentiment: demoCall.overallSentiment,
+        isProcessing: false,
+        transcriptId: aiTranscriptEntry.id
+      };
+
+    } catch (error) {
+      logger.error(`Error processing customer speech for demo call ${callId}: ${error.message}`);
+      this.processingQueue.delete(callId);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate AI response using Gemini API
+   */
+  async generateAIResponse(callId, customerInput, demoCall) {
+    try {
+      // Build conversation context
+      const conversationHistory = demoCall.transcript.slice(-6).map(entry => ({
+        speaker: entry.speaker,
+        content: entry.text,
+        timestamp: entry.timestamp
+      }));
+
+      const context = {
+        conversationHistory,
+        customerPhone: demoCall.metadata?.customerPhone || '+1-555-DEMO',
+        callDuration: Date.now() - new Date(demoCall.startTime).getTime(),
+        overallSentiment: demoCall.overallSentiment,
+        isDemo: true
+      };
+
+      // Use Gemini service to generate response
+      const aiResponse = await geminiService.processCustomerQuery(customerInput, context);
+
+      logger.info(`Generated AI response for demo call ${callId}: "${aiResponse.response.substring(0, 100)}..."`);
+
+      return aiResponse;
+
+    } catch (error) {
+      logger.error(`Error generating AI response for demo call ${callId}: ${error.message}`);
+
+      // Fallback response
+      return {
+        response: "I understand your concern. Let me help you with that. Could you please provide more details?",
+        intent: 'general_inquiry',
+        confidence: 0.8,
+        shouldEscalate: false
+      };
+    }
+  }
+
+  /**
+   * Generate audio response using ElevenLabs TTS
+   */
+  async generateAudioResponse(text, callId) {
+    try {
+      // Generate speech using ElevenLabs
+      const audioResult = await elevenLabsService.textToSpeech(text, null, {
+        stability: 0.6,
+        similarity_boost: 0.7,
+        style: 0.2,
+        use_speaker_boost: true
+      });
+
+      // Save audio file
+      const audioFileName = `demo-call-${callId}-${Date.now()}.mp3`;
+      const audioPath = path.join(process.cwd(), 'public', 'audio', audioFileName);
+
+      // Ensure audio directory exists
+      await fs.mkdir(path.dirname(audioPath), { recursive: true });
+
+      // Write audio file
+      await fs.writeFile(audioPath, audioResult.audioBuffer);
+
+      const audioUrl = `/audio/${audioFileName}`;
+      logger.info(`Generated audio response for demo call ${callId}: ${audioUrl}`);
+
+      return audioUrl;
+
+    } catch (error) {
+      logger.error(`Error generating audio response for demo call ${callId}: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Analyze sentiment of text
+   */
+  async analyzeSentiment(text) {
+    try {
+      const analysis = await emotionDetection.analyzeEmotion(text, 'demo-call');
+
+      if (analysis.overallSentiment > 0.6) return 'positive';
+      if (analysis.overallSentiment < 0.4) return 'negative';
+      return 'neutral';
+    } catch (error) {
+      logger.warn(`Error analyzing sentiment: ${error.message}`);
+      return 'neutral';
+    }
+  }
+
+  /**
+   * Calculate sentiment score
+   */
+  async calculateSentimentScore(text) {
+    try {
+      const analysis = await emotionDetection.analyzeEmotion(text, 'demo-call');
+      return analysis.overallSentiment || 0.5;
+    } catch (error) {
+      logger.warn(`Error calculating sentiment score: ${error.message}`);
+      return 0.5;
+    }
+  }
+
+  /**
+   * Analyze emotions in text
+   */
+  async analyzeEmotions(text) {
+    try {
+      const analysis = await emotionDetection.analyzeEmotion(text, 'demo-call');
+      return analysis.emotions || { joy: 0.2, anger: 0.2, fear: 0.2, sadness: 0.2, surprise: 0.2 };
+    } catch (error) {
+      logger.warn(`Error analyzing emotions: ${error.message}`);
+      return { joy: 0.2, anger: 0.2, fear: 0.2, sadness: 0.2, surprise: 0.2 };
+    }
+  }
+
+  /**
+   * Enable voice interaction mode for a demo call
+   */
+  enableVoiceInteraction(callId) {
+    this.voiceInteractionMode.set(callId, true);
+
+    // Stop any existing conversation simulation
+    const demoCall = this.activeDemoCalls.get(callId);
+    if (demoCall && demoCall.intervalId) {
+      clearTimeout(demoCall.intervalId);
+      demoCall.intervalId = null;
+    }
+
+    // Broadcast voice interaction enabled
+    broadcastVoiceInteractionStatus(callId, 'idle');
+
+    logger.info(`Voice interaction enabled for demo call: ${callId}`);
+  }
+
+  /**
+   * Disable voice interaction mode for a demo call
+   */
+  disableVoiceInteraction(callId) {
+    this.voiceInteractionMode.delete(callId);
+    logger.info(`Voice interaction disabled for demo call: ${callId}`);
+  }
+
+  /**
+   * Check if call is in voice interaction mode
+   */
+  isVoiceInteractionEnabled(callId) {
+    return this.voiceInteractionMode.has(callId);
+  }
+
+  /**
    * Force end all demo calls for cleanup
    */
   cleanup() {
@@ -282,6 +550,9 @@ class DemoCallService {
       }
     }
     this.activeDemoCalls.clear();
+    this.voiceInteractionMode.clear();
+    this.audioQueue.clear();
+    this.processingQueue.clear();
     logger.info('Demo call service cleaned up');
   }
 }

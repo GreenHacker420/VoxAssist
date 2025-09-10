@@ -8,7 +8,6 @@ import {
   Col,
   Button,
   Typography,
-  Space,
   Tag,
   Statistic,
   Input,
@@ -16,8 +15,7 @@ import {
   Empty,
   Spin,
   Dropdown,
-  App,
-  Tabs
+  App
 } from 'antd';
 import {
   PlusOutlined,
@@ -30,24 +28,18 @@ import {
   EyeOutlined,
   CodeOutlined,
   EditOutlined,
-  DeleteOutlined,
-  ExperimentOutlined
+  DeleteOutlined
 } from '@ant-design/icons';
 import { DEMO_WIDGETS, DemoWidget } from '@/demo/widgets';
 import { useAuth } from '@/contexts/AuthContext';
 import { WidgetsService, type WidgetDTO } from '@/services/widgets';
 import WidgetCreationWizard from './WidgetCreationWizard';
-import DemoCallInterface from '@/components/DemoCall/DemoCallInterface';
 
 const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
 const { Option } = Select;
 
-interface WidgetsDashboardProps {
-  onCreateWidget?: () => void;
-}
-
-export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardProps) {
+export default function WidgetsDashboard() {
   const router = useRouter();
   const { user, isDemoMode } = useAuth();
   const { message } = App.useApp();
@@ -157,13 +149,7 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
     return matchesSearch && matchesStatus;
   });
 
-  const handleToggleStatus = (widgetId: string, isActive: boolean) => {
-    setWidgets(prev =>
-      prev.map(widget =>
-        widget.id === widgetId ? { ...widget, isActive } : widget
-      )
-    );
-  };
+
 
   const handleDeleteWidget = async (widgetId: string) => {
     // Show confirmation dialog
@@ -241,21 +227,13 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
     );
   }
 
-  const tabItems = [
-    {
-      key: 'widgets',
-      label: (
-        <span>
-          <GlobalOutlined />
-          Widget Management
-        </span>
-      ),
-      children: (
-        <div>
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div>
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
               <Title level={2} className="!mb-2 !text-gray-900">
                 Widget Management
                 {isDemoMode && (
@@ -276,6 +254,7 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
               Create Widget
             </Button>
           </div>
+        </div>
 
           {/* Stats Cards */}
           <Row gutter={[24, 24]} className="mb-6">
@@ -313,7 +292,7 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
         </div>
 
         {/* Filters and Search */}
-        <Card className="mb-6 bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg">
+        <Card className="mb-16 bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg mx-10" style={{ marginBottom: '20px' }}>
           <Row gutter={[16, 16]} align="middle">
             <Col xs={24} sm={12} lg={8}>
               <Search
@@ -451,58 +430,16 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
           </Row>
         )}
 
-          {/* Widget Creation Wizard */}
-          <WidgetCreationWizard
-            open={showCreateWizard}
-            onClose={() => {
-              setShowCreateWizard(false);
-              setEditingWidget(null);
-            }}
-            onSuccess={handleWizardSuccess}
-            editWidget={editingWidget}
-          />
-        </div>
-      )
-    },
-    {
-      key: 'demo-call',
-      label: (
-        <span>
-          <ExperimentOutlined />
-          Demo Call
-        </span>
-      ),
-      children: (
-        <div>
-          <div className="mb-6">
-            <Title level={3}>Test VoxAssist Features</Title>
-            <Text type="secondary">
-              Experience VoxAssist&apos;s calling capabilities with real-time transcript and sentiment analysis
-            </Text>
-          </div>
-          <DemoCallInterface />
-        </div>
-      )
-    }
-  ];
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <Title level={2}>VoxAssist Dashboard</Title>
-          <Text type="secondary">
-            Manage your voice widgets and test calling features
-          </Text>
-        </div>
-
-        <Tabs
-          defaultActiveKey="widgets"
-          items={tabItems}
-          size="large"
-          className="bg-white rounded-lg shadow-sm"
+        {/* Widget Creation Wizard */}
+        <WidgetCreationWizard
+          open={showCreateWizard}
+          onClose={() => {
+            setShowCreateWizard(false);
+            setEditingWidget(null);
+          }}
+          onSuccess={handleWizardSuccess}
+          editWidget={editingWidget}
         />
       </div>
-    </div>
   );
 }

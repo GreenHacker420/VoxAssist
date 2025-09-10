@@ -296,9 +296,12 @@ export class CallsService {
     if (isDemoMode()) {
       // Use backend API for demo calls to get real-time features
       try {
+        console.log('Initiating interactive demo call via backend API...');
         const response = await apiClient.post<Call>('/demo-calls', {
           template: 'CUSTOMER_SUPPORT'
         });
+
+        console.log('Demo call API response:', response);
 
         if (response.success && response.data) {
           const demoCall = response.data;

@@ -72,7 +72,7 @@ export default function DemoPage() {
           </Title>
           
           <Paragraph style={{ fontSize: '18px', color: '#666', marginBottom: '32px' }}>
-            Experience VoxAssist's AI-powered calling features without creating an account. 
+            Experience VoxAssist&apos;s AI-powered calling features without creating an account. 
             Test real-time transcription, sentiment analysis, and voice widget management.
           </Paragraph>
 
@@ -125,7 +125,7 @@ export default function DemoPage() {
 
           <div style={{ marginTop: '32px', padding: '16px', backgroundColor: '#f9f9f9', borderRadius: '12px' }}>
             <Paragraph type="secondary" style={{ margin: 0, fontSize: '14px' }}>
-              <strong>Note:</strong> Demo mode uses simulated data and doesn't require real phone numbers or API keys. 
+              <strong>Note:</strong> Demo mode uses simulated data and doesn&apos;t require real phone numbers or API keys. 
               All demo calls are simulated conversations designed to showcase VoxAssist capabilities.
             </Paragraph>
           </div>

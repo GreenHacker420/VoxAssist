@@ -100,6 +100,10 @@ router.post('/', authenticateTokenOrDemo, async (req, res) => {
     // Store demo call session
     demoCallSessions.set(callId, demoCall);
 
+    // Start conversation simulation
+    const demoCallService = require('../services/demoCallService');
+    await demoCallService.startDemoCall(callId, req.user.userId, template);
+
     logger.info(`Demo call initiated: ${callId} for user ${req.user.userId}`);
 
     res.json({
@@ -111,7 +115,10 @@ router.post('/', authenticateTokenOrDemo, async (req, res) => {
         customerName: demoCall.metadata.customerName,
         customerPhone: demoCall.metadata.customerPhone,
         sentiment: 'neutral',
-        sentimentScore: 0.5
+        sentimentScore: 0.5,
+        // Include call type for frontend identification
+        callType: 'demo',
+        duration: 0
       }
     });
 
@@ -349,6 +356,157 @@ router.get('/', authenticateTokenOrDemo, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch demo calls'
+    });
+  }
+});
+
+// POST /api/demo-calls/:id/speech - Process customer speech input for real-time voice interaction
+router.post('/:id/speech', authenticateTokenOrDemo, async (req, res) => {
+  try {
+    const { id: callId } = req.params;
+    const { transcript, audioData, isInterim = false } = req.body;
+
+    if (!callId || !transcript) {
+      return res.status(400).json({
+        success: false,
+        error: 'Call ID and transcript are required'
+      });
+    }
+
+    // Get demo call session
+    const demoCall = demoCallSessions.get(callId);
+    if (!demoCall) {
+      return res.status(404).json({
+        success: false,
+        error: 'Demo call not found'
+      });
+    }
+
+    // Verify user access
+    if (demoCall.userId !== req.user.userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied'
+      });
+    }
+
+    logger.info(`Processing speech for demo call: ${callId}, transcript: "${transcript}", interim: ${isInterim}`);
+
+    // Process customer speech with AI
+    const demoCallService = require('../services/demoCallService');
+    const result = await demoCallService.processCustomerSpeech(callId, transcript, isInterim);
+
+    res.json({
+      success: true,
+      data: {
+        callId,
+        customerTranscript: transcript,
+        aiResponse: result.aiResponse,
+        audioUrl: result.audioUrl,
+        sentiment: result.sentiment,
+        isProcessing: result.isProcessing,
+        transcriptId: result.transcriptId,
+        isInterim: result.isInterim || false
+      }
+    });
+
+  } catch (error) {
+    logger.error(`Error processing speech for demo call: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process speech input'
+    });
+  }
+});
+
+// POST /api/demo-calls/:id/enable-voice - Enable voice interaction mode
+router.post('/:id/enable-voice', authenticateTokenOrDemo, async (req, res) => {
+  try {
+    const { id: callId } = req.params;
+
+    // Get demo call session
+    const demoCall = demoCallSessions.get(callId);
+    if (!demoCall) {
+      return res.status(404).json({
+        success: false,
+        error: 'Demo call not found'
+      });
+    }
+
+    // Verify user access
+    if (demoCall.userId !== req.user.userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied'
+      });
+    }
+
+    // Enable voice interaction
+    const demoCallService = require('../services/demoCallService');
+    demoCallService.enableVoiceInteraction(callId);
+
+    logger.info(`Voice interaction enabled for demo call: ${callId}`);
+
+    res.json({
+      success: true,
+      data: {
+        callId,
+        voiceInteractionEnabled: true,
+        message: 'Voice interaction enabled successfully'
+      }
+    });
+
+  } catch (error) {
+    logger.error(`Error enabling voice interaction for demo call: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to enable voice interaction'
+    });
+  }
+});
+
+// POST /api/demo-calls/:id/disable-voice - Disable voice interaction mode
+router.post('/:id/disable-voice', authenticateTokenOrDemo, async (req, res) => {
+  try {
+    const { id: callId } = req.params;
+
+    // Get demo call session
+    const demoCall = demoCallSessions.get(callId);
+    if (!demoCall) {
+      return res.status(404).json({
+        success: false,
+        error: 'Demo call not found'
+      });
+    }
+
+    // Verify user access
+    if (demoCall.userId !== req.user.userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied'
+      });
+    }
+
+    // Disable voice interaction
+    const demoCallService = require('../services/demoCallService');
+    demoCallService.disableVoiceInteraction(callId);
+
+    logger.info(`Voice interaction disabled for demo call: ${callId}`);
+
+    res.json({
+      success: true,
+      data: {
+        callId,
+        voiceInteractionEnabled: false,
+        message: 'Voice interaction disabled successfully'
+      }
+    });
+
+  } catch (error) {
+    logger.error(`Error disabling voice interaction for demo call: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to disable voice interaction'
     });
   }
 });

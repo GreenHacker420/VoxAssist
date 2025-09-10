@@ -20,6 +20,7 @@ import { toast } from 'react-hot-toast';
 import Waveform from '@/components/Call/Waveform';
 import DemoCallControls from '@/components/CallControls/DemoCallControls';
 import DemoCallAnalytics from '@/components/Analytics/DemoCallAnalytics';
+import VoiceInteractionManager from '@/components/VoiceInteraction/VoiceInteractionManager';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface TranscriptMessage {
@@ -56,6 +57,8 @@ export default function LiveCallPage() {
   const [callDuration, setCallDuration] = useState(0);
   const [isCustomerTalking, setIsCustomerTalking] = useState(false);
   const [isAiTalking, setIsAiTalking] = useState(false);
+  const [voiceInteractionStatus, setVoiceInteractionStatus] = useState<'idle' | 'listening' | 'processing' | 'speaking'>('idle');
+  const [isVoiceInteractionEnabled, setIsVoiceInteractionEnabled] = useState(false);
 
   const transcriptRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -123,6 +126,20 @@ export default function LiveCallPage() {
           break;
         case 'handoff_completed':
           setIsHandedOff(true);
+          break;
+        case 'voice_interaction_status':
+          setVoiceInteractionStatus(data.status);
+          if (data.status === 'speaking') {
+            setIsAiTalking(true);
+          } else if (data.status === 'listening') {
+            setIsCustomerTalking(true);
+          } else {
+            setIsCustomerTalking(false);
+            setIsAiTalking(false);
+          }
+          break;
+        case 'audio_response_ready':
+          // Audio response is handled by VoiceInteractionManager
           break;
       }
     };
@@ -242,6 +259,41 @@ export default function LiveCallPage() {
     }
   };
 
+  // Voice interaction handlers
+  const handleVoiceTranscriptUpdate = useCallback((voiceTranscript: TranscriptMessage[]) => {
+    // Merge voice transcript with existing transcript
+    setTranscript(prev => {
+      const merged = [...prev];
+      voiceTranscript.forEach(entry => {
+        const exists = merged.find(t => t.id === entry.id);
+        if (!exists) {
+          merged.push(entry);
+        }
+      });
+      return merged.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    });
+  }, []);
+
+  const handleVoiceSentimentUpdate = useCallback((voiceSentiment: SentimentData) => {
+    setSentiment(voiceSentiment);
+  }, []);
+
+  const handleVoiceStatusChange = useCallback((status: 'idle' | 'listening' | 'processing' | 'speaking') => {
+    setVoiceInteractionStatus(status);
+
+    // Update talking indicators based on voice status
+    if (status === 'listening') {
+      setIsCustomerTalking(true);
+      setIsAiTalking(false);
+    } else if (status === 'speaking') {
+      setIsCustomerTalking(false);
+      setIsAiTalking(true);
+    } else {
+      setIsCustomerTalking(false);
+      setIsAiTalking(false);
+    }
+  }, []);
+
   // Effects
   useEffect(() => {
     loadCallData();
@@ -318,6 +370,17 @@ export default function LiveCallPage() {
             </div>
             
             <div className="flex items-center space-x-3">
+              {/* Voice Interaction Toggle */}
+              {isDemoMode && call.status === 'active' && (
+                <Button
+                  onClick={() => setIsVoiceInteractionEnabled(!isVoiceInteractionEnabled)}
+                  className={isVoiceInteractionEnabled ? "bg-green-600 hover:bg-green-700" : "bg-purple-600 hover:bg-purple-700"}
+                >
+                  <MicrophoneIcon className="h-4 w-4 mr-2" />
+                  {isVoiceInteractionEnabled ? 'Disable Voice' : 'Enable Voice'}
+                </Button>
+              )}
+
               {call.status === 'active' && !isHandedOff && (
                 <Button
                   onClick={handleHandoffToHuman}
@@ -328,7 +391,7 @@ export default function LiveCallPage() {
                   {isConnecting ? 'Connecting...' : 'Handoff to Human'}
                 </Button>
               )}
-              
+
               {call.status === 'active' && (
                 <Button
                   onClick={handleEndCall}
@@ -344,10 +407,41 @@ export default function LiveCallPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Voice Interaction Section */}
+          {isDemoMode && isVoiceInteractionEnabled && (
+            <div className="lg:col-span-3">
+              <VoiceInteractionManager
+                callId={callId}
+                onTranscriptUpdate={handleVoiceTranscriptUpdate}
+                onSentimentUpdate={handleVoiceSentimentUpdate}
+                onStatusChange={handleVoiceStatusChange}
+                disabled={call?.status !== 'active'}
+                className="mb-6"
+              />
+            </div>
+          )}
+
           {/* Live Transcript */}
           <div className="lg:col-span-2 bg-white shadow rounded-lg">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900">Live Transcript</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-medium text-gray-900">Live Transcript</h2>
+                {isDemoMode && (
+                  <div className="flex items-center space-x-2">
+                    {isVoiceInteractionEnabled && (
+                      <span className={cn(
+                        "text-xs px-2 py-1 rounded-full",
+                        voiceInteractionStatus === 'listening' ? "bg-green-100 text-green-700" :
+                        voiceInteractionStatus === 'processing' ? "bg-blue-100 text-blue-700" :
+                        voiceInteractionStatus === 'speaking' ? "bg-purple-100 text-purple-700" :
+                        "bg-gray-100 text-gray-700"
+                      )}>
+                        Voice: {voiceInteractionStatus}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             <div 
               ref={transcriptRef}

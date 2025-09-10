@@ -22,7 +22,6 @@ import {
   SoundOutlined,
   UserOutlined,
   RobotOutlined,
-  HeartOutlined,
   FrownOutlined,
   SmileOutlined,
   MehOutlined
@@ -31,7 +30,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { CallsService } from '@/services/calls';
 import { useDemoCallWebSocket } from '@/hooks/useDemoCallWebSocket';
 
-const { Title, Text, Paragraph } = Typography;
+const { Text } = Typography;
 
 interface TranscriptEntry {
   id: string;
@@ -56,7 +55,7 @@ interface SentimentData {
 }
 
 export default function DemoCallInterface() {
-  const { user, isDemoMode } = useAuth();
+  const { isDemoMode } = useAuth();
   const [callDuration, setCallDuration] = useState(0);
   const [isCustomerTalking, setIsCustomerTalking] = useState(false);
   const [isAiTalking, setIsAiTalking] = useState(false);
@@ -74,9 +73,7 @@ export default function DemoCallInterface() {
     callStatus: wsCallStatus,
     error: wsError,
     connectToCall,
-    disconnectFromCall,
-    addTranscriptEntry,
-    updateSentiment
+    disconnectFromCall
   } = useDemoCallWebSocket();
 
   // Local state for fallback mode
@@ -87,6 +84,18 @@ export default function DemoCallInterface() {
     score: 0.5,
     emotions: { joy: 0, anger: 0, fear: 0, sadness: 0, surprise: 0 }
   });
+
+  // Debug logging
+  useEffect(() => {
+    console.log('DemoCallInterface state:', {
+      isDemoMode,
+      useBackendDemo,
+      wsConnected,
+      wsCallStatus,
+      localCallStatus,
+      wsError
+    });
+  }, [isDemoMode, useBackendDemo, wsConnected, wsCallStatus, localCallStatus, wsError]);
 
   // Use WebSocket data when available, fallback to local state
   const callStatus = useBackendDemo ? wsCallStatus : localCallStatus;
@@ -180,42 +189,41 @@ export default function DemoCallInterface() {
 
     try {
       if (useBackendDemo) {
+        console.log('Starting backend demo call...');
         // Use backend demo call service
         const demoCall = await CallsService.initiateInteractiveDemoCall();
+        console.log('Demo call created:', demoCall);
         setCallId(demoCall.id);
 
         // Connect to WebSocket for real-time updates
+        console.log('Connecting to WebSocket for call:', demoCall.id);
         connectToCall(demoCall.id);
       } else {
         // Fallback to frontend simulation
-        setLocalCallStatus('connecting');
-        setLocalTranscript([]);
-
-        const newCallId = `demo-call-${Date.now()}`;
-        setCallId(newCallId);
-
-        // Simulate connection delay
-        setTimeout(() => {
-          setLocalCallStatus('active');
-          simulateConversation();
-        }, 2000);
+        console.log('Starting frontend simulation...');
+        startFrontendSimulation();
       }
     } catch (error) {
-      console.error('Failed to start demo call:', error);
+      console.error('Failed to start demo call via backend, falling back to frontend simulation:', error);
 
       // Fallback to frontend simulation
       setUseBackendDemo(false);
-      setLocalCallStatus('connecting');
-      setLocalTranscript([]);
-
-      const newCallId = `demo-call-${Date.now()}`;
-      setCallId(newCallId);
-
-      setTimeout(() => {
-        setLocalCallStatus('active');
-        simulateConversation();
-      }, 2000);
+      startFrontendSimulation();
     }
+  };
+
+  const startFrontendSimulation = () => {
+    setLocalCallStatus('connecting');
+    setLocalTranscript([]);
+
+    const newCallId = `demo-call-${Date.now()}`;
+    setCallId(newCallId);
+
+    // Simulate connection delay
+    setTimeout(() => {
+      setLocalCallStatus('active');
+      simulateConversation();
+    }, 2000);
   };
 
   const endDemoCall = async () => {
