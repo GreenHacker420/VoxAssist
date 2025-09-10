@@ -100,19 +100,22 @@ class WebsiteAnalysisService {
       // Fallback - log the actual response for debugging
       console.error('Unexpected response format:', response);
       throw new Error(`No data received from website analysis. Response: ${JSON.stringify(response)}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Website analysis failed:', error);
 
       // Handle different error types
-      if (error.response?.data) {
-        return error.response.data;
+      if (error && typeof error === 'object' && 'response' in error) {
+        const errorObj = error as { response: { data: WebsiteAnalysisResponse } };
+        if (errorObj.response?.data) {
+          return errorObj.response.data;
+        }
       }
 
       // Handle rate limit and other specific errors
-      if (error.error) {
+      if (error && typeof error === 'object' && 'error' in error) {
         return {
           success: false,
-          error: error.error,
+          error: error.error as string,
           url,
           analyzedAt: new Date().toISOString()
         };
@@ -120,7 +123,7 @@ class WebsiteAnalysisService {
 
       return {
         success: false,
-        error: error.message || 'Failed to analyze website',
+        error: (error && typeof error === 'object' && 'message' in error ? error.message : 'Failed to analyze website') as string,
         url,
         analyzedAt: new Date().toISOString()
       };
@@ -163,15 +166,15 @@ class WebsiteAnalysisService {
       // Fallback - log the actual response for debugging
       console.error('Unexpected URL validation response format:', response);
       throw new Error(`No data received from URL validation. Response: ${JSON.stringify(response)}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('URL validation failed:', error);
 
       // Handle specific error messages
       let errorMessage = 'Failed to validate URL';
-      if (error.error) {
-        errorMessage = error.error;
-      } else if (error.message) {
-        errorMessage = error.message;
+      if (error && typeof error === 'object' && 'error' in error) {
+        errorMessage = error.error as string;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = error.message as string;
       }
 
       return {
@@ -222,7 +225,7 @@ class WebsiteAnalysisService {
       }
 
       throw new Error('No data received from suggestions');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to get suggestions:', error);
       
       return {
@@ -242,7 +245,7 @@ class WebsiteAnalysisService {
     try {
       const parsedUrl = new URL(url);
       return parsedUrl.hostname;
-    } catch (error) {
+    } catch {
       return '';
     }
   }
@@ -259,26 +262,26 @@ class WebsiteAnalysisService {
     suggestions.forEach(suggestion => {
       switch (suggestion.action) {
         case 'apply_primary_color':
-          if (updatedConfig.appearance) {
-            updatedConfig.appearance.primaryColor = suggestion.value;
+          if (updatedConfig.appearance && typeof updatedConfig.appearance === 'object') {
+            (updatedConfig.appearance as Record<string, unknown>).primaryColor = suggestion.value;
           }
           break;
           
         case 'apply_theme':
-          if (updatedConfig.appearance) {
-            updatedConfig.appearance.theme = suggestion.value;
+          if (updatedConfig.appearance && typeof updatedConfig.appearance === 'object') {
+            (updatedConfig.appearance as Record<string, unknown>).theme = suggestion.value;
           }
           break;
           
         case 'apply_position':
-          if (updatedConfig.appearance) {
-            updatedConfig.appearance.position = suggestion.value;
+          if (updatedConfig.appearance && typeof updatedConfig.appearance === 'object') {
+            (updatedConfig.appearance as Record<string, unknown>).position = suggestion.value;
           }
           break;
           
         case 'apply_font':
-          if (updatedConfig.appearance) {
-            updatedConfig.appearance.fontFamily = suggestion.value;
+          if (updatedConfig.appearance && typeof updatedConfig.appearance === 'object') {
+            (updatedConfig.appearance as Record<string, unknown>).fontFamily = suggestion.value;
           }
           break;
           
@@ -333,7 +336,7 @@ class WebsiteAnalysisService {
     try {
       const parsedUrl = new URL(url);
       return ['http:', 'https:'].includes(parsedUrl.protocol);
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -360,4 +363,5 @@ class WebsiteAnalysisService {
   }
 }
 
-export default new WebsiteAnalysisService();
+const websiteAnalysisService = new WebsiteAnalysisService();
+export default websiteAnalysisService;

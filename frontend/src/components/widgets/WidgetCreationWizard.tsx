@@ -2,32 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import {
+  Modal,
   Steps,
-  Card,
+  Button,
   Form,
   Input,
-  Button,
   Select,
-  ColorPicker,
-  Switch,
-  Space,
   Typography,
-  Alert,
-  Row,
-  Col,
-  Divider,
-  Tag,
-  Tooltip,
+  Space,
   App
 } from 'antd';
-import { 
-  InfoCircleOutlined, 
-  EyeOutlined, 
-  SettingOutlined, 
-  SecurityScanOutlined,
+import {
   CheckCircleOutlined,
-  CopyOutlined,
-  GlobalOutlined
+  SettingOutlined,
+  EyeOutlined,
+  RocketOutlined,
+  InfoCircleOutlined,
+  BgColorsOutlined,
+  SecurityScanOutlined,
+  SafetyOutlined
 } from '@ant-design/icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { WidgetsService, type WidgetDTO } from '@/services/widgets';
@@ -39,9 +32,7 @@ import BehaviorStep from './steps/BehaviorStep';
 import PermissionsStep from './steps/PermissionsStep';
 import PreviewStep from './steps/PreviewStep';
 
-const { Title, Text, Paragraph } = Typography;
-const { TextArea } = Input;
-const { Option } = Select;
+const { Title, Text } = Typography;
 
 interface WidgetFormData {
   name: string;
@@ -182,7 +173,6 @@ export default function WidgetCreationWizard({
 }: WidgetCreationWizardProps) {
   const { user, isDemoMode } = useAuth();
   const { message } = App.useApp();
-  const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<WidgetFormData>({
@@ -336,13 +326,8 @@ export default function WidgetCreationWizard({
     message.success(`${template.name} template applied!`);
   };
 
-  const handleNext = async () => {
-    try {
-      await form.validateFields();
-      setCurrentStep(prev => prev + 1);
-    } catch (error) {
-      console.error('Validation failed:', error);
-    }
+  const handleNext = () => {
+    setCurrentStep(prev => prev + 1);
   };
 
   const handlePrev = () => {
@@ -459,7 +444,7 @@ export default function WidgetCreationWizard({
                 formData={{ appearance: formData.appearance }}
                 onChange={(data) => setFormData(prev => ({ ...prev, ...data }))}
                 templates={WIDGET_TEMPLATES}
-                onApplyTemplate={(template) => applyTemplate(template as any)}
+                onApplyTemplate={(template) => applyTemplate(template as typeof WIDGET_TEMPLATES[0])}
               />
             )}
             {currentStep === 2 && (
@@ -503,26 +488,15 @@ export default function WidgetCreationWizard({
               >
                 Cancel
               </Button>
-              {currentStep < steps.length - 1 ? (
-                <Button
-                  type="primary"
-                  size="large"
-                  onClick={handleNext}
-                  className="min-w-[120px]"
-                >
-                  Next Step
-                </Button>
-              ) : (
-                <Button
-                  type="primary"
-                  size="large"
-                  loading={loading}
-                  onClick={handleSubmit}
-                  className="min-w-[140px]"
-                >
-                  {editWidget ? 'Update Widget' : 'Create Widget'}
-                </Button>
-              )}
+              <Button
+                type="primary"
+                size="large"
+                onClick={currentStep < steps.length - 1 ? handleNext : handleSubmit}
+                loading={currentStep === steps.length - 1 ? loading : false}
+                className="min-w-[120px]"
+              >
+                {currentStep < steps.length - 1 ? 'Next Step' : (editWidget ? 'Update Widget' : 'Create Widget')}
+              </Button>
             </Space>
           </div>
         </div>

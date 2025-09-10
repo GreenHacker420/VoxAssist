@@ -171,7 +171,7 @@ export default function BasicInfoStep({
                     {analyzing ? 'Analyzing Website...' : 'Analyze Website'}
                   </Button>
                   <Text type="secondary" className="block text-sm mt-2">
-                    We'll analyze your website to suggest optimal colors and styling
+                    We&apos;ll analyze your website to suggest optimal colors and styling
                   </Text>
                 </Form.Item>
               )}
@@ -189,7 +189,7 @@ export default function BasicInfoStep({
             <div className="space-y-4">
               <Alert
                 message="Choose a Clear Name"
-                description="Use a descriptive name that helps you identify                        especially if you plan to create multiple widgets."
+                description="Use a descriptive name that helps you identify this widget later, especially if you plan to create multiple widgets."
                 type="info"
                 showIcon
                 className="rounded-lg"
@@ -257,7 +257,7 @@ export default function BasicInfoStep({
               What happens next?
             </Title>
             <Text type="secondary" className="text-gray-600">
-              After completing the basic information, you'll customize the appearance,
+              After completing the basic information, you&apos;ll customize the appearance,
               configure behavior settings, set permissions, and preview your widget before deployment.
             </Text>
           </Col>

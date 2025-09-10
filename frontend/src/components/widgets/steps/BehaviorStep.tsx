@@ -1,23 +1,23 @@
 'use client';
 
-import { 
-  Card, 
-  Row, 
-  Col, 
-  Switch, 
-  Input, 
-  Select, 
-  Slider, 
-  Typography, 
-  Space, 
-  Divider,
-  Alert,
+import {
+  Card,
   Form,
-  Tooltip
+  Input,
+  Switch,
+  Select,
+  Slider,
+  Typography,
+  Row,
+  Col,
+  Space,
+  Button,
+  InputNumber,
+  Collapse,
+  Alert
 } from 'antd';
-import { 
-  SettingOutlined, 
-  MessageOutlined, 
+import {
+  MessageOutlined,
   SoundOutlined,
   FileTextOutlined,
   InfoCircleOutlined,
@@ -54,8 +54,6 @@ const LANGUAGE_OPTIONS = [
   { value: 'pt', label: 'Portuguese', flag: '🇵🇹' },
   { value: 'ru', label: 'Russian', flag: '🇷🇺' },
   { value: 'ja', label: 'Japanese', flag: '🇯🇵' },
-  { value: 'ko', label: 'Korean', flag: '🇰🇷' },
-  { value: 'zh', label: 'Chinese', flag: '🇨🇳' },
 ];
 
 const GREETING_TEMPLATES = [
@@ -204,7 +202,7 @@ export default function BehaviorStep({ formData, onChange }: BehaviorStepProps) 
                   <Text strong>Show VoxAssist Branding</Text>
                   <br />
                   <Text type="secondary" className="text-sm">
-                    Display "Powered by VoxAssist" link
+                    Display &quot;Powered by VoxAssist&quot; link
                   </Text>
                 </div>
                 <Switch
@@ -231,7 +229,7 @@ export default function BehaviorStep({ formData, onChange }: BehaviorStepProps) 
                     rows={3}
                     value={formData.behavior.greeting}
                     onChange={(e) => updateBehavior('greeting', e.target.value)}
-                    placeholder="Enter your custom greeting message..."
+                    placeholder="Hi! How can I help you today?"
                     className="rounded-lg"
                   />
                 </Form.Item>
@@ -316,7 +314,7 @@ export default function BehaviorStep({ formData, onChange }: BehaviorStepProps) 
                 • Use auto-open sparingly to avoid interrupting user experience
               </Text>
               <Text type="secondary" className="block text-sm">
-                • Customize your widget&apos;s &quot;Hello&quot; messages to match your brand voice
+                • Customize your widget&apos;s &quot;Hello&quot; message to match your brand voice
               </Text>
               <Text type="secondary" className="block text-sm">
                 • Consider your audience when selecting the widget language

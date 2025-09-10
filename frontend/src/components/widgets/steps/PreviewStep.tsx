@@ -306,7 +306,7 @@ add_action('wp_footer', 'add_voxassist_widget');
             className="font-mono text-sm"
           />
           <Text type="secondary" className="text-xs mt-2 block">
-            Add this code to your WordPress theme's functions.php file.
+            Add this code to your WordPress theme&apos;s functions.php file.
           </Text>
         </div>
       )
@@ -393,7 +393,7 @@ add_action('wp_footer', 'add_voxassist_widget');
                 block
                 onClick={() => window.open(`${baseUrl}/widget-test.html`, '_blank')}
               >
-                Your widget's ready to go live!
+                We&apos;ll guide you through the setup process step by step. Your widget is ready to go live!
               </Button>
               <Button 
                 icon={<DownloadOutlined />} 
@@ -405,7 +405,10 @@ add_action('wp_footer', 'add_voxassist_widget');
                 icon={<ShareAltOutlined />} 
                 block
               >
-                Share Configuration
+                Share Widget Configuration
+                <Text type="secondary" className="block text-xs mt-1">
+                  Don&apos;t worry - you can always modify these settings later from your dashboard.
+                </Text>
               </Button>
             </Space>
           </Card>

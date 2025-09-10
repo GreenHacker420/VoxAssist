@@ -40,7 +40,7 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
 
-  const handleProfileUpdate = async (values: any) => {
+  const handleProfileUpdate = async (values: Record<string, unknown>) => {
     setIsLoading(true);
     try {
       await updateProfile(values);
@@ -53,7 +53,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handlePasswordChange = async (values: any) => {
+  const handlePasswordChange = async (values: Record<string, unknown>) => {
     setPasswordLoading(true);
     try {
       // TODO: Implement password change API
@@ -66,7 +66,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleAvatarUpload = (info: any) => {
+  const handleAvatarUpload = async (info: { file: { status?: string } }) => {
     if (info.file.status === 'done') {
       message.success('Avatar uploaded successfully');
     } else if (info.file.status === 'error') {
@@ -89,7 +89,7 @@ export default function ProfilePage() {
             <div className="flex items-center space-x-2">
               <Tag color="orange">Demo Mode</Tag>
               <Text type="secondary">
-                Profile changes in demo mode are temporary and won't be saved.
+                Profile changes in demo mode are temporary and won&apos;t be saved.
               </Text>
             </div>
           </Card>
