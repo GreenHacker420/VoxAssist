@@ -126,8 +126,8 @@ export default function LoginPage() {
             </Form.Item>
 
             <div className="text-center mb-4">
-              <Link href="/forgot-password">
-                <AntLink>Forgot your password?</AntLink>
+              <Link href="/forgot-password" className="ant-typography ant-typography-link">
+                Forgot your password?
               </Link>
             </div>
 
@@ -148,8 +148,8 @@ export default function LoginPage() {
             <div className="text-center">
               <Text type="secondary">
                 Don&apos;t have an account?{' '}
-                <Link href="/register">
-                  <AntLink>Sign up</AntLink>
+                <Link href="/register" className="ant-typography ant-typography-link">
+                  Sign up
                 </Link>
               </Text>
             </div>

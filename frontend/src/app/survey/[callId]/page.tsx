@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { StarIcon } from '@heroicons/react/24/solid';
-import { message } from 'antd';
+import { App } from 'antd';
 
 export default function SurveyPage() {
+  const { message } = App.useApp();
   const params = useParams();
   const callId = params.callId as string;
   const [rating, setRating] = useState(0);

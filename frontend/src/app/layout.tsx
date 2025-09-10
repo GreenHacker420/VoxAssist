@@ -31,7 +31,6 @@ export default function RootLayout({
         <AntdProvider>
           <AuthProvider>
             {children}
-
           </AuthProvider>
         </AntdProvider>
       </body>

@@ -10,7 +10,7 @@ import {
   Typography, 
   Row, 
   Col, 
-  message, 
+  App, 
   Modal, 
   List, 
   Tag, 
@@ -66,6 +66,7 @@ interface WhatsAppAccountConfig {
 }
 
 export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProps) {
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [configForm] = Form.useForm();
   const [loading, setLoading] = useState(false);

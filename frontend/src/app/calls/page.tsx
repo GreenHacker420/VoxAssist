@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Call } from '@/types';
 import { CallsService } from '@/services/calls';
 // import { formatDistanceToNow } from 'date-fns';
-import { message } from 'antd';
+import { App } from 'antd';
 import Modal from '@/components/UI/Modal';
 import Button from '@/components/UI/Button';
 import Input from '@/components/UI/Input';
@@ -23,6 +23,7 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function CallsPage() {
+  const { message } = App.useApp();
   const [calls, setCalls] = useState<Call[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

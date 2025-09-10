@@ -15,9 +15,10 @@ import {
   CheckCircleIcon,
   ClockIcon
 } from '@heroicons/react/24/outline';
-import { message } from 'antd';
+import { App } from 'antd';
 
 export default function WebhooksPage() {
+  const { message } = App.useApp();
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
   const [webhookLogs, setWebhookLogs] = useState<WebhookLog[]>([]);

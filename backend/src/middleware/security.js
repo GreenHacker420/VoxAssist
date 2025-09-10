@@ -53,7 +53,7 @@ const passwordResetLimiter = createRateLimit(
 const speedLimiter = slowDown({
   windowMs: 15 * 60 * 1000, // 15 minutes
   delayAfter: 50, // allow 50 requests per windowMs without delay
-  delayMs: 500, // add 500ms delay per request after delayAfter
+  delay: (hits, req) => hits * 500, // add 500ms delay per request after delayAfter
   maxDelayMs: 20000, // maximum delay of 20 seconds
 });
 

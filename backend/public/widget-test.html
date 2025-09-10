@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoxAssist Widget Test Page</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+        
+        .header p {
+            color: #718096;
+            font-size: 1.2rem;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        
+        .section {
+            background: #f7fafc;
+            padding: 30px;
+            border-radius: 15px;
+            border-left: 4px solid #4299e1;
+        }
+        
+        .section h2 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        
+        .section p {
+            color: #4a5568;
+            margin-bottom: 15px;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            color: #4a5568;
+            position: relative;
+            padding-left: 25px;
+        }
+        
+        .feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #48bb78;
+            font-weight: bold;
+        }
+        
+        .demo-section {
+            background: #edf2f7;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .demo-section h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+        
+        .demo-button {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin: 5px;
+        }
+        
+        .demo-button:hover {
+            background: #3182ce;
+        }
+        
+        .widget-info {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .widget-info h4 {
+            color: #c53030;
+            margin-bottom: 10px;
+        }
+        
+        .code-block {
+            background: #1a202c;
+            color: #68d391;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 VoxAssist Widget Test Page</h1>
+            <p>Test the embeddable VoxAssist widget on this sample website</p>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2>🚀 About VoxAssist</h2>
+                <p>VoxAssist is an AI-powered calling and communication platform that helps businesses connect with their customers through intelligent voice and text interactions.</p>
+                <ul class="feature-list">
+                    <li>AI-powered voice conversations</li>
+                    <li>Real-time transcription</li>
+                    <li>Multi-language support</li>
+                    <li>Advanced analytics</li>
+                    <li>Easy integration</li>
+                </ul>
+            </div>
+            
+            <div class="section">
+                <h2>🛠️ Widget Features</h2>
+                <p>The VoxAssist widget provides a seamless communication experience for your website visitors.</p>
+                <ul class="feature-list">
+                    <li>Customizable appearance</li>
+                    <li>Voice and text chat</li>
+                    <li>Mobile responsive</li>
+                    <li>GDPR compliant</li>
+                    <li>Real-time notifications</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h3>🎮 Widget Demo Controls</h3>
+            <p>Use these buttons to test widget functionality:</p>
+            <button class="demo-button" onclick="openWidget()">Open Widget</button>
+            <button class="demo-button" onclick="closeWidget()">Close Widget</button>
+            <button class="demo-button" onclick="toggleWidget()">Toggle Widget</button>
+            <button class="demo-button" onclick="getWidgetState()">Get State</button>
+        </div>
+        
+        <div class="widget-info">
+            <h4>📋 Widget Integration Info</h4>
+            <p><strong>Widget ID:</strong> <span id="widget-id">test-widget-123</span></p>
+            <p><strong>Status:</strong> <span id="widget-status">Loading...</span></p>
+            <p><strong>Session ID:</strong> <span id="session-id">Not started</span></p>
+            <p><strong>Last Activity:</strong> <span id="last-activity">None</span></p>
+        </div>
+        
+        <div class="section">
+            <h2>💻 Integration Code</h2>
+            <p>Here's the embed code used on this page:</p>
+            <div class="code-block">
+&lt;script&gt;
+  (function() {
+    var script = document.createElement('script');
+    script.src = 'http://localhost:5000/embed/widget.js?id=test-widget-123&v=1.0';
+    script.async = true;
+    document.head.appendChild(script);
+  })();
+&lt;/script&gt;
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🔧 Testing Instructions</h2>
+            <p>To test the widget integration:</p>
+            <ul class="feature-list">
+                <li>Look for the widget in the bottom-right corner</li>
+                <li>Click the widget to open the chat interface</li>
+                <li>Try sending a message or starting a voice call</li>
+                <li>Use the demo controls above to test programmatic access</li>
+                <li>Check the browser console for debug information</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- VoxAssist Widget Embed Code -->
+    <script>
+        (function() {
+            var script = document.createElement('script');
+            script.src = 'http://localhost:5000/embed/widget.js?id=test-widget-123&v=1.0&debug=true';
+            script.async = true;
+            script.onload = function() {
+                console.log('VoxAssist widget script loaded');
+                updateWidgetStatus('Loaded');
+            };
+            script.onerror = function() {
+                console.error('Failed to load VoxAssist widget script');
+                updateWidgetStatus('Failed to load');
+            };
+            document.head.appendChild(script);
+        })();
+        
+        // Demo control functions
+        function openWidget() {
+            if (window.VoxAssistWidget) {
+                window.VoxAssistWidget.open();
+                updateLastActivity('Widget opened');
+            } else {
+                alert('Widget not loaded yet. Please wait...');
+            }
+        }
+        
+        function closeWidget() {
+            if (window.VoxAssistWidget) {
+                window.VoxAssistWidget.close();
+                updateLastActivity('Widget closed');
+            } else {
+                alert('Widget not loaded yet. Please wait...');
+            }
+        }
+        
+        function toggleWidget() {
+            if (window.VoxAssistWidget) {
+                window.VoxAssistWidget.toggle();
+                updateLastActivity('Widget toggled');
+            } else {
+                alert('Widget not loaded yet. Please wait...');
+            }
+        }
+        
+        function getWidgetState() {
+            if (window.VoxAssistWidget) {
+                const state = window.VoxAssistWidget.getState();
+                alert(`Widget State:\nOpen: ${state.isOpen}\nSession: ${state.sessionId || 'None'}`);
+                updateLastActivity('State checked');
+            } else {
+                alert('Widget not loaded yet. Please wait...');
+            }
+        }
+        
+        // Helper functions
+        function updateWidgetStatus(status) {
+            document.getElementById('widget-status').textContent = status;
+        }
+        
+        function updateLastActivity(activity) {
+            document.getElementById('last-activity').textContent = activity + ' at ' + new Date().toLocaleTimeString();
+        }
+        
+        // Listen for widget events
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'voxassist-widget') {
+                console.log('Widget event:', event.data);
+                if (event.data.event === 'session-started') {
+                    document.getElementById('session-id').textContent = event.data.sessionId;
+                }
+            }
+        });
+        
+        // Update status periodically
+        setInterval(function() {
+            if (window.VoxAssistWidget) {
+                updateWidgetStatus('Active');
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

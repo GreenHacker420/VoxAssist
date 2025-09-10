@@ -39,6 +39,7 @@ const billingRoutes = require('./routes/billing');
 const surveyRoutes = require('./routes/survey');
 const settingsRoutes = require('./routes/settings');
 const widgetRoutes = require('./routes/widgetRoutes');
+const embedRoutes = require('./routes/embed');
 const gdprRoutes = require('./routes/gdprRoutes');
 const whatsappRoutes = require('./routes/whatsapp');
 
@@ -111,6 +112,7 @@ app.use('/api/survey', surveyRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/i18n', i18nRoutes);
 app.use('/api/widget', widgetRoutes);
+app.use('/embed', embedRoutes);
 app.use('/api/gdpr', gdprRoutes);
 app.use('/api/whatsapp', auditDataAccess('whatsapp'), whatsappRoutes);
 app.use('/webhooks', webhookRoutes);
@@ -163,8 +165,12 @@ const initializeServices = async () => {
 
     // Initialize Maxim hardware integration
     try {
-      await maximIntegration.initialize();
-      logger.info('Maxim hardware integration initialized');
+      if (!maximIntegration.isInitialized()) {
+        await maximIntegration.initialize();
+        logger.info('Maxim hardware integration initialized');
+      } else {
+        logger.info('Maxim hardware integration already initialized');
+      }
     } catch (error) {
       logger.warn('Maxim hardware not available:', error.message);
     }

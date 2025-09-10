@@ -295,14 +295,19 @@ class WidgetController {
         try {
             const { organizationId, name, contextUrl, appearance, behavior, permissions } = req.body;
 
+            if (!organizationId || !name) {
+                return res.status(400).json({ error: 'Organization ID and name are required' });
+            }
+
             const widget = await prisma.widget.create({
                 data: {
-                    organizationId,
+                    organizationId: parseInt(organizationId),
                     name,
-                    contextUrl,
+                    contextUrl: contextUrl || null,
                     appearance: appearance || this.getDefaultAppearance(),
                     behavior: behavior || this.getDefaultBehavior(),
-                    permissions: permissions || this.getDefaultPermissions()
+                    permissions: permissions || this.getDefaultPermissions(),
+                    isActive: true
                 }
             });
 

@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { AuthService } from '@/services/auth';
-import { message } from 'antd';
+import { App } from 'antd';
 
 export default function ForgotPasswordPage() {
+  const { message } = App.useApp();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);

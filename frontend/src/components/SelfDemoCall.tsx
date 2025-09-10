@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Button, Typography, Space, Alert, Steps, Spin, message } from 'antd';
+import { Card, Button, Typography, Space, Alert, Steps, Spin, App } from 'antd';
 import {
   PhoneOutlined,
   PlayCircleOutlined,
@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const { Title, Text, Paragraph } = Typography;
 
 export default function SelfDemoCall() {
+  const { message } = App.useApp();
   const [isInitiating, setIsInitiating] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [callStatus, setCallStatus] = useState<string>('');
