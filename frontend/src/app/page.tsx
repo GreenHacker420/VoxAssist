@@ -45,12 +45,6 @@ export default function HomePage() {
                 Sign In
               </Link>
               <Link
-                href="/login"
-                className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors link-underline hover-glow"
-              >
-                Sign In
-              </Link>
-              <Link
                 href="/register"
                 className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow transition-all duration-200 ease-out"
               >
@@ -96,12 +90,12 @@ export default function HomePage() {
             A modern platform for AI-assisted calling. Clean analytics, real-time insights, and effortless integrations.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10">
-            <Link
+            {/* <Link
               href="/register"
               className="px-8 py-3 rounded-xl text-base font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow-md transition-all duration-200 ease-out"
             >
               Start Free Trial
-            </Link>
+            </Link> */}
             <Link
               href="/login"
               className="px-8 py-3 rounded-xl text-base font-medium text-gray-800 bg-white border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200 ease-out"
