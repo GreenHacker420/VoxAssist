@@ -153,7 +153,38 @@ export default function DashboardPage() {
           </div>
         )}
 
-
+        {/* Voice Demo Section */}
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-blue-100 rounded-full">
+                <PhoneOutlined className="text-2xl text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Try VoxAssist Voice Demo</h3>
+                <p className="text-gray-600 mt-1">
+                  Experience real-time AI voice conversation with advanced speech recognition and natural responses
+                </p>
+              </div>
+            </div>
+            <div className="flex space-x-3">
+              <Button
+                size="large"
+                onClick={() => router.push('/demo')}
+              >
+                Quick Demo
+              </Button>
+              <Button
+                type="primary"
+                size="large"
+                onClick={() => router.push('/demo/voice-call')}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Voice Demo
+              </Button>
+            </div>
+          </div>
+        </Card>
 
         {/* Simplified Stats Cards */}
         <Row gutter={[24, 24]}>

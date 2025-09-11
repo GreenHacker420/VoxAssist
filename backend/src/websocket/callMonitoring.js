@@ -51,6 +51,18 @@ function initializeWebSocketServer(server) {
           case 'voice_input':
             await handleVoiceInput(ws, data);
             break;
+          case 'start_voice_conversation':
+            await handleStartVoiceConversation(ws, data);
+            break;
+          case 'voice_stream_chunk':
+            await handleVoiceStreamChunk(ws, data);
+            break;
+          case 'end_voice_stream':
+            await handleEndVoiceStream(ws, data);
+            break;
+          case 'voice_activity_detected':
+            await handleVoiceActivityDetected(ws, data);
+            break;
         }
       } catch (error) {
         logger.error('WebSocket message error:', error);
@@ -63,6 +75,17 @@ function initializeWebSocketServer(server) {
 
     ws.on('close', () => {
       logger.info('WebSocket connection closed');
+
+      // Remove client from demo call service if it was part of a demo call
+      if (ws.demoCallId) {
+        try {
+          const demoCallService = require('../services/demoCallService');
+          demoCallService.removeConnection(ws.demoCallId, ws);
+        } catch (error) {
+          logger.error('Error removing demo call connection:', error);
+        }
+      }
+
       // Remove client from all call rooms
       for (const [callId, clients] of global.wsClients.entries()) {
         const index = clients.indexOf(ws);
@@ -304,25 +327,44 @@ async function handleJoinDemoCall(ws, callId, token, isDemoMode = false) {
 
     logger.info(`Client joined demo call monitoring for call: ${callId} (demo mode: ${isDemoMode})`);
 
-    // Check if demo call service has this call and trigger initial state
+    // Check if demo call service has this call, create if it doesn't exist
     const demoCallService = require('../services/demoCallService');
-    const demoCall = demoCallService.getDemoCall(callId);
+    let demoCall = demoCallService.getDemoCall(callId);
+
+    if (!demoCall) {
+      // Create new demo call
+      demoCall = demoCallService.createDemoCall(callId, {
+        isDemoMode: isDemoMode,
+        token: token
+      });
+      logger.info(`Created new demo call: ${callId}`);
+    }
+
+    // Add WebSocket connection to demo call service for broadcasting
+    demoCallService.addConnection(callId, ws);
+
     if (demoCall) {
       // Send current transcript if any
       if (demoCall.transcript && demoCall.transcript.length > 0) {
         demoCall.transcript.forEach(entry => {
           ws.send(JSON.stringify({
-            type: 'demo_transcript_update',
-            transcript: entry,
-            sentiment: demoCall.overallSentiment
+            type: 'transcript_entry',
+            entry: entry
           }));
         });
       }
 
       // Send current sentiment
       ws.send(JSON.stringify({
-        type: 'demo_sentiment_update',
-        sentiment: demoCall.overallSentiment
+        type: 'sentiment_update',
+        sentiment: demoCall.currentSentiment
+      }));
+
+      // Send welcome message
+      ws.send(JSON.stringify({
+        type: 'audio_response',
+        text: 'Hello! I\'m your AI assistant. How can I help you today?',
+        transcriptId: 'welcome-message'
       }));
     }
 
@@ -553,6 +595,391 @@ function broadcastVoiceAnalysis(callId, analysis) {
   logger.info(`Voice analysis broadcasted for call ${callId}: sentiment=${analysis.sentiment.overall}, emotion=${analysis.emotion.primary}`);
 }
 
+/**
+ * Process audio chunk for real-time transcription
+ */
+async function processAudioChunkForTranscription(callId, audioChunk, conversation) {
+  try {
+    // For real-time processing, we'll use a simplified approach
+    // In production, you might want to use streaming STT services
+
+    // Accumulate audio chunks for processing
+    if (conversation.audioBuffer.length > 10) { // Process every 10 chunks
+      const combinedAudio = combineAudioChunks(conversation.audioBuffer.slice(-10));
+
+      // Use voice analysis service for transcription
+      const voiceAnalysisService = require('../services/voiceAnalysisService');
+      const transcription = await voiceAnalysisService.transcribeAudio(
+        Buffer.from(combinedAudio, 'base64'),
+        conversation.voiceSettings.format
+      );
+
+      if (transcription && transcription.text) {
+        // Broadcast interim transcript
+        broadcastToCall(callId, {
+          type: 'voice_transcript_interim',
+          callId,
+          transcript: transcription.text,
+          confidence: transcription.confidence,
+          timestamp: Date.now()
+        });
+      }
+    }
+  } catch (error) {
+    logger.error('Error processing audio chunk for transcription:', error);
+  }
+}
+
+/**
+ * Process final audio buffer for complete transcription
+ */
+async function processFinalAudioBuffer(callId, conversation) {
+  try {
+    if (conversation.audioBuffer.length === 0) {
+      return '';
+    }
+
+    const combinedAudio = combineAudioChunks(conversation.audioBuffer);
+
+    // Use voice analysis service for final transcription
+    const voiceAnalysisService = require('../services/voiceAnalysisService');
+    const transcription = await voiceAnalysisService.transcribeAudio(
+      Buffer.from(combinedAudio, 'base64'),
+      conversation.voiceSettings.format
+    );
+
+    return transcription ? transcription.text : '';
+  } catch (error) {
+    logger.error('Error processing final audio buffer:', error);
+    return '';
+  }
+}
+
+/**
+ * Generate AI voice response
+ */
+async function generateAIVoiceResponse(callId, userMessage, conversation) {
+  try {
+    // Use real-time AI service
+    const realTimeAIService = require('../services/realTimeAIService');
+
+    // Process user input with AI service
+    const aiResult = await realTimeAIService.processUserInput(callId, userMessage, {
+      confidence: 0.9,
+      metadata: {
+        conversationHistory: conversation.conversationHistory
+      }
+    });
+
+    if (aiResult && aiResult.response) {
+      // Add AI response to conversation history
+      conversation.conversationHistory.push({
+        speaker: 'ai',
+        text: aiResult.response,
+        timestamp: new Date(),
+        confidence: aiResult.confidence,
+        intent: aiResult.intent
+      });
+
+      // Broadcast AI response
+      broadcastToCall(callId, {
+        type: 'ai_response_generated',
+        callId,
+        response: aiResult.response,
+        intent: aiResult.intent,
+        confidence: aiResult.confidence,
+        shouldEscalate: aiResult.shouldEscalate,
+        conversationPhase: aiResult.conversationPhase,
+        processingTime: aiResult.processingTime,
+        timestamp: new Date().toISOString()
+      });
+
+      // Generate TTS audio using real-time TTS service
+      await generateTTSAudioRealTime(callId, aiResult.response);
+    }
+  } catch (error) {
+    logger.error('Error generating AI voice response:', error);
+
+    // Broadcast error to client
+    broadcastToCall(callId, {
+      type: 'ai_response_error',
+      callId,
+      error: 'Failed to generate AI response',
+      timestamp: new Date().toISOString()
+    });
+  }
+}
+
+/**
+ * Generate TTS audio using real-time TTS service
+ */
+async function generateTTSAudioRealTime(callId, text) {
+  try {
+    const realTimeTTSService = require('../services/realTimeTTSService');
+
+    // Initialize TTS for this call if not already done
+    if (!realTimeTTSService.voiceSettings.has(callId)) {
+      realTimeTTSService.initializeTTS(callId, {
+        streaming: true,
+        voiceId: process.env.ELEVENLABS_VOICE_ID
+      });
+    }
+
+    // Set up audio chunk streaming
+    realTimeTTSService.on('audioChunk', (chunkData) => {
+      if (chunkData.callId === callId) {
+        // Broadcast audio chunk for streaming playback
+        broadcastToCall(callId, {
+          type: 'ai_audio_chunk',
+          callId,
+          chunkIndex: chunkData.chunkIndex,
+          audioChunk: chunkData.chunk.toString('base64'),
+          contentType: chunkData.contentType,
+          isLast: chunkData.isLast,
+          totalChunks: chunkData.totalChunks,
+          timestamp: chunkData.timestamp
+        });
+      }
+    });
+
+    // Generate speech with streaming
+    const audioResult = await realTimeTTSService.generateSpeech(callId, text, {
+      streaming: true
+    });
+
+    if (audioResult) {
+      // Broadcast complete audio response
+      broadcastToCall(callId, {
+        type: 'ai_audio_response',
+        callId,
+        generationId: audioResult.generationId,
+        audioData: audioResult.audioData ? audioResult.audioData.toString('base64') : null,
+        contentType: audioResult.contentType,
+        text: text,
+        duration: audioResult.duration,
+        streaming: audioResult.streaming,
+        timestamp: Date.now()
+      });
+    }
+  } catch (error) {
+    logger.error('Error generating real-time TTS audio:', error);
+
+    // Fallback: broadcast text-only response
+    broadcastToCall(callId, {
+      type: 'ai_text_response',
+      callId,
+      text: text,
+      error: 'TTS generation failed',
+      timestamp: Date.now()
+    });
+  }
+}
+
+/**
+ * Generate TTS audio for AI response (legacy method for compatibility)
+ */
+async function generateTTSAudio(callId, text) {
+  return generateTTSAudioRealTime(callId, text);
+}
+
+/**
+ * Combine audio chunks into a single buffer
+ */
+function combineAudioChunks(audioChunks) {
+  try {
+    // Simple concatenation - in production, you might need more sophisticated audio processing
+    return audioChunks.map(chunk => chunk.chunk).join('');
+  } catch (error) {
+    logger.error('Error combining audio chunks:', error);
+    return '';
+  }
+}
+
+/**
+ * Handle start of real-time voice conversation
+ */
+async function handleStartVoiceConversation(ws, data) {
+  try {
+    const { callId, voiceSettings = {} } = data;
+
+    logger.info(`Starting voice conversation for call: ${callId}`);
+
+    // Initialize voice conversation state
+    if (!global.voiceConversations) {
+      global.voiceConversations = new Map();
+    }
+
+    const conversationState = {
+      callId,
+      isActive: true,
+      startTime: new Date(),
+      currentSpeaker: null,
+      audioBuffer: [],
+      transcriptionBuffer: '',
+      conversationHistory: [],
+      voiceSettings: {
+        sampleRate: voiceSettings.sampleRate || 16000,
+        channels: voiceSettings.channels || 1,
+        format: voiceSettings.format || 'webm',
+        ...voiceSettings
+      }
+    };
+
+    global.voiceConversations.set(callId, conversationState);
+
+    // Store WebSocket reference for this conversation
+    ws.voiceCallId = callId;
+
+    ws.send(JSON.stringify({
+      type: 'voice_conversation_started',
+      callId,
+      message: 'Real-time voice conversation initialized',
+      voiceSettings: conversationState.voiceSettings
+    }));
+
+    logger.info(`Voice conversation started for call: ${callId}`);
+  } catch (error) {
+    logger.error('Error starting voice conversation:', error);
+    ws.send(JSON.stringify({
+      type: 'error',
+      message: 'Failed to start voice conversation'
+    }));
+  }
+}
+
+/**
+ * Handle voice stream chunks for real-time processing
+ */
+async function handleVoiceStreamChunk(ws, data) {
+  try {
+    const { callId, audioChunk, sequenceNumber, timestamp } = data;
+
+    if (!global.voiceConversations || !global.voiceConversations.has(callId)) {
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Voice conversation not found'
+      }));
+      return;
+    }
+
+    const conversation = global.voiceConversations.get(callId);
+
+    // Add audio chunk to buffer
+    conversation.audioBuffer.push({
+      chunk: audioChunk,
+      sequence: sequenceNumber,
+      timestamp: timestamp || Date.now()
+    });
+
+    // Process audio chunk for real-time transcription
+    await processAudioChunkForTranscription(callId, audioChunk, conversation);
+
+    // Broadcast voice activity to other clients
+    broadcastToCall(callId, {
+      type: 'voice_activity_update',
+      callId,
+      isReceiving: true,
+      timestamp: Date.now()
+    });
+
+  } catch (error) {
+    logger.error('Error handling voice stream chunk:', error);
+    ws.send(JSON.stringify({
+      type: 'error',
+      message: 'Failed to process voice stream chunk'
+    }));
+  }
+}
+
+/**
+ * Handle end of voice stream
+ */
+async function handleEndVoiceStream(ws, data) {
+  try {
+    const { callId, finalTranscript } = data;
+
+    if (!global.voiceConversations || !global.voiceConversations.has(callId)) {
+      return;
+    }
+
+    const conversation = global.voiceConversations.get(callId);
+
+    // Process final audio buffer for complete transcription
+    const completeTranscript = finalTranscript || await processFinalAudioBuffer(callId, conversation);
+
+    if (completeTranscript && completeTranscript.trim()) {
+      // Add to conversation history
+      conversation.conversationHistory.push({
+        speaker: 'user',
+        text: completeTranscript,
+        timestamp: new Date(),
+        confidence: 0.9
+      });
+
+      // Broadcast transcript update
+      broadcastToCall(callId, {
+        type: 'voice_transcript_update',
+        callId,
+        transcript: completeTranscript,
+        speaker: 'user',
+        timestamp: new Date().toISOString(),
+        isFinal: true
+      });
+
+      // Generate AI response
+      await generateAIVoiceResponse(callId, completeTranscript, conversation);
+    }
+
+    // Clear audio buffer
+    conversation.audioBuffer = [];
+    conversation.currentSpeaker = null;
+
+    // Broadcast end of voice stream
+    broadcastToCall(callId, {
+      type: 'voice_stream_ended',
+      callId,
+      timestamp: Date.now()
+    });
+
+  } catch (error) {
+    logger.error('Error handling end voice stream:', error);
+  }
+}
+
+/**
+ * Handle voice activity detection
+ */
+async function handleVoiceActivityDetected(ws, data) {
+  try {
+    const { callId, isActive, confidence } = data;
+
+    if (!global.voiceConversations || !global.voiceConversations.has(callId)) {
+      return;
+    }
+
+    const conversation = global.voiceConversations.get(callId);
+
+    if (isActive) {
+      conversation.currentSpeaker = 'user';
+    } else {
+      conversation.currentSpeaker = null;
+    }
+
+    // Broadcast voice activity to all clients
+    broadcastToCall(callId, {
+      type: 'voice_activity_detected',
+      callId,
+      isActive,
+      confidence,
+      speaker: isActive ? 'user' : null,
+      timestamp: Date.now()
+    });
+
+  } catch (error) {
+    logger.error('Error handling voice activity detection:', error);
+  }
+}
+
 module.exports = {
   initializeWebSocketServer,
   broadcastToCall,
@@ -566,5 +993,9 @@ module.exports = {
   broadcastAudioResponse,
   broadcastAudioStream,
   handleVoiceInput,
-  broadcastVoiceAnalysis
+  broadcastVoiceAnalysis,
+  handleStartVoiceConversation,
+  handleVoiceStreamChunk,
+  handleEndVoiceStream,
+  handleVoiceActivityDetected
 };

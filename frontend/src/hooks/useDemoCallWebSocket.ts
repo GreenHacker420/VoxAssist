@@ -250,6 +250,21 @@ export function useDemoCallWebSocket(options: UseDemoCallWebSocketOptions = {}):
         setError(null);
         break;
 
+      case 'transcript_entry':
+        console.log('Received transcript entry:', data.entry);
+        if (data.entry && typeof data.entry === 'object') {
+          const transcript = data.entry as TranscriptEntry;
+          setTranscript(prev => {
+            // Avoid duplicates
+            const exists = prev.some(entry => entry.id === transcript.id);
+            if (!exists) {
+              return [...prev, transcript];
+            }
+            return prev;
+          });
+        }
+        break;
+
       case 'demo_transcript_update':
         console.log('Received transcript update:', data.transcript);
         if (data.transcript && typeof data.transcript === 'object') {
@@ -278,6 +293,29 @@ export function useDemoCallWebSocket(options: UseDemoCallWebSocketOptions = {}):
       case 'voice_interaction_status':
         console.log('Voice interaction status update:', data.status);
         // Voice interaction status is handled by the VoiceInteractionManager
+        break;
+
+      case 'audio_response':
+        console.log('Audio response received:', { hasText: !!data.text, hasAudio: !!data.audioData });
+        // Handle AI audio response from demo call service
+        if (data.audioData && typeof data.audioData === 'string') {
+          // Convert base64 audio data to blob URL for playback
+          try {
+            const audioBlob = new Blob([
+              Uint8Array.from(atob(data.audioData), c => c.charCodeAt(0))
+            ], { type: (data.contentType as string) || 'audio/mp3' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+
+            if (onAudioResponse) {
+              onAudioResponse(audioUrl, (data.transcriptId as string) || '');
+            }
+          } catch (error) {
+            console.error('Failed to process audio response:', error);
+          }
+        } else if (data.text && onAudioResponse) {
+          // Text-only response, let the handler decide what to do
+          onAudioResponse('', (data.transcriptId as string) || '');
+        }
         break;
 
       case 'audio_response_ready':
