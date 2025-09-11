@@ -5,6 +5,11 @@ const logger = require('../utils/logger');
 let genAI = null;
 let model = null;
 
+// Response cache for common queries
+const responseCache = new Map();
+const CACHE_TTL = 300000; // 5 minutes
+const MAX_CACHE_SIZE = 100;
+
 /**
  * Initialize Gemini AI service
  */
@@ -14,59 +19,173 @@ const initializeGemini = () => {
   }
   
   genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  model = genAI.getGenerativeModel({
+    model: "gemini-2.5-flash",
+    generationConfig: {
+      temperature: 0.7,
+      topK: 40,
+      topP: 0.95,
+      maxOutputTokens: 150, // Limit response length for speed
+      candidateCount: 1
+    }
+  });
   
   logger.info('Gemini AI service initialized');
 };
 
 /**
- * Process customer query using Gemini AI
+ * Process customer query using Gemini AI with caching
  */
 const processCustomerQuery = async (query, context = {}) => {
   try {
     if (!model) {
       initializeGemini();
     }
-    
+
+    // Check cache first for common queries
+    const cacheKey = generateCacheKey(query, context);
+    const cachedResponse = getCachedResponse(cacheKey);
+    if (cachedResponse) {
+      logger.info(`Cache hit for query: ${query.substring(0, 30)}...`);
+      return cachedResponse;
+    }
+
+    const startTime = Date.now();
     const prompt = buildPrompt(query, context);
-    
+
     const result = await model.generateContent(prompt);
     const response = await result.response;
+
+    // Check for safety filters or blocked content
+    if (response.promptFeedback && response.promptFeedback.blockReason) {
+      logger.warn(`Gemini blocked content: ${response.promptFeedback.blockReason}`);
+      throw new Error(`Content blocked: ${response.promptFeedback.blockReason}`);
+    }
+
+    // Check if response was blocked
+    if (!response.candidates || response.candidates.length === 0) {
+      logger.warn('Gemini returned no candidates');
+      throw new Error('No response candidates from Gemini');
+    }
+
+    const candidate = response.candidates[0];
+    if (candidate.finishReason === 'SAFETY') {
+      logger.warn('Gemini response blocked by safety filters');
+      throw new Error('Response blocked by safety filters');
+    }
+
     const text = response.text();
 
-    logger.info(`Gemini processed query: ${query.substring(0, 50)}...`);
-    
-    return {
+    const processingTime = Date.now() - startTime;
+    logger.info(`Gemini processed query in ${processingTime}ms: ${query.substring(0, 30)}...`);
+    logger.info(`Gemini response text: "${text.substring(0, 100)}..."`);
+
+    if (!text || text.trim().length === 0) {
+      logger.warn('Gemini returned empty response, using fallback');
+      throw new Error('Empty response from Gemini');
+    }
+
+    const processedResponse = {
       response: text,
       intent: extractIntent(text),
       confidence: calculateConfidence(text),
       shouldEscalate: shouldEscalateToHuman(text, query)
     };
+
+    // Cache the response for future use
+    setCachedResponse(cacheKey, processedResponse);
+
+    return processedResponse;
   } catch (error) {
     logger.error(`Gemini service error: ${error.message}`);
-    throw new Error('Failed to process customer query');
+
+    // Return intelligent fallback responses based on query content
+    const fallbackResponse = generateIntelligentFallback(query, context);
+    logger.info(`Using intelligent fallback response: "${fallbackResponse.response}"`);
+
+    return fallbackResponse;
   }
+};
+
+/**
+ * Generate intelligent fallback responses based on query content
+ */
+const generateIntelligentFallback = (query, context) => {
+  const lowerQuery = query.toLowerCase();
+
+  // Greeting responses
+  if (lowerQuery.includes('hello') || lowerQuery.includes('hi') || lowerQuery.includes('how are you')) {
+    return {
+      response: "Hello! I'm doing well, thank you for asking. How can I help you today?",
+      intent: 'greeting',
+      confidence: 0.9,
+      shouldEscalate: false
+    };
+  }
+
+  // Billing related
+  if (lowerQuery.includes('bill') || lowerQuery.includes('payment') || lowerQuery.includes('charge')) {
+    return {
+      response: "I'd be happy to help you with your billing questions. What specific billing issue can I assist you with?",
+      intent: 'billing',
+      confidence: 0.85,
+      shouldEscalate: false
+    };
+  }
+
+  // Technical issues
+  if (lowerQuery.includes('not working') || lowerQuery.includes('broken') || lowerQuery.includes('error')) {
+    return {
+      response: "I understand you're experiencing a technical issue. Can you tell me more about what's happening so I can help troubleshoot?",
+      intent: 'technical',
+      confidence: 0.85,
+      shouldEscalate: false
+    };
+  }
+
+  // Account related
+  if (lowerQuery.includes('account') || lowerQuery.includes('password') || lowerQuery.includes('login')) {
+    return {
+      response: "I can help you with your account. What specific account-related assistance do you need?",
+      intent: 'account',
+      confidence: 0.85,
+      shouldEscalate: false
+    };
+  }
+
+  // Business hours
+  if (lowerQuery.includes('hours') || lowerQuery.includes('open') || lowerQuery.includes('available')) {
+    return {
+      response: "Our support team is available 24/7 to assist you. Is there something specific I can help you with right now?",
+      intent: 'general',
+      confidence: 0.8,
+      shouldEscalate: false
+    };
+  }
+
+  // Default fallback
+  return {
+    response: "I understand you need assistance. Could you please provide more details about how I can help you today?",
+    intent: 'general',
+    confidence: 0.7,
+    shouldEscalate: false
+  };
 };
 
 /**
  * Build prompt for Gemini AI
  */
 const buildPrompt = (query, context) => {
-  const systemPrompt = `You are VoxAssist, a helpful AI customer support agent. 
-  
-  Your role:
-  - Provide accurate, helpful responses to customer queries
-  - Be empathetic and professional
-  - If you cannot help, clearly state that you'll escalate to a human agent
-  - Keep responses concise but complete
-  - Always aim to resolve the customer's issue
-  
-  Context: ${JSON.stringify(context)}
-  
-  Customer Query: ${query}
-  
-  Provide a helpful response:`;
-  
+  // Optimized prompt for speed - much more concise
+  const recentHistory = context.conversationHistory ?
+    context.conversationHistory.slice(-2).map(h => `${h.speaker}: ${h.text || h.content || h.message}`).join('\n') : '';
+
+  const systemPrompt = `You are VoxAssist AI support. Be helpful, concise, and professional. Respond naturally to the user's specific question or comment.
+
+${recentHistory ? `Recent conversation:\n${recentHistory}\n` : ''}User: ${query}
+
+AI Response (be specific and contextual, max 2 sentences):`;
+
   return systemPrompt;
 };
 
@@ -131,6 +250,45 @@ const shouldEscalateToHuman = (response, query) => {
   return escalationTriggers.some(trigger => 
     lowerResponse.includes(trigger) || lowerQuery.includes(trigger)
   );
+};
+
+/**
+ * Generate cache key for query
+ */
+const generateCacheKey = (query, context) => {
+  const normalizedQuery = query.toLowerCase().trim();
+  const contextKey = context.conversationPhase || 'general';
+  return `${contextKey}:${normalizedQuery}`;
+};
+
+/**
+ * Get cached response
+ */
+const getCachedResponse = (cacheKey) => {
+  const cached = responseCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.response;
+  }
+  if (cached) {
+    responseCache.delete(cacheKey); // Remove expired cache
+  }
+  return null;
+};
+
+/**
+ * Set cached response
+ */
+const setCachedResponse = (cacheKey, response) => {
+  // Implement LRU cache behavior
+  if (responseCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = responseCache.keys().next().value;
+    responseCache.delete(firstKey);
+  }
+
+  responseCache.set(cacheKey, {
+    response,
+    timestamp: Date.now()
+  });
 };
 
 /**

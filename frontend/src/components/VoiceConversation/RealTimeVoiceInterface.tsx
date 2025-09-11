@@ -390,9 +390,22 @@ export default function RealTimeVoiceInterface({
       console.log('Received audio data for playback:', {
         dataLength: audioData.length,
         contentType,
-        transcriptId
+        transcriptId,
+        timestamp: Date.now()
       });
-      playAudioResponse(audioData, contentType);
+
+      // Start audio playback timing
+      const playbackStartTime = Date.now();
+      playAudioResponse(audioData, contentType).then(() => {
+        const playbackDuration = Date.now() - playbackStartTime;
+        console.log('🎵 Audio playback completed:', {
+          duration: playbackDuration + 'ms',
+          transcriptId,
+          status: playbackDuration < 100 ? '🚀 INSTANT' : '✅ NORMAL'
+        });
+      }).catch(error => {
+        console.error('Audio playback failed:', error);
+      });
     } else {
       console.log('No audio data to play or text-only response');
     }

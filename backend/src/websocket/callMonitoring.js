@@ -2,6 +2,7 @@ const WebSocket = require('ws');
 const logger = require('../utils/logger');
 const { authenticateToken } = require('../middleware/auth');
 const { prisma } = require('../database/prisma');
+const demoCallService = require('../services/demoCallService');
 
 // Global WebSocket clients map
 global.wsClients = new Map();
@@ -113,19 +114,32 @@ async function handleJoinCall(ws, callId, token) {
   try {
     // Verify user has access to this call
     // In a real implementation, decode and verify the JWT token
-    
+
+    // Auto-create demo call if it doesn't exist (for testing and demo purposes)
+    if (!demoCallService.getDemoCall(callId)) {
+      logger.info(`Auto-creating demo call: ${callId}`);
+      demoCallService.createDemoCall(callId, {
+        customerName: 'Demo User',
+        customerPhone: '+1-555-DEMO',
+        status: 'active'
+      });
+    }
+
+    // Add WebSocket connection to demo call service
+    demoCallService.addConnection(callId, ws);
+
     if (!global.wsClients.has(callId)) {
       global.wsClients.set(callId, []);
     }
-    
+
     global.wsClients.get(callId).push(ws);
-    
+
     ws.send(JSON.stringify({
-      type: 'joined_call',
+      type: 'call_joined',
       callId: callId,
       message: 'Successfully joined call monitoring'
     }));
-    
+
     logger.info(`Client joined call monitoring for call: ${callId}`);
   } catch (error) {
     logger.error('Error joining call:', error);

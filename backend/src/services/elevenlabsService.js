@@ -32,13 +32,14 @@ const textToSpeech = async (text, voiceId = null, options = {}) => {
 
     const payload = {
       text: text,
-      model_id: options.model || 'eleven_monolingual_v1',
+      model_id: options.model || 'eleven_turbo_v2_5', // Fastest model for speed optimization
       voice_settings: {
-        stability: options.stability || 0.5,
-        similarity_boost: options.similarity_boost || 0.5,
+        stability: options.stability || 0.3, // Lower stability for faster generation
+        similarity_boost: options.similarity_boost || 0.3, // Lower similarity for speed
         style: options.style || 0.0,
-        use_speaker_boost: options.use_speaker_boost || true
-      }
+        use_speaker_boost: options.use_speaker_boost || false // Disable for speed
+      },
+      output_format: options.output_format || 'mp3_22050_32' // Lower quality for speed
     };
 
     const response = await axios.post(url, payload, {
@@ -150,13 +151,14 @@ const streamTextToSpeech = async (text, voiceId = null, options = {}) => {
     
     const payload = {
       text: text,
-      model_id: options.model || 'eleven_monolingual_v1',
+      model_id: options.model || 'eleven_turbo_v2_5', // Fastest model for streaming
       voice_settings: {
-        stability: options.stability || 0.5,
-        similarity_boost: options.similarity_boost || 0.5,
+        stability: options.stability || 0.3, // Lower stability for faster generation
+        similarity_boost: options.similarity_boost || 0.3, // Lower similarity for speed
         style: options.style || 0.0,
-        use_speaker_boost: options.use_speaker_boost || true
-      }
+        use_speaker_boost: options.use_speaker_boost || false // Disable for speed
+      },
+      output_format: options.output_format || 'mp3_22050_32' // Lower quality for speed
     };
 
     const response = await axios.post(url, payload, {
@@ -203,6 +205,57 @@ const getUsage = async () => {
 };
 
 /**
+ * Fast text to speech optimized for conversational speed
+ */
+const fastTextToSpeech = async (text, voiceId = null, options = {}) => {
+  try {
+    if (!apiKey) {
+      initializeElevenLabs();
+    }
+
+    const voice = voiceId || defaultVoiceId;
+    const url = `${baseURL}/text-to-speech/${voice}`;
+
+    // Optimized payload for maximum speed
+    const payload = {
+      text: optimizeTextForSpeech(text),
+      model_id: 'eleven_turbo_v2_5', // Fastest model
+      voice_settings: {
+        stability: 0.2, // Very low for speed
+        similarity_boost: 0.2, // Very low for speed
+        style: 0.0,
+        use_speaker_boost: false // Disabled for speed
+      },
+      output_format: 'mp3_22050_32' // Lower quality for speed
+    };
+
+    const startTime = Date.now();
+    const response = await axios.post(url, payload, {
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': apiKey
+      },
+      responseType: 'arraybuffer',
+      timeout: 10000 // 10 second timeout for speed
+    });
+
+    const duration = Date.now() - startTime;
+    logger.info(`Fast TTS generated speech in ${duration}ms for text: ${text.substring(0, 30)}...`);
+
+    return {
+      audioBuffer: response.data,
+      contentType: 'audio/mpeg',
+      size: response.data.length,
+      generationTime: duration
+    };
+  } catch (error) {
+    logger.error(`Fast TTS error: ${error.message}`);
+    throw new Error('Failed to generate fast speech');
+  }
+};
+
+/**
  * Utility method to optimize text for speech
  */
 const optimizeTextForSpeech = (text) => {
@@ -221,6 +274,7 @@ module.exports = {
   initializeElevenLabs,
   textToSpeech,
   textToSpeechBuffer,
+  fastTextToSpeech,
   getVoices,
   cloneVoice,
   streamTextToSpeech,

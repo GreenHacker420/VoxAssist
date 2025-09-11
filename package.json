@@ -29,6 +29,8 @@
     "concurrently": "^9.2.1"
   },
   "dependencies": {
-    "@lottiefiles/dotlottie-web": "^0.51.0"
+    "@lottiefiles/dotlottie-web": "^0.51.0",
+    "node-fetch": "^3.3.2",
+    "ws": "^8.18.3"
   }
 }

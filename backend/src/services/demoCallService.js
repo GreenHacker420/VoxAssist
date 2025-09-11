@@ -1,6 +1,7 @@
 const logger = require('../utils/logger');
 const realTimeAIService = require('./realTimeAIService');
 const realTimeTTSService = require('./realTimeTTSService');
+const performanceMonitor = require('./performanceMonitor');
 
 class DemoCallService {
   constructor() {
@@ -33,6 +34,11 @@ class DemoCallService {
   // Get demo call by ID
   getDemoCall(callId) {
     return this.demoCalls.get(callId);
+  }
+
+  // Get performance report
+  getPerformanceReport() {
+    return performanceMonitor.getPerformanceReport();
   }
 
   // Add WebSocket connection for broadcasting
@@ -92,6 +98,9 @@ class DemoCallService {
   // Process voice input and generate AI response
   async processVoiceInput(callId, audioBuffer, format = 'webm', audioMetrics = {}) {
     try {
+      // Start performance monitoring for complete conversation cycle
+      performanceMonitor.startTiming(callId, 'complete_conversation_cycle');
+
       const demoCall = this.getDemoCall(callId);
       if (!demoCall) {
         throw new Error(`Demo call not found: ${callId}`);
@@ -103,7 +112,13 @@ class DemoCallService {
       const audioBase64 = audioBuffer.toString('base64');
 
       // Simulate speech-to-text processing (in real implementation, this would call a STT service)
+      performanceMonitor.startTiming(callId, 'speech_to_text');
       const transcriptText = await this.simulateSTT(audioBase64, format);
+      performanceMonitor.endTiming(callId, 'speech_to_text', {
+        audioSize: audioBuffer.length,
+        format,
+        transcriptLength: transcriptText?.length || 0
+      });
       
       if (!transcriptText) {
         logger.warn(`No transcript generated for demo call: ${callId}`);
@@ -130,8 +145,13 @@ class DemoCallService {
         entry: userTranscriptEntry
       });
 
-      // Generate AI response
+      // Generate AI response (without duplicate streaming)
+      performanceMonitor.startTiming(callId, 'ai_processing');
       const aiResponse = await this.generateAIResponse(transcriptText, demoCall.transcript, callId);
+      performanceMonitor.endTiming(callId, 'ai_processing', {
+        inputLength: transcriptText.length,
+        responseLength: aiResponse?.text?.length || 0
+      });
       
       if (aiResponse) {
         // Create transcript entry for AI
@@ -157,10 +177,16 @@ class DemoCallService {
         if (aiResponse.text) {
           try {
             logger.info(`Generating audio for AI response: "${aiResponse.text}"`);
+            performanceMonitor.startTiming(callId, 'text_to_speech');
             const audioResponse = await this.generateAIAudio(aiResponse.text, callId);
+            performanceMonitor.endTiming(callId, 'text_to_speech', {
+              textLength: aiResponse.text.length,
+              audioSize: audioResponse?.audioData?.length || 0
+            });
 
             if (audioResponse && audioResponse.audioData) {
               logger.info(`Audio generated successfully, sending audio_response message`);
+              performanceMonitor.startTiming(callId, 'audio_transmission');
               this.broadcast(callId, {
                 type: 'audio_response',
                 text: aiResponse.text,
@@ -168,6 +194,15 @@ class DemoCallService {
                 contentType: audioResponse.contentType,
                 transcriptId: aiTranscriptEntry.id
               });
+              performanceMonitor.endTiming(callId, 'audio_transmission', {
+                audioSize: audioResponse.audioData.length
+              });
+
+              // Complete the conversation cycle timing
+              const cycleMetrics = performanceMonitor.completeConversationCycle(callId);
+              if (cycleMetrics && !cycleMetrics.isOptimal) {
+                logger.warn(`🐌 Slow conversation cycle detected: ${cycleMetrics.totalTime}ms (target: <2000ms)`);
+              }
             } else {
               logger.warn(`No audio data generated, sending text-only response`);
               // Still send text response even if audio generation fails
@@ -312,20 +347,21 @@ class DemoCallService {
     }
   }
 
-  // Generate AI audio response
+  // Note: Removed duplicate streaming methods to fix duplicate audio playback
+  // The system now uses a single audio_response message type for consistency
+
+  // Generate AI audio response using fast TTS
   async generateAIAudio(text, callId = 'demo-call') {
     try {
-      // Use the existing real-time TTS service
-      const audioResponse = await realTimeTTSService.generateSpeech(callId, text, {
-        voice: 'alloy', // ElevenLabs voice
-        format: 'mp3',
-        speed: 1.0
-      });
+      // Use ElevenLabs fast TTS directly for optimal speed
+      const elevenlabsService = require('./elevenlabsService');
+      const audioResponse = await elevenlabsService.fastTextToSpeech(text, process.env.ELEVENLABS_VOICE_ID);
 
-      if (audioResponse && audioResponse.audioData) {
+      if (audioResponse && audioResponse.audioBuffer) {
         return {
-          audioData: audioResponse.audioData.toString('base64'),
-          contentType: audioResponse.contentType || 'audio/mpeg'
+          audioData: Buffer.from(audioResponse.audioBuffer).toString('base64'),
+          contentType: audioResponse.contentType || 'audio/mpeg',
+          generationTime: audioResponse.generationTime
         };
       }
 

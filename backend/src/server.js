@@ -123,6 +123,18 @@ app.post('/api/test-audio', async (req, res) => {
   }
 });
 
+// Performance monitoring endpoint
+app.get('/api/performance-report', async (req, res) => {
+  try {
+    const demoCallService = require('./services/demoCallService');
+    const report = demoCallService.getPerformanceReport();
+    res.json(report);
+  } catch (error) {
+    logger.error('Performance report endpoint error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Routes with audit middleware
 app.use('/api/auth', auditAuth('auth'), authRoutes);
 app.use('/api/calls', auditDataAccess('calls'), callRoutes);

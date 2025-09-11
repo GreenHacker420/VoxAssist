@@ -299,7 +299,7 @@ export function useDemoCallWebSocket(options: UseDemoCallWebSocketOptions = {}):
         console.log('Audio response received:', {
           hasText: !!data.text,
           hasAudio: !!data.audioData,
-          audioDataLength: data.audioData ? data.audioData.length : 0,
+          audioDataLength: data.audioData && typeof data.audioData === 'string' ? data.audioData.length : 0,
           contentType: data.contentType,
           transcriptId: data.transcriptId
         });
@@ -338,6 +338,9 @@ export function useDemoCallWebSocket(options: UseDemoCallWebSocketOptions = {}):
           onAudioStream(data.audioData, data.transcriptId as string, data.metadata as { speaker?: string; messageId?: string });
         }
         break;
+
+      // Removed audio_stream_ready handler to fix duplicate audio playback
+      // Now using only audio_response for consistent single audio playback
 
       case 'voice_transcribed':
         console.log('Voice transcribed:', data.transcript);
