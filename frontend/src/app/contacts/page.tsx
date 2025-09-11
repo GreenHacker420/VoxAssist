@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
-import { Customer, Lead } from '@/types';
+import { ContactsService, Contact, CreateContactData } from '@/services/contacts';
 import { formatDate } from '@/lib/utils';
 import {
   Table,
@@ -17,7 +17,7 @@ import {
   Empty,
   Modal,
   Form,
-  Select,
+
   App
 } from 'antd';
 import {
@@ -33,101 +33,101 @@ const { Search } = Input;
 
 export default function ContactsPage() {
   const { message } = App.useApp();
-  const [contacts, setContacts] = useState<(Customer | Lead)[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [form] = Form.useForm();
-  const [nextId, setNextId] = useState(3);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0
+  });
+
+  // Load contacts from API
+  const loadContacts = async (page = 1, search = '') => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await ContactsService.getContacts({
+        page,
+        limit: pagination.pageSize,
+        search: search || undefined
+      });
+
+      setContacts(response.contacts);
+      setPagination(prev => ({
+        ...prev,
+        current: response.pagination.page,
+        total: response.pagination.total
+      }));
+    } catch (error) {
+      console.error('Failed to load contacts:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load contacts');
+      message.error('Failed to load contacts');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Mock data for now since we don't have a contacts endpoint
-    const mockContacts: Lead[] = [
-      {
-        id: 1,
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        phone: '+1 (555) 123-4567',
-        company: 'Acme Corp',
-        source: 'Website',
-        status: 'new',
-        createdAt: '2023-12-01T10:00:00Z',
-      },
-      {
-        id: 2,
-        firstName: 'Jane',
-        lastName: 'Smith',
-        email: 'jane.smith@techco.com',
-        phone: '+1 (555) 987-6543',
-        company: 'TechCo',
-        source: 'Referral',
-        status: 'contacted',
-        createdAt: '2023-12-02T14:30:00Z',
-      },
-    ];
-    
-    setContacts(mockContacts);
-    setIsLoading(false);
+    loadContacts();
   }, []);
 
-  const handleAddContact = async (values: { firstName: string; lastName: string; phone: string; email?: string; company?: string; source?: string; tags?: string[] }) => {
+  const handleAddContact = async (values: { name: string; phone: string; email?: string; company?: string }) => {
     try {
-      const newContact: Lead = {
-        id: nextId,
-        firstName: values.firstName,
-        lastName: values.lastName,
-        email: values.email || '',
+      const contactData: CreateContactData = {
+        name: values.name,
         phone: values.phone,
-        company: values.company || '',
-        source: values.source || 'Manual',
-        status: 'new',
-        createdAt: new Date().toISOString(),
+        email: values.email,
+        metadata: {
+          company: values.company || '',
+          source: 'Manual'
+        }
       };
 
-      setContacts(prev => [newContact, ...prev]);
-      setNextId(prev => prev + 1);
+      await ContactsService.createContact(contactData);
       setShowAddModal(false);
       form.resetFields();
       message.success('Contact added successfully!');
+
+      // Reload contacts to show the new one
+      await loadContacts(pagination.current, searchTerm);
     } catch (error) {
-      message.error('Failed to add contact');
+      console.error('Failed to add contact:', error);
+      message.error(error instanceof Error ? error.message : 'Failed to add contact');
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'new':
-        return 'processing';
-      case 'contacted':
-        return 'warning';
-      case 'qualified':
-        return 'success';
-      case 'converted':
-        return 'purple';
-      default:
-        return 'default';
-    }
+  // Handle search
+  const handleSearch = async (value: string) => {
+    setSearchTerm(value);
+    await loadContacts(1, value);
   };
 
-  const filteredContacts = contacts.filter(contact =>
-    `${contact.firstName} ${contact.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.company?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Handle pagination change
+  const handleTableChange = async (page: number, pageSize?: number) => {
+    if (pageSize && pageSize !== pagination.pageSize) {
+      setPagination(prev => ({ ...prev, pageSize }));
+    }
+    await loadContacts(page, searchTerm);
+  };
 
   const columns = [
     {
       title: 'Contact',
       key: 'contact',
-      render: (record: Customer | Lead) => (
+      render: (record: Contact) => (
         <div className="flex items-center space-x-3">
           <Avatar icon={<UserOutlined />} />
           <div>
-            <Text strong>{record.firstName} {record.lastName}</Text>
+            <Text strong>{record.name}</Text>
             <br />
-            <Text type="secondary" className="text-sm">{record.company}</Text>
+            <Text type="secondary" className="text-sm">
+                {(record.metadata?.company as string) || 'No company'}
+            </Text>
           </div>
         </div>
       ),
@@ -137,10 +137,14 @@ export default function ContactsPage() {
       dataIndex: 'email',
       key: 'email',
       render: (email: string) => (
-        <Space>
-          <MailOutlined />
-          <Text copyable>{email}</Text>
-        </Space>
+        email ? (
+          <Space>
+            <MailOutlined />
+            <Text copyable>{email}</Text>
+          </Space>
+        ) : (
+          <Text type="secondary">No email</Text>
+        )
       ),
     },
     {
@@ -150,24 +154,22 @@ export default function ContactsPage() {
       render: (phone: string) => (
         <Space>
           <PhoneOutlined />
-          <Text copyable>{phone}</Text>
+          <Text copyable>{ContactsService.formatPhoneNumber(phone)}</Text>
         </Space>
       ),
     },
     {
       title: 'Source',
-      dataIndex: 'source',
       key: 'source',
-      render: (source: string) => <Tag>{source}</Tag>,
+      render: (record: Contact) => (
+        <Tag>{(record.metadata?.source as string) || 'Unknown'}</Tag>
+      ),
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string) => (
-        <Tag color={getStatusColor(status)}>
-          {status.charAt(0).toUpperCase() + status.slice(1)}
-        </Tag>
+      title: 'Calls',
+      key: 'calls',
+      render: (record: Contact) => (
+        <Text>{record._count?.calls || 0}</Text>
       ),
     },
     {
@@ -179,10 +181,12 @@ export default function ContactsPage() {
     {
       title: 'Actions',
       key: 'actions',
-      render: () => (
+      render: (record: Contact) => (
         <Space>
           <Button size="small" icon={<PhoneOutlined />}>Call</Button>
-          <Button size="small" icon={<MailOutlined />}>Email</Button>
+          {record.email && (
+            <Button size="small" icon={<MailOutlined />}>Email</Button>
+          )}
         </Space>
       ),
     },
@@ -224,9 +228,11 @@ export default function ContactsPage() {
           <Search
             placeholder="Search contacts..."
             value={searchTerm}
+            onSearch={handleSearch}
             onChange={(e) => setSearchTerm(e.target.value)}
             prefix={<SearchOutlined />}
             allowClear
+            loading={isLoading}
           />
         </div>
 
@@ -243,14 +249,19 @@ export default function ContactsPage() {
         {/* Contacts table */}
         <Table
           columns={columns}
-          dataSource={filteredContacts}
-          rowKey={(record) => record.id || record.email}
+          dataSource={contacts}
+          rowKey="id"
+          loading={isLoading}
           pagination={{
-            pageSize: 10,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} of ${total} contacts`,
+            onChange: handleTableChange,
+            onShowSizeChange: (current, size) => handleTableChange(current, size),
           }}
           locale={{
             emptyText: (
@@ -295,30 +306,21 @@ export default function ContactsPage() {
             requiredMark={false}
           >
             <Form.Item
-              name="firstName"
-              label="First Name"
-              rules={[{ required: true, message: 'Please enter first name' }]}
+              name="name"
+              label="Full Name"
+              rules={[{ required: true, message: 'Please enter full name' }]}
             >
-              <Input placeholder="Enter first name" />
-            </Form.Item>
-
-            <Form.Item
-              name="lastName"
-              label="Last Name"
-              rules={[{ required: true, message: 'Please enter last name' }]}
-            >
-              <Input placeholder="Enter last name" />
+              <Input placeholder="Enter full name" />
             </Form.Item>
 
             <Form.Item
               name="email"
               label="Email"
               rules={[
-                { required: true, message: 'Please enter email' },
                 { type: 'email', message: 'Please enter a valid email' }
               ]}
             >
-              <Input placeholder="Enter email address" />
+              <Input placeholder="Enter email address (optional)" />
             </Form.Item>
 
             <Form.Item
@@ -333,20 +335,7 @@ export default function ContactsPage() {
               name="company"
               label="Company"
             >
-              <Input placeholder="Enter company name" />
-            </Form.Item>
-
-            <Form.Item
-              name="source"
-              label="Source"
-            >
-              <Select placeholder="Select source">
-                <Select.Option value="Website">Website</Select.Option>
-                <Select.Option value="Referral">Referral</Select.Option>
-                <Select.Option value="Social Media">Social Media</Select.Option>
-                <Select.Option value="Email Campaign">Email Campaign</Select.Option>
-                <Select.Option value="Manual">Manual</Select.Option>
-              </Select>
+              <Input placeholder="Enter company name (optional)" />
             </Form.Item>
           </Form>
         </Modal>

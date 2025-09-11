@@ -84,7 +84,34 @@ const schemas = {
       'any.only': 'Language must be either "en" (English) or "hi" (Hindi)',
       'any.required': 'Language is required'
     })
-  })
+  }),
+
+  // Script management schemas
+  createScript: Joi.object({
+    name: Joi.string().min(2).max(200).required().messages({
+      'string.min': 'Script name must be at least 2 characters long',
+      'string.max': 'Script name cannot exceed 200 characters',
+      'any.required': 'Script name is required'
+    }),
+    description: Joi.string().max(1000).optional().allow(''),
+    type: Joi.string().valid('conversation', 'greeting', 'objection_handling', 'closing', 'follow_up', 'custom').default('conversation'),
+    content: Joi.string().min(10).max(10000).required().messages({
+      'string.min': 'Script content must be at least 10 characters long',
+      'string.max': 'Script content cannot exceed 10,000 characters',
+      'any.required': 'Script content is required'
+    }),
+    category: Joi.string().valid('general', 'sales', 'support', 'marketing', 'custom').default('general'),
+    tags: Joi.array().items(Joi.string().min(1).max(50)).max(10).optional()
+  }),
+
+  updateScript: Joi.object({
+    name: Joi.string().min(2).max(200).optional(),
+    description: Joi.string().max(1000).optional().allow(''),
+    type: Joi.string().valid('conversation', 'greeting', 'objection_handling', 'closing', 'follow_up', 'custom').optional(),
+    content: Joi.string().min(10).max(10000).optional(),
+    category: Joi.string().valid('general', 'sales', 'support', 'marketing', 'custom').optional(),
+    tags: Joi.array().items(Joi.string().min(1).max(50)).max(10).optional()
+  }).min(1)
 };
 
 // Validation middleware factory

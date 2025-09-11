@@ -1,0 +1,123 @@
+{
+  "version": "1.0.0",
+  "description": "Database seeding configuration for VoxAssist",
+  "environments": {
+    "development": {
+      "enabled": false,
+      "dryRun": true,
+      "autoBackup": true,
+      "batchSize": 50
+    },
+    "staging": {
+      "enabled": true,
+      "dryRun": false,
+      "autoBackup": true,
+      "batchSize": 100
+    },
+    "production": {
+      "enabled": true,
+      "dryRun": false,
+      "autoBackup": true,
+      "batchSize": 100
+    }
+  },
+  "models": {
+    "priority": [
+      "user",
+      "organization",
+      "userOrganization",
+      "userSession",
+      "contact",
+      "campaign",
+      "campaignContact",
+      "call",
+      "callInteraction",
+      "script",
+      "scriptVersion",
+      "scriptTest",
+      "knowledgeBase",
+      "escalationRule",
+      "dailyAnalytics",
+      "voiceSettings",
+      "securityIncident",
+      "auditLog",
+      "survey",
+      "notification",
+      "widget",
+      "widgetSession",
+      "widgetInteraction",
+      "contextExtract",
+      "aiConfig",
+      "voiceConfig",
+      "providerConfig",
+      "providerCall"
+    ],
+    "uniqueConstraints": {
+      "user": ["email"],
+      "organization": ["name"],
+      "userOrganization": ["userId", "organizationId"],
+      "userSession": ["token"],
+      "call": ["callSid"],
+      "contact": ["organizationId", "phone"],
+      "campaign": ["id"],
+      "script": ["id"],
+      "widget": ["id"],
+      "widgetSession": ["sessionId"],
+      "contextExtract": ["widgetId", "url"],
+      "aiConfig": ["organizationId"],
+      "voiceConfig": ["organizationId"],
+      "providerConfig": ["id"],
+      "providerCall": ["id"],
+      "notification": ["id"],
+      "survey": ["callId"]
+    },
+    "excludeFromSeeding": [],
+    "transformations": {
+      "user": {
+        "password": "hash"
+      },
+      "providerConfig": {
+        "credentials": "encrypt"
+      }
+    }
+  },
+  "backup": {
+    "enabled": true,
+    "retentionDays": 30,
+    "compressionEnabled": true,
+    "encryptionEnabled": false
+  },
+  "logging": {
+    "level": "info",
+    "enableFileLogging": true,
+    "enableConsoleLogging": true,
+    "logRotation": {
+      "enabled": true,
+      "maxFiles": 10,
+      "maxSize": "10MB"
+    }
+  },
+  "performance": {
+    "batchSize": 100,
+    "maxRetries": 3,
+    "retryDelay": 1000,
+    "connectionTimeout": 30000,
+    "queryTimeout": 60000
+  },
+  "validation": {
+    "enableIntegrityCheck": true,
+    "enableDataValidation": true,
+    "strictMode": true
+  },
+  "security": {
+    "enableAuditLogging": true,
+    "maskSensitiveData": true,
+    "sensitiveFields": [
+      "password",
+      "token",
+      "credentials",
+      "apiKey",
+      "secret"
+    ]
+  }
+}

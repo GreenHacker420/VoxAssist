@@ -12,3 +12,10 @@ frontend/build
 ./idea
 .DS_Store
 *.log
+
+# Database seeding
+backend/logs/
+backend/backups/
+backend/scripts/seeder-completed.flag
+backend/scripts/*.lock
+test-seeding.db

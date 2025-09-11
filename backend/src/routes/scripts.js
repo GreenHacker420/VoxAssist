@@ -40,7 +40,8 @@ router.get('/', asyncHandler(async (req, res) => {
       _count: {
         select: {
           campaigns: true,
-          calls: true
+          tests: true,
+          versions: true
         }
       }
     }

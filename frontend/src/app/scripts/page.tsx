@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
 import { Script } from '@/types';
 import { formatDate } from '@/lib/utils';
+import { ScriptsService } from '@/services/scripts';
 import {
   DocumentTextIcon,
   PlusIcon,
@@ -18,64 +19,62 @@ import { cn } from '@/lib/utils';
 export default function ScriptsPage() {
   const [scripts, setScripts] = useState<Script[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string>('all');
 
+  // Load scripts from API
+  const loadScripts = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const scriptsData = await ScriptsService.getScripts();
+      setScripts(scriptsData);
+    } catch (error) {
+      console.error('Failed to load scripts:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load scripts');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Mock data for scripts
-    const mockScripts: Script[] = [
-      {
-        id: 1,
-        name: 'Welcome Greeting',
-        content: 'Hello! Thank you for calling VoxAssist. My name is Alex, and I\'m here to help you today. How can I assist you?',
-        type: 'greeting',
-        isActive: true,
-        createdAt: '2023-11-15T10:00:00Z',
-        updatedAt: '2023-12-01T14:30:00Z',
-      },
-      {
-        id: 2,
-        name: 'Price Objection Handler',
-        content: 'I understand that price is an important consideration. Let me explain the value you\'ll receive and see if we can find a solution that works for your budget...',
-        type: 'objection_handling',
-        isActive: true,
-        createdAt: '2023-11-20T09:15:00Z',
-        updatedAt: '2023-11-25T16:45:00Z',
-      },
-      {
-        id: 3,
-        name: 'Closing Script',
-        content: 'Based on our conversation, it sounds like our solution would be a great fit for your needs. Would you like to move forward with getting started today?',
-        type: 'closing',
-        isActive: false,
-        createdAt: '2023-11-18T11:30:00Z',
-        updatedAt: '2023-11-18T11:30:00Z',
-      },
-      {
-        id: 4,
-        name: 'Escalation Protocol',
-        content: 'I want to make sure you get the best possible assistance. Let me connect you with one of our senior specialists who can help resolve this for you right away.',
-        type: 'escalation',
-        isActive: true,
-        createdAt: '2023-11-22T13:20:00Z',
-        updatedAt: '2023-11-28T10:15:00Z',
-      },
-    ];
-    
-    setScripts(mockScripts);
-    setIsLoading(false);
+    loadScripts();
   }, []);
+
+  // Toggle script activation status
+  const toggleScriptStatus = async (scriptId: number) => {
+    try {
+      const script = scripts.find(s => s.id === scriptId);
+      if (!script) return;
+
+      if (script.isActive) {
+        await ScriptsService.deactivateScript(scriptId.toString());
+      } else {
+        await ScriptsService.activateScript(scriptId.toString());
+      }
+
+      // Reload scripts to get updated data
+      await loadScripts();
+    } catch (error) {
+      console.error('Failed to toggle script status:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update script status');
+    }
+  };
 
   const getTypeColor = (type: string) => {
     switch (type) {
+      case 'conversation':
+        return 'bg-purple-100 text-purple-800';
       case 'greeting':
         return 'bg-blue-100 text-blue-800';
       case 'objection_handling':
         return 'bg-yellow-100 text-yellow-800';
       case 'closing':
         return 'bg-green-100 text-green-800';
-      case 'escalation':
-        return 'bg-red-100 text-red-800';
+      case 'follow_up':
+        return 'bg-indigo-100 text-indigo-800';
+      case 'custom':
+        return 'bg-pink-100 text-pink-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -83,30 +82,26 @@ export default function ScriptsPage() {
 
   const getTypeLabel = (type: string) => {
     switch (type) {
+      case 'conversation':
+        return 'Conversation';
       case 'greeting':
         return 'Greeting';
       case 'objection_handling':
         return 'Objection Handling';
       case 'closing':
         return 'Closing';
-      case 'escalation':
-        return 'Escalation';
+      case 'follow_up':
+        return 'Follow Up';
+      case 'custom':
+        return 'Custom';
       default:
-        return type;
+        return type.charAt(0).toUpperCase() + type.slice(1);
     }
   };
 
-  const filteredScripts = selectedType === 'all' 
-    ? scripts 
+  const filteredScripts = selectedType === 'all'
+    ? scripts
     : scripts.filter(script => script.type === selectedType);
-
-  const toggleScriptStatus = (scriptId: number) => {
-    setScripts(scripts.map(script => 
-      script.id === scriptId 
-        ? { ...script, isActive: !script.isActive }
-        : script
-    ));
-  };
 
   if (isLoading) {
     return (
@@ -150,15 +145,31 @@ export default function ScriptsPage() {
           </div>
         </div>
 
+        {/* Error display */}
+        {error && (
+          <div className="rounded-md bg-red-50 p-4">
+            <div className="flex">
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Error</h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>{error}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Filter tabs */}
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             {[
               { key: 'all', label: 'All Scripts' },
+              { key: 'conversation', label: 'Conversation' },
               { key: 'greeting', label: 'Greetings' },
               { key: 'objection_handling', label: 'Objection Handling' },
               { key: 'closing', label: 'Closing' },
-              { key: 'escalation', label: 'Escalation' },
+              { key: 'follow_up', label: 'Follow Up' },
+              { key: 'custom', label: 'Custom' },
             ].map((tab) => (
               <button
                 key={tab.key}

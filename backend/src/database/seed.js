@@ -48,13 +48,13 @@ async function main() {
     const adminUser = await prisma.user.upsert({
       where: { email: 'admin@voxassist.com' },
       update: {
-        passwordHash: adminPassword,
+        password: adminPassword,
         name: 'Admin User',
         role: 'admin'
       },
       create: {
         email: 'admin@voxassist.com',
-        passwordHash: adminPassword,
+        password: adminPassword,
         name: 'Admin User',
         role: 'admin'
       }
@@ -63,13 +63,13 @@ async function main() {
     const demoUser = await prisma.user.upsert({
       where: { email: 'user@voxassist.com' },
       update: {
-        passwordHash: userPassword,
+        password: userPassword,
         name: 'Demo User',
         role: 'user'
       },
       create: {
         email: 'user@voxassist.com',
-        passwordHash: userPassword,
+        password: userPassword,
         name: 'Demo User',
         role: 'user'
       }

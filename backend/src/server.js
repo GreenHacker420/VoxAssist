@@ -22,6 +22,7 @@ const { auditAuth, auditDataAccess } = require('./middleware/audit');
 const authRoutes = require('./routes/auth');
 const callRoutes = require('./routes/calls');
 const campaignsRoutes = require('./routes/campaigns');
+const contactsRoutes = require('./routes/contacts');
 const scriptsRoutes = require('./routes/scripts');
 const analyticsRoutes = require('./routes/analytics');
 const advancedAnalyticsRoutes = require('./routes/advancedAnalytics');
@@ -92,6 +93,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', auditAuth('auth'), authRoutes);
 app.use('/api/calls', auditDataAccess('calls'), callRoutes);
 app.use('/api/campaigns', auditDataAccess('campaigns'), campaignsRoutes);
+app.use('/api/contacts', auditDataAccess('contacts'), contactsRoutes);
 app.use('/api/scripts', auditDataAccess('scripts'), scriptsRoutes);
 app.use('/api/analytics', auditDataAccess('analytics'), analyticsRoutes);
 app.use('/api/advanced-analytics', auditDataAccess('advanced-analytics'), advancedAnalyticsRoutes);
