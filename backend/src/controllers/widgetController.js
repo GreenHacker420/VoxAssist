@@ -242,17 +242,30 @@ class WidgetController {
     // Get widget configuration
     async getWidgetConfig(req, res) {
         try {
-            const { widgetId } = req.params;
+            const { id, widgetId } = req.params;
+            const actualWidgetId = id || widgetId; // Support both :id and :widgetId routes
+
+            if (!actualWidgetId) {
+                return res.status(400).json({
+                    error: 'Widget ID is required',
+                    details: 'No widget ID provided in request parameters'
+                });
+            }
+
+            console.log(`Fetching widget config for ID: ${actualWidgetId}`);
 
             const widget = await prisma.widget.findUnique({
-                where: { id: widgetId },
+                where: { id: actualWidgetId },
                 include: {
                     organization: true
                 }
             });
 
             if (!widget) {
-                return res.status(404).json({ error: 'Widget not found' });
+                return res.status(404).json({
+                    error: 'Widget not found',
+                    details: `No widget found with ID: ${actualWidgetId}`
+                });
             }
 
             res.json({
@@ -261,12 +274,19 @@ class WidgetController {
                 appearance: widget.appearance,
                 behavior: widget.behavior,
                 permissions: widget.permissions,
-                isActive: widget.isActive
+                isActive: widget.isActive,
+                createdAt: widget.createdAt,
+                updatedAt: widget.updatedAt,
+                organizationId: widget.organizationId
             });
 
         } catch (error) {
             console.error('Widget config retrieval error:', error);
-            res.status(500).json({ error: 'Failed to get widget configuration' });
+            res.status(500).json({
+                error: 'Failed to get widget configuration',
+                details: error.message,
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            });
         }
     }
 
@@ -297,13 +317,27 @@ class WidgetController {
         try {
             const { organizationId, name, contextUrl, appearance, behavior, permissions } = req.body;
 
+            console.log('Creating widget with data:', { organizationId, name, contextUrl });
+
             if (!organizationId || !name) {
-                return res.status(400).json({ error: 'Organization ID and name are required' });
+                return res.status(400).json({
+                    error: 'Organization ID and name are required',
+                    details: 'Both organizationId and name fields must be provided'
+                });
+            }
+
+            // Validate organizationId is a valid number
+            const orgId = parseInt(organizationId);
+            if (isNaN(orgId)) {
+                return res.status(400).json({
+                    error: 'Invalid organization ID',
+                    details: 'Organization ID must be a valid number'
+                });
             }
 
             const widget = await prisma.widget.create({
                 data: {
-                    organizationId: parseInt(organizationId),
+                    organizationId: orgId,
                     name,
                     contextUrl: contextUrl || null,
                     appearance: appearance || this.getDefaultAppearance(),
@@ -312,6 +346,8 @@ class WidgetController {
                     isActive: true
                 }
             });
+
+            console.log(`Widget created successfully with ID: ${widget.id}`);
 
             // Start context extraction if URL provided (skip for now to avoid errors)
             // if (contextUrl) {
@@ -325,7 +361,21 @@ class WidgetController {
 
         } catch (error) {
             console.error('Widget creation error:', error);
-            res.status(500).json({ error: 'Failed to create widget' });
+
+            // Handle specific Prisma errors
+            if (error.code === 'P2003' && error.meta?.constraint === 'widgets_organization_id_fkey') {
+                return res.status(400).json({
+                    error: 'Invalid organization ID',
+                    details: `Organization with ID ${req.body.organizationId} does not exist`,
+                    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+                });
+            }
+
+            res.status(500).json({
+                error: 'Failed to create widget',
+                details: error.message,
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            });
         }
     }
 
@@ -370,34 +420,108 @@ class WidgetController {
         try {
             const { id, widgetId } = req.params;
             const updates = req.body;
-            const widgetIdToUpdate = id || widgetId;
+            const actualWidgetId = id || widgetId;
+
+            if (!actualWidgetId) {
+                return res.status(400).json({
+                    error: 'Widget ID is required',
+                    details: 'No widget ID provided in request parameters'
+                });
+            }
+
+            console.log(`Updating widget ID: ${actualWidgetId} with data:`, updates);
+
+            // Validate that the widget exists first
+            const existingWidget = await prisma.widget.findUnique({
+                where: { id: actualWidgetId }
+            });
+
+            if (!existingWidget) {
+                return res.status(404).json({
+                    error: 'Widget not found',
+                    details: `No widget found with ID: ${actualWidgetId}`
+                });
+            }
 
             const widget = await prisma.widget.update({
-                where: { id: parseInt(widgetIdToUpdate) },
+                where: { id: actualWidgetId },
                 data: updates
             });
 
+            console.log(`Widget ${actualWidgetId} updated successfully`);
             res.json(widget);
 
         } catch (error) {
             console.error('Widget update error:', error);
-            res.status(500).json({ error: 'Failed to update widget' });
+            res.status(500).json({
+                error: 'Failed to update widget',
+                details: error.message,
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            });
         }
     }
 
     // Get widget analytics
     async getWidgetAnalytics(req, res) {
         try {
-            const { widgetId } = req.params;
+            const { id, widgetId } = req.params;
+            const actualWidgetId = id || widgetId;
             const { startDate, endDate } = req.query;
 
-            const analytics = await this.calculateWidgetAnalytics(widgetId, startDate, endDate);
+            if (!actualWidgetId) {
+                return res.status(400).json({
+                    error: 'Widget ID is required',
+                    details: 'No widget ID provided in request parameters'
+                });
+            }
+
+            console.log(`Fetching analytics for widget ID: ${actualWidgetId}`);
+
+            // Calculate analytics directly without relying on 'this' context
+            const start = new Date(startDate || Date.now() - 30 * 24 * 60 * 60 * 1000);
+            const end = new Date(endDate || Date.now());
+
+            const [sessions, interactions, avgSentiment] = await Promise.all([
+                prisma.widgetSession.count({
+                    where: {
+                        widgetId: actualWidgetId,
+                        startTime: { gte: start, lte: end }
+                    }
+                }),
+                prisma.widgetInteraction.count({
+                    where: {
+                        session: {
+                            widgetId: actualWidgetId,
+                            startTime: { gte: start, lte: end }
+                        }
+                    }
+                }),
+                prisma.widgetSession.aggregate({
+                    where: {
+                        widgetId: actualWidgetId,
+                        startTime: { gte: start, lte: end },
+                        sentimentScore: { not: null }
+                    },
+                    _avg: { sentimentScore: true }
+                })
+            ]);
+
+            const analytics = {
+                totalSessions: sessions,
+                totalInteractions: interactions,
+                avgSentimentScore: avgSentiment._avg.sentimentScore || 0.5,
+                period: { start, end }
+            };
 
             res.json(analytics);
 
         } catch (error) {
             console.error('Widget analytics error:', error);
-            res.status(500).json({ error: 'Failed to get widget analytics' });
+            res.status(500).json({
+                error: 'Failed to get widget analytics',
+                details: error.message,
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            });
         }
     }
 

@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
 export default function HomePage() {
-  const { isAuthenticated, isLoading, enableDemoMode } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -38,15 +38,12 @@ export default function HomePage() {
               <span className="text-xl font-semibold text-gray-900">VoxAssist</span>
             </div>
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => {
-                  enableDemoMode();
-                  router.push('/dashboard');
-                }}
+              <Link
+                href="/login"
                 className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200 ease-out link-underline hover-glow"
               >
-                Try Demo
-              </button>
+                Sign In
+              </Link>
               <Link
                 href="/login"
                 className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors link-underline hover-glow"
@@ -105,15 +102,12 @@ export default function HomePage() {
             >
               Start Free Trial
             </Link>
-            <button
-              onClick={() => {
-                enableDemoMode();
-                router.push('/dashboard');
-              }}
+            <Link
+              href="/login"
               className="px-8 py-3 rounded-xl text-base font-medium text-gray-800 bg-white border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200 ease-out"
             >
-              Try Demo Now
-            </button>
+              Sign In
+            </Link>
           </div>
         </section>
 

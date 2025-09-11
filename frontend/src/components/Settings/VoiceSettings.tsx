@@ -70,11 +70,22 @@ export default function VoiceSettings({ onSave, onTest }: VoiceSettingsProps) {
 
   const loadVoiceConfig = async () => {
     try {
-      // TODO: Implement API call to load voice configuration
-      form.setFieldsValue(config);
+      const response = await fetch('/api/settings/voice', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setConfig(data);
+        form.setFieldsValue(data);
+      } else {
+        form.setFieldsValue(config);
+      }
     } catch (error) {
       console.error('Failed to load voice configuration:', error);
-      message.error('Failed to load voice configuration');
+      form.setFieldsValue(config);
     }
   };
 
@@ -84,7 +95,18 @@ export default function VoiceSettings({ onSave, onTest }: VoiceSettingsProps) {
       if (onSave) {
         await onSave(values);
       } else {
-        // TODO: Implement default save logic
+        const response = await fetch('/api/settings/voice', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          },
+          body: JSON.stringify(values)
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to save voice configuration');
+        }
       }
       setConfig(values);
       message.success('Voice settings saved successfully');
@@ -106,8 +128,21 @@ export default function VoiceSettings({ onSave, onTest }: VoiceSettingsProps) {
       if (onTest) {
         testResult = await onTest(values, testText);
       } else {
-        // TODO: Implement default test logic
-        testResult = true; // Mock success for now
+        const response = await fetch('/api/settings/voice/test', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          },
+          body: JSON.stringify({ ...values, testText })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Voice test failed');
+        }
+        
+        const result = await response.json();
+        testResult = result.success;
         // Simulate audio playback
         setTimeout(() => setIsPlaying(false), 3000);
       }

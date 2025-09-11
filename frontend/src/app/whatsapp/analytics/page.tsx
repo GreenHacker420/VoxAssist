@@ -5,7 +5,7 @@ import WhatsAppAnalytics from '@/components/WhatsApp/WhatsAppAnalytics';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function WhatsAppAnalyticsPage() {
-  const { isDemoMode } = useAuth();
+  const { user } = useAuth();
 
   return (
     <DashboardLayout>

@@ -35,7 +35,7 @@ router.post('/register', validate('register'), asyncHandler(async (req, res) => 
   const newUser = await prisma.user.create({
     data: {
       email: cleanEmail,
-      passwordHash: hashedPassword,
+      password: hashedPassword,
       name: cleanName,
       role: role,
       userOrganizations: {
@@ -101,11 +101,11 @@ router.post('/login', validate('login'), asyncHandler(async (req, res) => {
   }
   
   // Verify password
-  const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+  const isValidPassword = await bcrypt.compare(password, user.password);
   if (!isValidPassword) {
-    return res.status(401).json({ 
-      success: false, 
-      error: 'Invalid credentials' 
+    return res.status(401).json({
+      success: false,
+      error: 'Invalid credentials'
     });
   }
   

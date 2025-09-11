@@ -56,27 +56,77 @@ const list = async (organizationId: number): Promise<WidgetDTO[]> => {
 };
 
 const analytics = async (widgetId: string): Promise<WidgetAnalyticsDTO> => {
-  const res = await api.get<WidgetAnalyticsDTO>(`/widgets/${widgetId}/analytics`);
-  return res.data as WidgetAnalyticsDTO;
+  try {
+    console.log('Fetching widget analytics:', widgetId);
+    const res = await api.get<WidgetAnalyticsDTO>(`/widgets/${widgetId}/analytics`);
+    console.log('Widget analytics fetched successfully:', res.data);
+    return res.data as WidgetAnalyticsDTO;
+  } catch (error: unknown) {
+    console.error('Widget analytics fetch failed:', error);
+    const err = error as { error?: string; message?: string; details?: string };
+    const errorMessage = err?.error || err?.message || 'Failed to fetch widget analytics';
+    const errorDetails = err?.details || 'Unknown error occurred';
+    throw new Error(`${errorMessage}: ${errorDetails}`);
+  }
 };
 
 const create = async (organizationId: number, payload: WidgetDTO): Promise<WidgetDTO> => {
-  const res = await api.post<WidgetDTO>(`/widgets`, { ...payload, organizationId });
-  return res.data as WidgetDTO;
+  try {
+    console.log('Creating widget:', { organizationId, payload });
+    const res = await api.post<WidgetDTO>(`/widgets`, { ...payload, organizationId });
+    console.log('Widget created successfully:', res.data);
+    return res.data as WidgetDTO;
+  } catch (error: unknown) {
+    console.error('Widget creation failed:', error);
+    const err = error as { error?: string; message?: string; details?: string };
+    const errorMessage = err?.error || err?.message || 'Failed to create widget';
+    const errorDetails = err?.details || 'Unknown error occurred';
+    throw new Error(`${errorMessage}: ${errorDetails}`);
+  }
 };
 
 const update = async (widgetId: string, payload: Partial<WidgetDTO>): Promise<WidgetDTO> => {
-  const res = await api.put<WidgetDTO>(`/widgets/${widgetId}`, payload);
-  return res.data as WidgetDTO;
+  try {
+    console.log('Updating widget:', { widgetId, payload });
+    const res = await api.put<WidgetDTO>(`/widgets/${widgetId}`, payload);
+    console.log('Widget updated successfully:', res.data);
+    return res.data as WidgetDTO;
+  } catch (error: unknown) {
+    console.error('Widget update failed:', error);
+    const err = error as { error?: string; message?: string; details?: string };
+    const errorMessage = err?.error || err?.message || 'Failed to update widget';
+    const errorDetails = err?.details || 'Unknown error occurred';
+    throw new Error(`${errorMessage}: ${errorDetails}`);
+  }
 };
 
 const get = async (widgetId: string): Promise<WidgetDTO> => {
-  const res = await api.get<WidgetDTO>(`/widgets/${widgetId}`);
-  return res.data as WidgetDTO;
+  try {
+    console.log('Fetching widget:', widgetId);
+    const res = await api.get<WidgetDTO>(`/widgets/${widgetId}`);
+    console.log('Widget fetched successfully:', res.data);
+    return res.data as WidgetDTO;
+  } catch (error: unknown) {
+    console.error('Widget fetch failed:', error);
+    const err = error as { error?: string; message?: string; details?: string };
+    const errorMessage = err?.error || err?.message || 'Failed to fetch widget';
+    const errorDetails = err?.details || 'Unknown error occurred';
+    throw new Error(`${errorMessage}: ${errorDetails}`);
+  }
 };
 
 const remove = async (widgetId: string) => {
-  await api.delete(`/widgets/${widgetId}`);
+  try {
+    console.log('Deleting widget:', widgetId);
+    await api.delete(`/widgets/${widgetId}`);
+    console.log('Widget deleted successfully');
+  } catch (error: unknown) {
+    console.error('Widget deletion failed:', error);
+    const err = error as { error?: string; message?: string; details?: string };
+    const errorMessage = err?.error || err?.message || 'Failed to delete widget';
+    const errorDetails = err?.details || 'Unknown error occurred';
+    throw new Error(`${errorMessage}: ${errorDetails}`);
+  }
 };
 
 const toggleActive = async (widgetId: string, isActive: boolean) => {

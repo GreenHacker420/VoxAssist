@@ -15,7 +15,7 @@ const { TextArea } = Input;
 export default function WidgetEmbedPage() {
   const params = useParams();
   const widgetId = params.id as string;
-  
+
   const [widget, setWidget] = useState<WidgetDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
@@ -29,49 +29,10 @@ export default function WidgetEmbedPage() {
   const loadWidget = async () => {
     try {
       setLoading(true);
-      // Try to fetch the actual widget data
-      try {
-        const widgetData = await WidgetsService.get(widgetId);
-        setWidget(widgetData);
-      } catch (error) {
-        console.warn('Failed to load widget, using mock data:', error);
-        // Fallback to mock widget for demo purposes
-        const mockWidget: WidgetDTO = {
-          id: widgetId,
-          name: 'Sample Widget',
-          contextUrl: 'https://example.com',
-          appearance: {
-            position: 'bottom-right',
-            primaryColor: '#3B82F6',
-            secondaryColor: '#1E40AF',
-            textColor: '#FFFFFF',
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            size: 'medium',
-            theme: 'light'
-          },
-          behavior: {
-            autoOpen: false,
-            autoOpenDelay: 5000,
-            greeting: 'Hi! How can I help you today?',
-            language: 'en',
-            enableVoice: true,
-          enableText: true,
-          enableFileUpload: true,
-          showBranding: true
-        },
-        permissions: {
-          collectPersonalData: false,
-          storeCookies: true,
-          recordAudio: false,
-          shareWithThirdParty: false,
-          allowedDomains: []
-        }
-      };
-      setWidget(mockWidget);
-      }
+      const widgetData = await WidgetsService.get(widgetId);
+      setWidget(widgetData);
     } catch (error) {
-      console.error('Failed to load widget:', error);
+      console.error('Error loading widget:', error);
     } finally {
       setLoading(false);
     }

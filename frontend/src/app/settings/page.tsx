@@ -15,23 +15,46 @@ export default function SettingsPage() {
 
   const handleProviderSave = async (config: unknown) => {
     try {
-      // TODO: Implement API call to save provider config
-      console.log('Saving provider config:', config);
+      const response = await fetch('/api/settings/providers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify(config)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save provider configuration');
+      }
+      
       message.success('Provider settings saved successfully');
     } catch (error) {
-      console.error('Failed to save provider config:', error);
+      console.error('Failed to save provider settings:', error);
       message.error('Failed to save provider settings');
     }
   };
 
   const handleProviderTest = async (config: unknown): Promise<boolean> => {
     try {
-      // TODO: Implement API call to test provider config
-      console.log('Testing provider config:', config);
+      const response = await fetch('/api/settings/providers/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify(config)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Provider test failed');
+      }
+      
+      const result = await response.json();
       message.success('Provider connection test successful');
-      return true;
+      return result.success;
     } catch (error) {
-      console.error('Failed to test provider config:', error);
+      console.error('Provider connection test failed:', error);
       message.error('Provider connection test failed');
       return false;
     }
@@ -39,8 +62,19 @@ export default function SettingsPage() {
 
   const handleAISave = async (config: unknown) => {
     try {
-      // TODO: Implement API call to save AI config
-      console.log('Saving AI config:', config);
+      const response = await fetch('/api/settings/ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify(config)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save AI configuration');
+      }
+      
       message.success('AI settings saved successfully');
     } catch (error) {
       console.error('Failed to save AI config:', error);
@@ -50,10 +84,22 @@ export default function SettingsPage() {
 
   const handleAITest = async (config: unknown): Promise<boolean> => {
     try {
-      // TODO: Implement API call to test AI config
-      console.log('Testing AI config:', config);
+      const response = await fetch('/api/settings/ai/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify(config)
+      });
+      
+      if (!response.ok) {
+        throw new Error('AI test failed');
+      }
+      
+      const result = await response.json();
       message.success('AI configuration test successful');
-      return true;
+      return result.success;
     } catch (error) {
       console.error('Failed to test AI config:', error);
       message.error('AI configuration test failed');
@@ -63,8 +109,19 @@ export default function SettingsPage() {
 
   const handleVoiceSave = async (config: unknown) => {
     try {
-      // TODO: Implement API call to save voice config
-      console.log('Saving voice config:', config);
+      const response = await fetch('/api/settings/voice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify(config)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save voice configuration');
+      }
+      
       message.success('Voice settings saved successfully');
     } catch (error) {
       console.error('Failed to save voice config:', error);
@@ -74,10 +131,22 @@ export default function SettingsPage() {
 
   const handleVoiceTest = async (config: unknown, text: string): Promise<boolean> => {
     try {
-      // TODO: Implement API call to test voice config
-      console.log('Testing voice config:', config, 'with text:', text);
+      const response = await fetch('/api/settings/voice/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({ config, text })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Voice test failed');
+      }
+      
+      const result = await response.json();
       message.success('Voice test completed successfully');
-      return true;
+      return result.success;
     } catch (error) {
       console.error('Failed to test voice config:', error);
       message.error('Voice test failed');

@@ -3,20 +3,16 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@/types';
 import { AuthService } from '@/services/auth';
-import { DEMO_USER, enableDemoMode as enableDemo, disableDemoMode as disableDemo } from '@/demo';
 import { App } from 'antd';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  isDemoMode: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<Pick<User, 'name' | 'email'>>) => Promise<void>;
-  enableDemoMode: () => void;
-  disableDemoMode: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,17 +21,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { message } = App.useApp();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDemoMode, setIsDemoMode] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // Check if demo mode is enabled from localStorage
-        const demoMode = localStorage.getItem('voxassist_demo_mode') === 'true';
-        if (demoMode) {
-          setIsDemoMode(true);
-          setUser(DEMO_USER);
-        } else if (AuthService.isAuthenticated()) {
+        if (AuthService.isAuthenticated()) {
           // Try to restore user data from localStorage first
           const cachedUserData = localStorage.getItem('voxassist_user_data');
           if (cachedUserData) {
@@ -155,16 +145,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      if (isDemoMode) {
-        disableDemo();
-        setIsDemoMode(false);
-        setUser(null);
-        message.success('Demo session ended');
-      } else {
-        await AuthService.logout();
-        setUser(null);
-        message.success('Logged out successfully');
-      }
+      await AuthService.logout();
+      setUser(null);
+      message.success('Logged out successfully');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Logout failed';
       message.error(errorMessage);
@@ -173,12 +156,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateProfile = async (data: Partial<Pick<User, 'name' | 'email'>>) => {
     try {
-      if (isDemoMode) {
-        // In demo mode, just update the local user state
-        setUser(prev => prev ? { ...prev, ...data } : null);
-        message.success('Profile updated (demo mode)');
-        return;
-      }
       const updatedUser = await AuthService.updateProfile(data);
       setUser(updatedUser);
       message.success('Profile updated successfully');
@@ -189,31 +166,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const enableDemoMode = () => {
-    enableDemo();
-    setIsDemoMode(true);
-    setUser(DEMO_USER);
-    message.success('Demo mode enabled!');
-  };
-
-  const disableDemoMode = () => {
-    disableDemo();
-    setIsDemoMode(false);
-    setUser(null);
-    message.success('Demo mode disabled');
-  };
-
   const value: AuthContextType = {
     user,
     isLoading,
     isAuthenticated: !!user,
-    isDemoMode,
     login,
     register,
     logout,
     updateProfile,
-    enableDemoMode,
-    disableDemoMode,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

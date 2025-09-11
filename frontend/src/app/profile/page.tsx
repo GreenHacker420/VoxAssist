@@ -33,7 +33,7 @@ const { Title, Text } = Typography;
 
 export default function ProfilePage() {
   const { message } = App.useApp();
-  const { user, updateProfile, isDemoMode } = useAuth();
+  const { user, updateProfile } = useAuth();
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
   const [isEditing, setIsEditing] = useState(false);
@@ -56,7 +56,23 @@ export default function ProfilePage() {
   const handlePasswordChange = async (values: Record<string, unknown>) => {
     setPasswordLoading(true);
     try {
-      // TODO: Implement password change API
+      const response = await fetch('/api/settings/password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          currentPassword: values.currentPassword,
+          newPassword: values.newPassword
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to change password');
+      }
+
       message.success('Password changed successfully');
       passwordForm.resetFields();
     } catch (error) {
@@ -84,16 +100,7 @@ export default function ProfilePage() {
           </p>
         </div>
 
-        {isDemoMode && (
-          <Card className="border-orange-200 bg-orange-50">
-            <div className="flex items-center space-x-2">
-              <Tag color="orange">Demo Mode</Tag>
-              <Text type="secondary">
-                Profile changes in demo mode are temporary and won&apos;t be saved.
-              </Text>
-            </div>
-          </Card>
-        )}
+
 
         <Row gutter={24}>
           <Col xs={24} lg={16}>
@@ -109,9 +116,8 @@ export default function ProfilePage() {
                     name="avatar"
                     showUploadList={false}
                     onChange={handleAvatarUpload}
-                    disabled={isDemoMode}
                   >
-                    <Button icon={<UploadOutlined />} disabled={isDemoMode}>
+                    <Button icon={<UploadOutlined />}>
                       Change Avatar
                     </Button>
                   </Upload>
@@ -212,7 +218,7 @@ export default function ProfilePage() {
                         htmlType="submit"
                         loading={isLoading}
                         icon={<SaveOutlined />}
-                        disabled={isDemoMode}
+
                       >
                         Save Changes
                       </Button>
@@ -222,7 +228,7 @@ export default function ProfilePage() {
                       type="primary" 
                       icon={<EditOutlined />}
                       onClick={() => setIsEditing(true)}
-                      disabled={isDemoMode}
+
                     >
                       Edit Profile
                     </Button>
@@ -245,7 +251,7 @@ export default function ProfilePage() {
                   <Input.Password 
                     prefix={<LockOutlined />}
                     placeholder="Enter current password"
-                    disabled={isDemoMode}
+
                   />
                 </Form.Item>
 
@@ -260,7 +266,7 @@ export default function ProfilePage() {
                   <Input.Password 
                     prefix={<LockOutlined />}
                     placeholder="Enter new password"
-                    disabled={isDemoMode}
+
                   />
                 </Form.Item>
 
@@ -283,7 +289,7 @@ export default function ProfilePage() {
                   <Input.Password 
                     prefix={<LockOutlined />}
                     placeholder="Confirm new password"
-                    disabled={isDemoMode}
+
                   />
                 </Form.Item>
 
@@ -291,7 +297,7 @@ export default function ProfilePage() {
                   type="primary" 
                   htmlType="submit"
                   loading={passwordLoading}
-                  disabled={isDemoMode}
+
                 >
                   Change Password
                 </Button>
@@ -310,7 +316,7 @@ export default function ProfilePage() {
                 <Divider />
                 <Statistic 
                   title="Account Type" 
-                  value={isDemoMode ? 'Demo' : (user?.plan || 'Free')}
+                  value={user?.plan || 'Free'}
                 />
                 <Divider />
                 <Statistic 

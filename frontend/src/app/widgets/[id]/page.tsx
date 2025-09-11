@@ -19,7 +19,8 @@ import {
   Alert,
   Tabs,
   Badge,
-  Tooltip
+  Tooltip,
+  App
 } from 'antd';
 import {
   EyeOutlined,
@@ -40,10 +41,11 @@ import { useAuth } from '@/contexts/AuthContext';
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
 
-export default function WidgetDetailsPage() {
+function WidgetDetailsPageContent() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { message } = App.useApp();
   const widgetId = params.id as string;
 
   const [widget, setWidget] = useState<WidgetDTO | null>(null);
@@ -392,5 +394,13 @@ export default function WidgetDetailsPage() {
         </Modal>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function WidgetDetailsPage() {
+  return (
+    <App>
+      <WidgetDetailsPageContent />
+    </App>
   );
 }

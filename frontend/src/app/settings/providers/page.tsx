@@ -29,7 +29,7 @@ import {
 } from '@ant-design/icons';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
 import { ProvidersService } from '@/services/providers';
-import { isDemoMode } from '@/demo';
+
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -113,58 +113,35 @@ export default function ProvidersPage() {
   const loadProviderConfigs = async () => {
     try {
       setLoading(true);
-      if (isDemoMode()) {
-        // Demo data
-        setConfigs([
-          {
-            id: 'demo-twilio',
-            name: 'Demo Twilio Config',
-            type: 'phone',
-            provider: 'twilio',
-            isActive: true,
-            isPrimary: true,
-            credentials: {
-              accountSid: 'AC***demo***',
-              authToken: '***demo***',
-              phoneNumber: '+1234567890'
-            },
-            settings: {
-              region: 'us1',
-              enableRecording: true,
-              enableTranscription: true
-            }
-          }
-        ]);
-        setConnectionStatus({ 'demo-twilio': 'connected' });
-      } else {
-        const response = await ProvidersService.getConfigs();
-        setConfigs(response);
-        
-        // Check connection status for each config
-        const statusPromises = response.map(async (config) => {
-          try {
-            const status = await ProvidersService.testConnection(config.id!);
-            return {
-              id: config.id!,
-              status: (status.connected ? 'connected' : 'disconnected') as 'connected' | 'disconnected' | 'testing'
-            };
-          } catch {
-            return {
-              id: config.id!,
-              status: 'disconnected' as 'connected' | 'disconnected' | 'testing'
-            };
-          }
-        });
 
-        const statuses = await Promise.all(statusPromises);
-        const statusMap = statuses.reduce((acc, { id, status }) => {
-          acc[id] = status;
-          return acc;
-        }, {} as Record<string, 'connected' | 'disconnected' | 'testing'>);
-        
-        setConnectionStatus(statusMap);
-      }
+      const response = await ProvidersService.getConfigs();
+      setConfigs(response);
+
+      // Check connection status for each config
+      const statusPromises = response.map(async (config) => {
+        try {
+          const status = await ProvidersService.testConnection(config.id!);
+          return {
+            id: config.id!,
+            status: (status.connected ? 'connected' : 'disconnected') as 'connected' | 'disconnected' | 'testing'
+          };
+        } catch {
+          return {
+            id: config.id!,
+            status: 'disconnected' as 'connected' | 'disconnected' | 'testing'
+          };
+        }
+      });
+
+      const statuses = await Promise.all(statusPromises);
+      const statusMap = statuses.reduce((acc, { id, status }) => {
+        acc[id] = status;
+        return acc;
+      }, {} as Record<string, 'connected' | 'disconnected' | 'testing'>);
+
+      setConnectionStatus(statusMap);
     } catch (error) {
+      console.error('Error loading provider configurations:', error);
       message.error('Failed to load provider configurations');
     } finally {
       setLoading(false);
@@ -175,10 +152,7 @@ export default function ProvidersPage() {
     try {
       setLoading(true);
       
-      if (isDemoMode()) {
-        message.success('Demo configuration saved successfully!');
-        return;
-      }
+
 
       const config: ProviderConfig = {
         name: values.name as string,
@@ -216,13 +190,7 @@ export default function ProvidersPage() {
       setTesting(true);
       setConnectionStatus(prev => ({ ...prev, [configId]: 'testing' }));
       
-      if (isDemoMode()) {
-        // Simulate testing delay
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setConnectionStatus(prev => ({ ...prev, [configId]: 'connected' }));
-        message.success('Demo connection test successful!');
-        return;
-      }
+
 
       const result = await ProvidersService.testConnection(configId);
       
@@ -231,7 +199,7 @@ export default function ProvidersPage() {
         message.success('Connection test successful!');
       } else {
         setConnectionStatus(prev => ({ ...prev, [configId]: 'disconnected' }));
-        message.error(`Connection test failed: ${result.error}`);
+        message.error(`Connection test failed: ${result.details?.error || 'Unknown error'}`);
       }
     } catch (error) {
       setConnectionStatus(prev => ({ ...prev, [configId]: 'disconnected' }));
@@ -381,15 +349,7 @@ export default function ProvidersPage() {
           </div>
         </div>
 
-        {isDemoMode() && (
-          <Alert
-            message="Demo Mode Active"
-            description="You're in demo mode. Provider configurations will be simulated and not saved to a real database."
-            type="info"
-            showIcon
-            className="mb-6"
-          />
-        )}
+
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Existing Configurations */}

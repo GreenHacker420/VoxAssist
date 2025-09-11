@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
+
+// Demo call storage (in-memory for simplicity)
+const demoCalls = new Map();
 const logger = require('../utils/logger');
 const { prisma } = require('../database/prisma');
 
@@ -711,5 +714,212 @@ router.post('/:callId/handoff', authenticateToken, async (req, res) => {
     res.status(500).json({ success: false, error: 'Failed to handoff call' });
   }
 });
+
+// Demo call endpoints
+router.post('/demo/start', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const demoCall = {
+      id: `demo-call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      userId,
+      customerName: 'Demo Customer',
+      customerEmail: 'demo@example.com',
+      customerPhone: '+1-555-DEMO',
+      status: 'active',
+      startTime: new Date().toISOString(),
+      sentiment: 'neutral',
+      sentimentScore: 0.5,
+      callSid: `demo-sid-${Date.now()}`,
+      transcript: '',
+      aiInsights: 'Demo call in progress'
+    };
+
+    demoCalls.set(demoCall.id, demoCall);
+
+    res.json({
+      success: true,
+      data: demoCall
+    });
+  } catch (error) {
+    console.error('Error starting demo call:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to start demo call',
+      details: error.message
+    });
+  }
+});
+
+router.post('/demo/:callId/end', authenticateToken, async (req, res) => {
+  try {
+    const { callId } = req.params;
+    const userId = req.user.id;
+
+    const demoCall = demoCalls.get(callId);
+    if (!demoCall) {
+      return res.status(404).json({
+        success: false,
+        error: 'Demo call not found'
+      });
+    }
+
+    if (demoCall.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Unauthorized to end this demo call'
+      });
+    }
+
+    demoCall.status = 'completed';
+    demoCall.endTime = new Date().toISOString();
+    demoCall.duration = Math.floor((new Date() - new Date(demoCall.startTime)) / 1000);
+
+    demoCalls.set(callId, demoCall);
+
+    res.json({
+      success: true,
+      data: demoCall
+    });
+  } catch (error) {
+    console.error('Error ending demo call:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to end demo call',
+      details: error.message
+    });
+  }
+});
+
+router.post('/demo/:callId/voice', authenticateToken, async (req, res) => {
+  try {
+    const { callId } = req.params;
+    const userId = req.user.id;
+
+    const demoCall = demoCalls.get(callId);
+    if (!demoCall) {
+      return res.status(404).json({
+        success: false,
+        error: 'Demo call not found'
+      });
+    }
+
+    if (demoCall.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Unauthorized to access this demo call'
+      });
+    }
+
+    let analysis = {};
+    try {
+      analysis = JSON.parse(req.body.analysis || '{}');
+    } catch (e) {
+      analysis = {};
+    }
+
+    const mockTranscript = generateMockTranscript(analysis);
+    const mockSentiment = generateMockSentiment(analysis);
+    const mockAiResponse = generateMockAiResponse(mockTranscript);
+
+    demoCall.transcript += `Customer: ${mockTranscript}\n`;
+    demoCall.sentiment = mockSentiment.overall;
+    demoCall.sentimentScore = mockSentiment.score;
+
+    demoCalls.set(callId, demoCall);
+
+    res.json({
+      success: true,
+      data: {
+        transcript: mockTranscript,
+        confidence: analysis.confidence || 0.8,
+        sentiment: mockSentiment.overall,
+        sentimentData: mockSentiment,
+        aiResponse: mockAiResponse
+      }
+    });
+  } catch (error) {
+    console.error('Error processing voice input:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process voice input',
+      details: error.message
+    });
+  }
+});
+
+// Helper functions
+function generateMockTranscript(analysis) {
+  const mockPhrases = [
+    "Hello, I need help with my account",
+    "Can you help me with billing questions?",
+    "I'm having trouble with my order",
+    "What are your business hours?",
+    "I'd like to speak to a manager",
+    "Thank you for your help"
+  ];
+
+  let selectedPhrases = mockPhrases;
+  if (analysis.emotion === 'angry') {
+    selectedPhrases = ["I'm very frustrated with this service", "This is completely unacceptable"];
+  } else if (analysis.emotion === 'happy') {
+    selectedPhrases = ["Thank you so much for your help", "This is exactly what I needed"];
+  }
+
+  return selectedPhrases[Math.floor(Math.random() * selectedPhrases.length)];
+}
+
+function generateMockSentiment(analysis) {
+  let overall = 'neutral';
+  let score = 0.5;
+
+  switch (analysis.emotion) {
+    case 'happy':
+    case 'excited':
+      overall = 'positive';
+      score = 0.7 + Math.random() * 0.3;
+      break;
+    case 'angry':
+    case 'sad':
+      overall = 'negative';
+      score = Math.random() * 0.4;
+      break;
+    default:
+      overall = 'neutral';
+      score = 0.4 + Math.random() * 0.2;
+  }
+
+  return {
+    overall,
+    score,
+    emotions: {
+      joy: analysis.emotion === 'happy' ? 0.8 : 0.2,
+      anger: analysis.emotion === 'angry' ? 0.8 : 0.1,
+      fear: analysis.emotion === 'sad' ? 0.6 : 0.1,
+      sadness: analysis.emotion === 'sad' ? 0.7 : 0.1,
+      surprise: analysis.emotion === 'excited' ? 0.7 : 0.1
+    }
+  };
+}
+
+function generateMockAiResponse(transcript) {
+  const responses = {
+    'account': "I'd be happy to help you with your account.",
+    'billing': "I can assist you with billing questions.",
+    'order': "Let me check on your order status.",
+    'hours': "Our business hours are Monday through Friday, 9 AM to 6 PM EST.",
+    'manager': "Let me connect you with a manager right away.",
+    'help': "How can I assist you today?"
+  };
+
+  const lowerTranscript = transcript.toLowerCase();
+  for (const [keyword, response] of Object.entries(responses)) {
+    if (lowerTranscript.includes(keyword)) {
+      return response;
+    }
+  }
+
+  return "I understand. Let me help you with that.";
+}
 
 module.exports = router;

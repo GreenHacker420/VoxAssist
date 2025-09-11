@@ -44,8 +44,22 @@ router.get('/:id/config', widgetController.getWidgetConfig);
 router.get('/configs/:id', widgetController.getWidgetConfig);
 
 // Analytics
-router.get('/analytics/:widgetId', widgetController.getWidgetAnalytics);
-router.get('/:id/analytics', widgetController.getWidgetAnalytics);
+router.get('/analytics/:widgetId', async (req, res) => {
+    try {
+        await widgetController.getWidgetAnalytics.call(widgetController, req, res);
+    } catch (error) {
+        console.error('Route error:', error);
+        res.status(500).json({ error: 'Internal server error', details: error.message });
+    }
+});
+router.get('/:id/analytics', async (req, res) => {
+    try {
+        await widgetController.getWidgetAnalytics.call(widgetController, req, res);
+    } catch (error) {
+        console.error('Route error:', error);
+        res.status(500).json({ error: 'Internal server error', details: error.message });
+    }
+});
 
 // Widget status management
 router.patch('/:id/status', widgetController.toggleWidgetStatus);

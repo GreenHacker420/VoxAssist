@@ -1,15 +1,10 @@
 import apiClient from '@/lib/api';
 import { DashboardAnalytics } from '@/types';
-import { DEMO_ANALYTICS, isDemoMode } from '@/demo';
+
 
 export class AnalyticsService {
   // Get dashboard analytics
   static async getDashboardAnalytics(): Promise<DashboardAnalytics> {
-    if (isDemoMode()) {
-      // Return demo analytics data
-      return Promise.resolve(DEMO_ANALYTICS);
-    }
-
     const response = await apiClient.get<DashboardAnalytics>('/analytics/dashboard');
     
     if (response.success && response.data) {

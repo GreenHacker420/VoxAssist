@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   Card, 
   Form, 
@@ -11,236 +11,39 @@ import {
   Row, 
   Col, 
   App, 
-  Modal, 
-  List, 
-  Tag, 
   Alert
 } from 'antd';
 import { 
   WhatsAppOutlined, 
   PhoneOutlined, 
-  SendOutlined, 
-  HistoryOutlined,
-  SettingOutlined,
-  CheckCircleOutlined,
-  ExclamationCircleOutlined
+  SendOutlined
 } from '@ant-design/icons';
-import { CallsService } from '@/services/calls';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  DEMO_WHATSAPP_CONFIG,
-  DEMO_WHATSAPP_CALL_HISTORY,
-  isDemoMode
-} from '@/demo';
 
 const { Title, Text } = Typography;
-
-type JSONObject = Record<string, unknown>;
-
-interface WhatsAppConfig {
-  accessToken: string;
-  phoneNumberId: string;
-  webhookVerifyToken: string;
-  businessAccountId: string;
-}
-
-interface CallHistoryItem {
-  id: string;
-  phoneNumber: string;
-  eventType: string;
-  timestamp: string;
-  metadata: JSONObject;
-}
 
 interface WhatsAppCallingProps {
   onCallInitiated?: (phoneNumber: string) => void;
 }
 
-interface WhatsAppAccountConfig {
-  id: string;
-  provider: string;
-  phoneNumber: string;
-  verifiedName: string;
-  isActive: boolean;
-  status: 'connected' | 'disconnected' | string;
-}
-
 export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProps) {
   const { message } = App.useApp();
   const [form] = Form.useForm();
-  const [configForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [configLoading, setConfigLoading] = useState(false);
-  const [testLoading, setTestLoading] = useState(false);
-  const [configured, setConfigured] = useState(false);
-  const [configModalVisible, setConfigModalVisible] = useState(false);
-  const [historyModalVisible, setHistoryModalVisible] = useState(false);
-  const [callHistory, setCallHistory] = useState<CallHistoryItem[]>([]);
-  const [whatsappConfig, setWhatsappConfig] = useState<WhatsAppAccountConfig | null>(null);
+  const { user } = useAuth();
 
-  const { isDemoMode: isDemo } = useAuth();
-
-  useEffect(() => {
-    checkConfiguration();
-  }, []);
-
-  const checkConfiguration = async () => {
-    try {
-      if (isDemoMode()) {
-        // Use demo configuration
-        setConfigured(true);
-        setWhatsappConfig(DEMO_WHATSAPP_CONFIG);
-        return;
-      }
-
-      const response = await fetch('/whatsapp/config', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      const data = await response.json();
-      
-      if (data.success && data.configured) {
-        setConfigured(true);
-        setWhatsappConfig(data.config);
-      }
-    } catch (error) {
-      console.error('Error checking WhatsApp configuration:', error);
-    }
-  };
-
-  const handleConfigureWhatsApp = async (values: WhatsAppConfig) => {
-    setConfigLoading(true);
-    try {
-      if (isDemoMode()) {
-        // Simulate configuration in demo mode
-        setTimeout(() => {
-          message.success('WhatsApp configured successfully! (Demo Mode)');
-          setConfigured(true);
-          setWhatsappConfig({
-            ...DEMO_WHATSAPP_CONFIG,
-            ...values
-          });
-          setConfigModalVisible(false);
-          configForm.resetFields();
-          setConfigLoading(false);
-        }, 1500);
-        return;
-      }
-
-      const response = await fetch('/whatsapp/configure', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(values)
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        message.success('WhatsApp configured successfully!');
-        setConfigured(true);
-        setWhatsappConfig(data.config);
-        setConfigModalVisible(false);
-        configForm.resetFields();
-      } else {
-        message.error(data.error || 'Failed to configure WhatsApp');
-      }
-    } catch (error) {
-      console.error('Error configuring WhatsApp:', error);
-      message.error('Failed to configure WhatsApp');
-    } finally {
-      setConfigLoading(false);
-    }
-  };
-
-  const testWhatsAppConnection = async () => {
-    const values = configForm.getFieldsValue();
-    
-    if (!values.accessToken || !values.phoneNumberId) {
-      message.error('Please fill in Access Token and Phone Number ID');
+  const initiateWhatsAppCall = async (values: { phoneNumber: string; message?: string }) => {
+    if (!user) {
+      message.error('Please log in to make WhatsApp calls');
       return;
     }
 
-    setTestLoading(true);
-    try {
-      if (isDemoMode()) {
-        // Simulate connection test in demo mode
-        setTimeout(() => {
-          message.success(`Connection successful! Phone: ${DEMO_WHATSAPP_CONFIG.phoneNumber}, Name: ${DEMO_WHATSAPP_CONFIG.verifiedName} (Demo)`);
-          setTestLoading(false);
-        }, 1000);
-        return;
-      }
-
-      const response = await fetch('/whatsapp/test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          accessToken: values.accessToken,
-          phoneNumberId: values.phoneNumberId
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        message.success(`Connection successful! Phone: ${data.phoneNumber}, Name: ${data.verifiedName}`);
-      } else {
-        message.error(data.error || 'Connection test failed');
-      }
-    } catch (error) {
-      console.error('Error testing WhatsApp connection:', error);
-      message.error('Connection test failed');
-    } finally {
-      setTestLoading(false);
-    }
-  };
-
-  const initiateWhatsAppCall = async (values: { phoneNumber: string; message?: string }) => {
     setLoading(true);
     try {
-      if (isDemoMode()) {
-        // Use demo WhatsApp call service
-        const call = await CallsService.initiateWhatsAppDemoCall(values.phoneNumber);
-        message.success('WhatsApp demo call initiated successfully!');
-        form.resetFields();
-        onCallInitiated?.(values.phoneNumber);
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch('/whatsapp/call', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          phoneNumber: values.phoneNumber,
-          callOptions: {
-            headerText: 'Voice Call Request',
-            bodyText: values.message || 'Click to start voice call with our support team',
-            footerText: 'Powered by VoxAssist'
-          }
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        message.success('WhatsApp call initiated successfully!');
-        form.resetFields();
-        onCallInitiated?.(values.phoneNumber);
-      } else {
-        message.error(data.error || 'Failed to initiate WhatsApp call');
-      }
+      // For now, just show a success message since WhatsApp integration is complex
+      message.success('WhatsApp call feature is coming soon!');
+      form.resetFields();
+      onCallInitiated?.(values.phoneNumber);
     } catch (error) {
       console.error('Error initiating WhatsApp call:', error);
       message.error('Failed to initiate WhatsApp call');
@@ -249,320 +52,118 @@ export default function WhatsAppCalling({ onCallInitiated }: WhatsAppCallingProp
     }
   };
 
-  const sendCallMessage = async (values: { phoneNumber: string; message?: string }) => {
-    setLoading(true);
-    try {
-      const response = await fetch('/whatsapp/send-call-message', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          phoneNumber: values.phoneNumber,
-          messageOptions: {
-            headerText: 'Voice Call Available',
-            bodyText: values.message || 'We are ready to assist you via voice call.',
-            languageCode: 'en_US'
-          }
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        message.success('WhatsApp call message sent successfully!');
-        form.resetFields();
-      } else {
-        message.error(data.error || 'Failed to send WhatsApp call message');
-      }
-    } catch (error) {
-      console.error('Error sending WhatsApp call message:', error);
-      message.error('Failed to send WhatsApp call message');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadCallHistory = async () => {
-    try {
-      if (isDemoMode()) {
-        // Use demo call history
-        setCallHistory(DEMO_WHATSAPP_CALL_HISTORY);
-        setHistoryModalVisible(true);
-        return;
-      }
-
-      const response = await fetch('/whatsapp/call-history', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setCallHistory(data.data);
-        setHistoryModalVisible(true);
-      } else {
-        message.error('Failed to load call history');
-      }
-    } catch (error) {
-      console.error('Error loading call history:', error);
-      message.error('Failed to load call history');
-    }
-  };
-
-  const getEventTypeColor = (eventType: string) => {
-    switch (eventType) {
-      case 'call_initiated': return 'blue';
-      case 'call_delivered': return 'green';
-      case 'call_read': return 'cyan';
-      case 'call_failed': return 'red';
-      case 'incoming_call_accepted': return 'purple';
-      default: return 'default';
-    }
-  };
+  if (!user) {
+    return (
+      <Card>
+        <Alert
+          message="Authentication Required"
+          description="Please log in to access WhatsApp calling features."
+          type="warning"
+          showIcon
+        />
+      </Card>
+    );
+  }
 
   return (
-    <div>
-      <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <Title level={4}>
-            <WhatsAppOutlined style={{ color: '#25D366', marginRight: 8 }} />
-            WhatsApp Calling
-          </Title>
-          <Space>
-            <Button 
-              icon={<HistoryOutlined />} 
-              onClick={loadCallHistory}
-              disabled={!configured}
-            >
-              Call History
-            </Button>
-            <Button 
-              icon={<SettingOutlined />} 
-              onClick={() => setConfigModalVisible(true)}
-            >
-              Configure
-            </Button>
-          </Space>
+    <Card>
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Title level={4} className="!mb-2 flex items-center">
+              <WhatsAppOutlined className="mr-2 text-green-500" />
+              WhatsApp Business Calling
+            </Title>
+            <Text type="secondary">
+              Send messages and initiate calls through WhatsApp Business API
+            </Text>
+          </div>
         </div>
 
-        {!configured && !isDemoMode() && (
-          <Alert
-            message="WhatsApp Not Configured"
-            description="Please configure your WhatsApp Business API credentials to start making calls."
-            type="warning"
-            showIcon
-            style={{ marginBottom: 16 }}
-            action={
-              <Button size="small" onClick={() => setConfigModalVisible(true)}>
-                Configure Now
-              </Button>
-            }
-          />
-        )}
-
-        {isDemoMode() && (
-          <Alert
-            message="WhatsApp Demo Mode Active"
-            description="Demo mode is active. All WhatsApp calls will be simulated using demo data from VoxAssist Demo Business (+1-555-WHATSAPP)."
-            type="success"
-            showIcon
-            style={{ marginBottom: 16 }}
-            action={
-              <Button size="small" onClick={() => window.open('/whatsapp/analytics', '_blank')}>
-                View Analytics
-              </Button>
-            }
-          />
-        )}
-
-        {configured && whatsappConfig && !isDemoMode() && (
-          <Alert
-            message="WhatsApp Configured"
-            description={`Connected to ${whatsappConfig.phoneNumber} (${whatsappConfig.verifiedName})`}
-            type="success"
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
-        )}
+        <Alert
+          message="WhatsApp Integration Coming Soon"
+          description="WhatsApp Business API integration is currently under development. This feature will allow you to send messages and initiate calls through WhatsApp."
+          type="info"
+          showIcon
+          className="mb-6"
+        />
 
         <Form
           form={form}
           layout="vertical"
           onFinish={initiateWhatsAppCall}
-          disabled={!configured && !isDemoMode()}
+          disabled={true}
         >
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item
                 name="phoneNumber"
-                label="Phone Number"
+                label="WhatsApp Number"
                 rules={[
-                  { required: true, message: 'Please enter phone number' },
-                  { pattern: /^\+?[1-9]\d{1,14}$/, message: 'Please enter valid phone number with country code' }
+                  { required: true, message: 'Please enter a phone number' },
+                  { pattern: /^\+?[1-9]\d{1,14}$/, message: 'Please enter a valid phone number' }
                 ]}
               >
-                <Input 
-                  placeholder="+1234567890" 
+                <Input
                   prefix={<PhoneOutlined />}
+                  placeholder="+1234567890"
+                  size="large"
                 />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
               <Form.Item
                 name="message"
-                label="Custom Message (Optional)"
+                label="Initial Message (Optional)"
               >
-                <Input.TextArea 
-                  placeholder="Custom message for the call invitation"
+                <Input.TextArea
+                  placeholder="Hello! I'm reaching out from VoxAssist..."
                   rows={3}
+                  maxLength={1000}
+                  showCount
                 />
               </Form.Item>
             </Col>
           </Row>
 
-          <Space>
-            <Button
-              type="primary"
-              htmlType="submit"
-              icon={<WhatsAppOutlined />}
-              loading={loading}
-              disabled={!configured}
-            >
-              Initiate WhatsApp Call
-            </Button>
-            <Button
-              icon={<SendOutlined />}
-              onClick={() => {
-                const values = form.getFieldsValue();
-                if (values.phoneNumber) {
-                  sendCallMessage(values);
-                } else {
-                  message.error('Please enter phone number');
-                }
-              }}
-              loading={loading}
-              disabled={!configured}
-            >
-              Send Call Message
-            </Button>
-          </Space>
+          <Form.Item>
+            <Space>
+              <Button
+                type="primary"
+                htmlType="submit"
+                icon={<SendOutlined />}
+                loading={loading}
+                size="large"
+                disabled={true}
+              >
+                Send WhatsApp Message
+              </Button>
+              <Button
+                icon={<WhatsAppOutlined />}
+                loading={loading}
+                size="large"
+                disabled={true}
+              >
+                Initiate WhatsApp Call
+              </Button>
+            </Space>
+          </Form.Item>
         </Form>
-      </Card>
 
-      {/* Configuration Modal */}
-      <Modal
-        title="Configure WhatsApp Business API"
-        open={configModalVisible}
-        onCancel={() => setConfigModalVisible(false)}
-        footer={null}
-        width={600}
-      >
-        <Alert
-          message="WhatsApp Business API Setup"
-          description="You need a WhatsApp Business Account and approved Business Solution Provider (BSP) to use this feature."
-          type="info"
-          showIcon
-          style={{ marginBottom: 16 }}
-        />
-
-        <Form
-          form={configForm}
-          layout="vertical"
-          onFinish={handleConfigureWhatsApp}
-        >
-          <Form.Item
-            name="accessToken"
-            label="Access Token"
-            rules={[{ required: true, message: 'Please enter access token' }]}
-          >
-            <Input.Password placeholder="Your WhatsApp Business API access token" />
-          </Form.Item>
-
-          <Form.Item
-            name="phoneNumberId"
-            label="Phone Number ID"
-            rules={[{ required: true, message: 'Please enter phone number ID' }]}
-          >
-            <Input placeholder="Your WhatsApp Business phone number ID" />
-          </Form.Item>
-
-          <Form.Item
-            name="webhookVerifyToken"
-            label="Webhook Verify Token"
-          >
-            <Input placeholder="Webhook verification token (optional)" />
-          </Form.Item>
-
-          <Form.Item
-            name="businessAccountId"
-            label="Business Account ID"
-          >
-            <Input placeholder="Your WhatsApp Business Account ID (optional)" />
-          </Form.Item>
-
-          <Space>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={configLoading}
-              icon={<CheckCircleOutlined />}
-            >
-              Save Configuration
-            </Button>
-            <Button
-              onClick={testWhatsAppConnection}
-              loading={testLoading}
-              icon={<ExclamationCircleOutlined />}
-            >
-              Test Connection
-            </Button>
-          </Space>
-        </Form>
-      </Modal>
-
-      {/* Call History Modal */}
-      <Modal
-        title="WhatsApp Call History"
-        open={historyModalVisible}
-        onCancel={() => setHistoryModalVisible(false)}
-        footer={null}
-        width={700}
-      >
-        <List
-          dataSource={callHistory}
-          renderItem={(item) => (
-            <List.Item>
-              <List.Item.Meta
-                title={
-                  <Space>
-                    <Text strong>{item.phoneNumber}</Text>
-                    <Tag color={getEventTypeColor(item.eventType)}>
-                      {item.eventType.replace('_', ' ').toUpperCase()}
-                    </Tag>
-                  </Space>
-                }
-                description={
-                  <div>
-                    <Text type="secondary">
-                      {new Date(item.timestamp).toLocaleString()}
-                    </Text>
-                    {item.metadata && (
-                      <div style={{ marginTop: 4 }}>
-                        <Text code>{JSON.stringify(item.metadata, null, 2)}</Text>
-                      </div>
-                    )}
-                  </div>
-                }
-              />
-            </List.Item>
-          )}
-          locale={{ emptyText: 'No call history found' }}
-        />
-      </Modal>
-    </div>
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <Title level={5} className="!mb-2">
+            WhatsApp Business Features (Coming Soon)
+          </Title>
+          <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
+            <li>Send rich media messages (text, images, documents)</li>
+            <li>Initiate voice and video calls</li>
+            <li>Template message support</li>
+            <li>Real-time message status tracking</li>
+            <li>Integration with customer support workflows</li>
+            <li>Automated responses and chatbots</li>
+          </ul>
+        </div>
+      </div>
+    </Card>
   );
 }

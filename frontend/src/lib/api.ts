@@ -20,20 +20,12 @@ class ApiClient {
       },
     });
 
-    // Request interceptor to add auth token and demo mode header
+    // Request interceptor to add auth token
     this.client.interceptors.request.use(
       (config) => {
         const token = Cookies.get('auth-token');
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
-        }
-
-        // Add demo mode header if in demo mode
-        if (typeof window !== 'undefined') {
-          const isDemoMode = localStorage.getItem('voxassist_demo_mode') === 'true';
-          if (isDemoMode) {
-            config.headers['X-Demo-Mode'] = 'true';
-          }
         }
 
         return config;
@@ -75,10 +67,26 @@ class ApiClient {
         data: response.data as T
       };
     } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { error?: string } }; message?: string };
+      const axiosError = error as {
+        response?: {
+          data?: {
+            error?: string;
+            details?: string;
+            stack?: string;
+            [key: string]: unknown;
+          }
+        };
+        message?: string
+      };
+
+      // Preserve all error information from the backend
+      const errorData = axiosError.response?.data || {};
       throw {
         success: false,
-        error: axiosError.response?.data?.error || axiosError.message || 'An error occurred',
+        error: errorData.error || axiosError.message || 'An error occurred',
+        details: errorData.details,
+        stack: errorData.stack,
+        ...errorData // Include any additional error fields
       };
     }
   }

@@ -487,10 +487,20 @@ async function handleVoiceInput(ws, data) {
   try {
     const { callId, audioData, format = 'webm', audioMetrics = {} } = data;
 
-    logger.info(`Received voice input for call: ${callId}, format: ${format}, metrics:`, audioMetrics);
+    logger.info(`Received voice input for call: ${callId}, format: ${format}, size: ${audioData?.length || 0} chars, metrics:`, audioMetrics);
+
+    // Validate input data
+    if (!callId) {
+      throw new Error('Missing callId in voice input');
+    }
+
+    if (!audioData || audioData.length === 0) {
+      throw new Error('Missing or empty audioData in voice input');
+    }
 
     // Convert base64 audio data to buffer
     const audioBuffer = Buffer.from(audioData, 'base64');
+    logger.info(`Converted audio buffer: ${audioBuffer.length} bytes`);
 
     // Process voice input with comprehensive analysis
     const demoCallService = require('../services/demoCallService');
@@ -498,14 +508,30 @@ async function handleVoiceInput(ws, data) {
 
     if (result) {
       // The voice analysis is already broadcasted by the service
-      logger.info(`Voice input processed successfully for call: ${callId}`);
+      logger.info(`Voice input processed successfully for call: ${callId}, transcription: "${result.transcriptEntry?.text?.substring(0, 50)}..."`);
+
+      // Send success confirmation to client
+      ws.send(JSON.stringify({
+        type: 'voice_input_processed',
+        callId,
+        success: true,
+        transcriptId: result.transcriptEntry?.id
+      }));
+    } else {
+      logger.warn(`Voice input processing returned null for call: ${callId}`);
+      ws.send(JSON.stringify({
+        type: 'voice_input_processed',
+        callId,
+        success: false,
+        message: 'Voice processing returned no result'
+      }));
     }
 
   } catch (error) {
     logger.error('Error handling voice input:', error);
     ws.send(JSON.stringify({
       type: 'error',
-      message: 'Failed to process voice input'
+      message: `Failed to process voice input: ${error.message}`
     }));
   }
 }

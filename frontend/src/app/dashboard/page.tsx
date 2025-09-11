@@ -32,7 +32,7 @@ const formatDuration = (seconds: number): string => {
 };
 
 export default function DashboardPage() {
-  const { isDemoMode } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,9 +94,9 @@ export default function DashboardPage() {
   const stats = [
     {
       name: 'Total Calls',
-      stat: isDemoMode ? 247 : (analytics?.overview?.totalCalls || 0),
+      stat: analytics?.overview?.totalCalls || 0,
       icon: PhoneIcon,
-      change: isDemoMode ? 12.3 : calculatePercentageChange(
+      change: calculatePercentageChange(
         analytics?.callVolume?.thisWeek || 0,
         analytics?.callVolume?.lastWeek || 0
       ),
@@ -104,24 +104,24 @@ export default function DashboardPage() {
     },
     {
       name: 'Resolution Rate',
-      stat: isDemoMode ? '94.2%' : formatPercentage(analytics?.overview?.resolutionRate || 0),
+      stat: formatPercentage(analytics?.overview?.resolutionRate || 0),
       icon: CheckCircleIcon,
-      change: isDemoMode ? 2.8 : 2.1,
+      change: 2.1,
       changeType: 'increase' as const,
     },
     {
       name: 'Avg Duration',
-      stat: isDemoMode ? '3:42' : formatDuration(analytics?.overview?.avgCallDuration || 0),
+      stat: formatDuration(analytics?.overview?.avgCallDuration || 0),
       icon: ClockIcon,
-      change: isDemoMode ? -0.8 : -1.2,
+      change: -1.2,
       changeType: 'decrease' as const,
     },
     {
       name: 'Escalated',
-      stat: isDemoMode ? 14 : (analytics?.overview?.escalatedCalls || 0),
+      stat: analytics?.overview?.escalatedCalls || 0,
       icon: ExclamationTriangleIcon,
-      change: isDemoMode ? -1.2 : 0.5,
-      changeType: isDemoMode ? 'decrease' : 'increase' as const,
+      change: 0.5,
+      changeType: 'increase' as const,
     },
   ];
 
@@ -133,11 +133,6 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
               Dashboard
-              {isDemoMode && (
-                <span className="ml-3 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                  Demo Mode
-                </span>
-              )}
             </h1>
             <p className="mt-2 text-gray-600">
               Monitor your call performance and analytics
@@ -160,28 +155,26 @@ export default function DashboardPage() {
         )}
 
         {/* Demo Components - Simplified Layout */}
-        {isDemoMode && (
-          <div className="space-y-6">
-            <SelfDemoCall />
+        <div className="space-y-6">
+          <SelfDemoCall />
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <CallConfiguration
-                onStartCall={(config) => {
-                  console.log('Starting call with config:', config);
-                }}
-                onCreateWidget={(config) => {
-                  console.log('Creating widget with config:', config);
-                }}
-              />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <CallConfiguration
+              onStartCall={(config) => {
+                console.log('Starting call with config:', config);
+              }}
+              onCreateWidget={(config) => {
+                console.log('Creating widget with config:', config);
+              }}
+            />
 
-              <WhatsAppCalling
-                onCallInitiated={(phoneNumber: string) => {
-                  console.log('WhatsApp call initiated to:', phoneNumber);
-                }}
-              />
-            </div>
+            <WhatsAppCalling
+              onCallInitiated={(phoneNumber: string) => {
+                console.log('WhatsApp call initiated to:', phoneNumber);
+              }}
+            />
           </div>
-        )}
+        </div>
 
         {/* Simplified Stats Cards */}
         <Row gutter={[24, 24]}>
@@ -266,11 +259,6 @@ export default function DashboardPage() {
           title={
             <div className="flex items-center">
               <span>Recent Activity</span>
-              {isDemoMode && (
-                <Tag color="blue" className="ml-2 text-xs">
-                  Demo Data
-                </Tag>
-              )}
             </div>
           }
           className="shadow-sm"
@@ -282,10 +270,10 @@ export default function DashboardPage() {
                 children: (
                   <div>
                     <div className="text-sm text-gray-900 font-medium">
-                      {isDemoMode ? 'Self-demo call completed successfully' : 'Call completed with high satisfaction score'}
+                      Call completed with high satisfaction score
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      {isDemoMode ? 'Demo User (Self)' : 'Customer #1234'} • 2 hours ago
+                      Customer #1234 • 2 hours ago
                     </div>
                   </div>
                 ),
@@ -296,35 +284,35 @@ export default function DashboardPage() {
                 children: (
                   <div>
                     <div className="text-sm text-gray-900 font-medium">
-                      {isDemoMode ? 'WhatsApp demo call initiated' : 'New lead generated from campaign'}
+                      New lead generated from campaign
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      {isDemoMode ? 'WhatsApp User +1-555-0123' : 'Campaign: Q1 Outreach'} • 4 hours ago
+                      Campaign: Q1 Outreach • 4 hours ago
                     </div>
                   </div>
                 ),
                 color: 'blue',
               },
               {
-                dot: <ExclamationCircleOutlined style={{ fontSize: '16px', color: isDemoMode ? '#8b5cf6' : '#f59e0b' }} />,
+                dot: <ExclamationCircleOutlined style={{ fontSize: '16px', color: '#f59e0b' }} />,
                 children: (
                   <div>
                     <div className="text-sm text-gray-900 font-medium">
-                      {isDemoMode ? 'Demo call with advanced analysis' : 'Call escalated to human agent'}
+                      Call escalated to human agent
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      {isDemoMode ? 'Customer +1-555-0456' : 'Customer #5678'} • 6 hours ago
+                      Customer #5678 • 6 hours ago
                     </div>
                   </div>
                 ),
-                color: isDemoMode ? 'purple' : 'orange',
+                color: 'orange',
               },
             ]}
           />
         </Card>
 
         {/* Enhanced Widgets Preview */}
-        {isDemoMode && (
+        {user && (
           <div className="bg-white shadow rounded-lg p-6">
             <div className="flex items-center justify-between mb-6">
               <div>

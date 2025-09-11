@@ -56,7 +56,7 @@ interface SentimentData {
 export default function LiveCallPage() {
   const params = useParams();
   const callId = params.callId as string;
-  const { isDemoMode } = useAuth();
+  const { user } = useAuth();
 
   const [call, setCall] = useState<Call | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -395,7 +395,7 @@ export default function LiveCallPage() {
             
             <div className="flex items-center space-x-3">
               {/* Voice Interaction Toggle */}
-              {isDemoMode && call.status === 'active' && (
+              {call.status === 'active' && (
                 <Button
                   onClick={() => setIsVoiceInteractionEnabled(!isVoiceInteractionEnabled)}
                   className={isVoiceInteractionEnabled ? "bg-green-600 hover:bg-green-700" : "bg-purple-600 hover:bg-purple-700"}
@@ -432,7 +432,7 @@ export default function LiveCallPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Voice Interaction Section */}
-          {isDemoMode && isVoiceInteractionEnabled && (
+          {isVoiceInteractionEnabled && (
             <div className="lg:col-span-3">
               <VoiceInteractionManager
                 callId={callId}
@@ -450,7 +450,7 @@ export default function LiveCallPage() {
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-medium text-gray-900">Live Transcript</h2>
-                {isDemoMode && (
+                {user && (
                   <div className="flex items-center space-x-2">
                     {isVoiceInteractionEnabled && (
                       <span className={cn(
@@ -611,7 +611,7 @@ export default function LiveCallPage() {
             </div>
 
             {/* Demo Call Controls */}
-            {isDemoMode && call && (
+            {call && (
               <DemoCallControls
                 callStatus={call.status}
                 onCallEnd={() => {
@@ -641,7 +641,7 @@ export default function LiveCallPage() {
         </div>
 
         {/* Demo Analytics Section */}
-        {isDemoMode && call && (
+        {call && (
           <div className="mt-8">
             <DemoCallAnalytics
               callStatus={call.status}

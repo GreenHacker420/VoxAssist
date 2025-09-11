@@ -48,38 +48,24 @@ export default function LoginPage() {
           </div>
 
           <Alert
-            message="Demo Credentials"
+            message="Test Account"
             description={
               <Space direction="vertical" className="w-full mt-3">
-                <Text className="text-xs">Use these credentials to test the platform:</Text>
-                <Space direction="vertical" className="w-full" size="small">
-                  <div className="flex justify-between items-center bg-gray-50 rounded p-2">
-                    <div>
-                      <div className="text-xs font-medium">Admin Account</div>
-                      <div className="text-xs text-gray-600">admin@voxassist.com</div>
-                    </div>
-                    <Button
-                      size="small"
-                      type="primary"
-                      onClick={() => fillDemoCredentials('admin@voxassist.com', 'admin123')}
-                    >
-                      Use
-                    </Button>
+                <Text className="text-xs">Use this test account to explore the platform:</Text>
+                <div className="flex justify-between items-center bg-gray-50 rounded p-2">
+                  <div>
+                    <div className="text-xs font-medium">Test Account</div>
+                    <div className="text-xs text-gray-600">test@example.com</div>
+                    <div className="text-xs text-gray-500">Password: TestPassword123!</div>
                   </div>
-                  <div className="flex justify-between items-center bg-gray-50 rounded p-2">
-                    <div>
-                      <div className="text-xs font-medium">User Account</div>
-                      <div className="text-xs text-gray-600">user@voxassist.com</div>
-                    </div>
-                    <Button
-                      size="small"
-                      type="primary"
-                      onClick={() => fillDemoCredentials('user@voxassist.com', 'user123')}
-                    >
-                      Use
-                    </Button>
-                  </div>
-                </Space>
+                  <Button
+                    size="small"
+                    type="primary"
+                    onClick={() => fillDemoCredentials('test@example.com', 'TestPassword123!')}
+                  >
+                    Use Test Account
+                  </Button>
+                </div>
               </Space>
             }
             type="info"

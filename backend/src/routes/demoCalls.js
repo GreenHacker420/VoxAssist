@@ -1,158 +1,53 @@
 const express = require('express');
-const multer = require('multer');
 const router = express.Router();
-const logger = require('../utils/logger');
 const { authenticateToken } = require('../middleware/auth');
-const { authenticateTokenOrDemo, isDemoRequest } = require('../middleware/demoAuth');
-const emotionDetection = require('../services/emotionDetection');
-const geminiService = require('../services/geminiService');
 
-// Configure multer for audio file uploads
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('audio/') || file.mimetype === 'application/octet-stream') {
-      cb(null, true);
-    } else {
-      cb(new Error('Only audio files are allowed'), false);
-    }
-  }
-});
+// Demo call storage (in-memory for simplicity)
+const demoCalls = new Map();
 
-// In-memory storage for demo calls (in production, use Redis or database)
-const demoCallSessions = new Map();
-
-// Demo conversation templates
-const DEMO_CONVERSATION_TEMPLATES = {
-  CUSTOMER_SUPPORT: [
-    {
-      speaker: 'ai',
-      text: "Hello! I'm VoxAssist, your AI support agent. How can I help you today?",
-      sentiment: 'positive',
-      sentimentScore: 0.8,
-      emotions: { joy: 0.7, anger: 0.1, fear: 0.1, sadness: 0.1, surprise: 0.0 }
-    },
-    {
-      speaker: 'customer',
-      text: "Hi, I'm having trouble with my account login. I can't seem to access my dashboard.",
-      sentiment: 'negative',
-      sentimentScore: 0.3,
-      emotions: { joy: 0.1, anger: 0.4, fear: 0.2, sadness: 0.2, surprise: 0.1 }
-    },
-    {
-      speaker: 'ai',
-      text: "I understand your frustration with the login issue. Let me help you resolve this. Can you tell me what error message you're seeing?",
-      sentiment: 'positive',
-      sentimentScore: 0.7,
-      emotions: { joy: 0.6, anger: 0.1, fear: 0.1, sadness: 0.1, surprise: 0.1 }
-    },
-    {
-      speaker: 'customer',
-      text: "It says 'Invalid credentials' but I'm sure I'm using the right password.",
-      sentiment: 'negative',
-      sentimentScore: 0.4,
-      emotions: { joy: 0.1, anger: 0.3, fear: 0.2, sadness: 0.3, surprise: 0.1 }
-    },
-    {
-      speaker: 'ai',
-      text: "That's definitely frustrating. Let me check your account status. I can see there might be a temporary lock. I'll reset it for you right now.",
-      sentiment: 'positive',
-      sentimentScore: 0.8,
-      emotions: { joy: 0.7, anger: 0.1, fear: 0.1, sadness: 0.1, surprise: 0.0 }
-    },
-    {
-      speaker: 'customer',
-      text: "Oh great! That would be really helpful. Thank you so much.",
-      sentiment: 'positive',
-      sentimentScore: 0.9,
-      emotions: { joy: 0.8, anger: 0.1, fear: 0.0, sadness: 0.0, surprise: 0.1 }
-    },
-    {
-      speaker: 'ai',
-      text: "Perfect! I've reset your account. You should be able to log in now. Is there anything else I can help you with today?",
-      sentiment: 'positive',
-      sentimentScore: 0.9,
-      emotions: { joy: 0.8, anger: 0.0, fear: 0.0, sadness: 0.0, surprise: 0.2 }
-    },
-    {
-      speaker: 'customer',
-      text: "That worked perfectly! You've been incredibly helpful. Thank you!",
-      sentiment: 'positive',
-      sentimentScore: 0.95,
-      emotions: { joy: 0.9, anger: 0.0, fear: 0.0, sadness: 0.0, surprise: 0.1 }
-    }
-  ]
-};
-
-// POST /api/demo-calls - Initiate a new demo call
-router.post('/', authenticateTokenOrDemo, async (req, res) => {
+// Start a demo call
+router.post('/demo/start', authenticateToken, async (req, res) => {
   try {
-    const { template = 'CUSTOMER_SUPPORT', userId } = req.body;
-    const callId = `demo-call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const userId = req.user.id;
     
     const demoCall = {
-      id: callId,
-      userId: req.user.userId,
-      template,
+      id: `demo-call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      userId,
+      customerName: 'Demo Customer',
+      customerEmail: 'demo@example.com',
+      customerPhone: '+1-555-DEMO',
       status: 'active',
       startTime: new Date().toISOString(),
-      currentMessageIndex: 0,
-      transcript: [],
-      overallSentiment: {
-        overall: 'neutral',
-        score: 0.5,
-        emotions: { joy: 0.2, anger: 0.2, fear: 0.2, sadness: 0.2, surprise: 0.2 }
-      },
-      metadata: {
-        customerName: 'Demo Customer',
-        customerPhone: '+1-555-DEMO',
-        customerEmail: 'demo.customer@example.com'
-      }
+      sentiment: 'neutral',
+      sentimentScore: 0.5,
+      callSid: `demo-sid-${Date.now()}`,
+      transcript: '',
+      aiInsights: 'Demo call in progress'
     };
 
-    // Store demo call session
-    demoCallSessions.set(callId, demoCall);
-
-    // Start conversation simulation
-    const demoCallService = require('../services/demoCallService');
-    await demoCallService.startDemoCall(callId, req.user.userId, template);
-
-    logger.info(`Demo call initiated: ${callId} for user ${req.user.userId}`);
+    demoCalls.set(demoCall.id, demoCall);
 
     res.json({
       success: true,
-      data: {
-        id: callId,
-        status: 'active',
-        startTime: demoCall.startTime,
-        customerName: demoCall.metadata.customerName,
-        customerPhone: demoCall.metadata.customerPhone,
-        sentiment: 'neutral',
-        sentimentScore: 0.5,
-        // Include call type for frontend identification
-        callType: 'demo',
-        duration: 0
-      }
+      data: demoCall
     });
-
   } catch (error) {
-    logger.error(`Error initiating demo call: ${error.message}`);
+    console.error('Error starting demo call:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to initiate demo call'
+      error: 'Failed to start demo call',
+      details: error.message
     });
   }
 });
 
-// GET /api/demo-calls/:callId - Get demo call details
-router.get('/:callId', authenticateTokenOrDemo, async (req, res) => {
+// End a demo call
+router.post('/demo/:callId/end', authenticateToken, async (req, res) => {
   try {
     const { callId } = req.params;
-    const demoCall = demoCallSessions.get(callId);
+    const userId = req.user.id;
 
+    const demoCall = demoCalls.get(callId);
     if (!demoCall) {
       return res.status(404).json({
         success: false,
@@ -160,241 +55,41 @@ router.get('/:callId', authenticateTokenOrDemo, async (req, res) => {
       });
     }
 
-    // Check if user has access to this demo call
-    if (demoCall.userId !== req.user.userId) {
+    if (demoCall.userId !== userId) {
       return res.status(403).json({
         success: false,
-        error: 'Access denied'
+        error: 'Unauthorized to end this demo call'
       });
     }
 
-    res.json({
-      success: true,
-      data: {
-        id: demoCall.id,
-        status: demoCall.status,
-        startTime: demoCall.startTime,
-        endTime: demoCall.endTime,
-        transcript: demoCall.transcript,
-        sentiment: demoCall.overallSentiment.overall,
-        sentimentScore: demoCall.overallSentiment.score,
-        emotions: demoCall.overallSentiment.emotions,
-        customerName: demoCall.metadata.customerName,
-        customerPhone: demoCall.metadata.customerPhone,
-        aiInsights: demoCall.aiInsights || 'Demo call in progress'
-      }
-    });
-
-  } catch (error) {
-    logger.error(`Error fetching demo call: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch demo call'
-    });
-  }
-});
-
-// POST /api/demo-calls/:callId/next-message - Get next message in demo conversation
-router.post('/:callId/next-message', authenticateTokenOrDemo, async (req, res) => {
-  try {
-    const { callId } = req.params;
-    const demoCall = demoCallSessions.get(callId);
-
-    if (!demoCall) {
-      return res.status(404).json({
-        success: false,
-        error: 'Demo call not found'
-      });
-    }
-
-    if (demoCall.userId !== req.user.userId) {
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      });
-    }
-
-    if (demoCall.status !== 'active') {
-      return res.status(400).json({
-        success: false,
-        error: 'Demo call is not active'
-      });
-    }
-
-    const template = DEMO_CONVERSATION_TEMPLATES[demoCall.template];
-    if (!template || demoCall.currentMessageIndex >= template.length) {
-      // End of conversation
-      demoCall.status = 'completed';
-      demoCall.endTime = new Date().toISOString();
-      
-      return res.json({
-        success: true,
-        data: {
-          finished: true,
-          status: 'completed'
-        }
-      });
-    }
-
-    const nextMessage = template[demoCall.currentMessageIndex];
-    const transcriptEntry = {
-      id: `msg-${Date.now()}-${demoCall.currentMessageIndex}`,
-      speaker: nextMessage.speaker,
-      text: nextMessage.text,
-      timestamp: new Date().toISOString(),
-      confidence: 0.85 + Math.random() * 0.1,
-      sentiment: nextMessage.sentiment,
-      sentimentScore: nextMessage.sentimentScore,
-      emotions: nextMessage.emotions
-    };
-
-    // Add to transcript
-    demoCall.transcript.push(transcriptEntry);
-    demoCall.currentMessageIndex++;
-
-    // Update overall sentiment (weighted average)
-    const totalMessages = demoCall.transcript.length;
-    const currentWeight = 1 / totalMessages;
-    const previousWeight = (totalMessages - 1) / totalMessages;
-    
-    demoCall.overallSentiment.score = 
-      (demoCall.overallSentiment.score * previousWeight) + 
-      (nextMessage.sentimentScore * currentWeight);
-
-    // Update overall sentiment category
-    if (demoCall.overallSentiment.score > 0.6) {
-      demoCall.overallSentiment.overall = 'positive';
-    } else if (demoCall.overallSentiment.score < 0.4) {
-      demoCall.overallSentiment.overall = 'negative';
-    } else {
-      demoCall.overallSentiment.overall = 'neutral';
-    }
-
-    // Update emotions (weighted average)
-    Object.keys(demoCall.overallSentiment.emotions).forEach(emotion => {
-      demoCall.overallSentiment.emotions[emotion] = 
-        (demoCall.overallSentiment.emotions[emotion] * previousWeight) + 
-        (nextMessage.emotions[emotion] * currentWeight);
-    });
-
-    logger.info(`Demo call ${callId} - Next message: ${nextMessage.speaker}`);
-
-    res.json({
-      success: true,
-      data: {
-        message: transcriptEntry,
-        overallSentiment: demoCall.overallSentiment,
-        finished: false
-      }
-    });
-
-  } catch (error) {
-    logger.error(`Error getting next demo message: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get next message'
-    });
-  }
-});
-
-// DELETE /api/demo-calls/:callId - End demo call
-router.delete('/:callId', authenticateTokenOrDemo, async (req, res) => {
-  try {
-    const { callId } = req.params;
-    const demoCall = demoCallSessions.get(callId);
-
-    if (!demoCall) {
-      return res.status(404).json({
-        success: false,
-        error: 'Demo call not found'
-      });
-    }
-
-    if (demoCall.userId !== req.user.userId) {
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      });
-    }
-
-    // End the demo call
+    // Update call status
     demoCall.status = 'completed';
     demoCall.endTime = new Date().toISOString();
-    
-    // Calculate final insights
-    demoCall.aiInsights = `Demo call completed. Total messages: ${demoCall.transcript.length}. Overall sentiment: ${demoCall.overallSentiment.overall} (${Math.round(demoCall.overallSentiment.score * 100)}%)`;
+    demoCall.duration = Math.floor((new Date() - new Date(demoCall.startTime)) / 1000);
 
-    logger.info(`Demo call ended: ${callId}`);
+    demoCalls.set(callId, demoCall);
 
     res.json({
       success: true,
-      data: {
-        id: callId,
-        status: 'completed',
-        endTime: demoCall.endTime,
-        aiInsights: demoCall.aiInsights
-      }
+      data: demoCall
     });
-
   } catch (error) {
-    logger.error(`Error ending demo call: ${error.message}`);
+    console.error('Error ending demo call:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to end demo call'
+      error: 'Failed to end demo call',
+      details: error.message
     });
   }
 });
 
-// GET /api/demo-calls - Get all demo calls for user
-router.get('/', authenticateTokenOrDemo, async (req, res) => {
+// Process voice input for demo call
+router.post('/demo/:callId/voice', authenticateToken, async (req, res) => {
   try {
-    const userDemoCalls = Array.from(demoCallSessions.values())
-      .filter(call => call.userId === req.user.userId)
-      .map(call => ({
-        id: call.id,
-        status: call.status,
-        startTime: call.startTime,
-        endTime: call.endTime,
-        customerName: call.metadata.customerName,
-        customerPhone: call.metadata.customerPhone,
-        sentiment: call.overallSentiment.overall,
-        sentimentScore: call.overallSentiment.score,
-        messageCount: call.transcript.length
-      }));
+    const { callId } = req.params;
+    const userId = req.user.id;
 
-    res.json({
-      success: true,
-      data: userDemoCalls
-    });
-
-  } catch (error) {
-    logger.error(`Error fetching demo calls: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch demo calls'
-    });
-  }
-});
-
-// POST /api/demo-calls/:id/speech - Process customer speech input for real-time voice interaction
-router.post('/:id/speech', upload.single('audioData'), authenticateTokenOrDemo, async (req, res) => {
-  try {
-    const { id: callId } = req.params;
-    const { transcript, isInterim = 'false' } = req.body;
-    const audioFile = req.file;
-
-    // Convert string to boolean
-    const isInterimBool = isInterim === 'true' || isInterim === true;
-
-    if (!callId || !transcript) {
-      return res.status(400).json({
-        success: false,
-        error: 'Call ID and transcript are required'
-      });
-    }
-
-    // Get demo call session
-    const demoCall = demoCallSessions.get(callId);
+    const demoCall = demoCalls.get(callId);
     if (!demoCall) {
       return res.status(404).json({
         success: false,
@@ -402,51 +97,69 @@ router.post('/:id/speech', upload.single('audioData'), authenticateTokenOrDemo, 
       });
     }
 
-    // Verify user access
-    if (demoCall.userId !== req.user.userId) {
+    if (demoCall.userId !== userId) {
       return res.status(403).json({
         success: false,
-        error: 'Access denied'
+        error: 'Unauthorized to access this demo call'
       });
     }
 
-    logger.info(`Processing speech for demo call: ${callId}, transcript: "${transcript}", interim: ${isInterimBool}, hasAudio: ${!!audioFile}`);
+    // Parse analysis data
+    let analysis = {};
+    try {
+      analysis = JSON.parse(req.body.analysis || '{}');
+    } catch (e) {
+      analysis = {};
+    }
 
-    // Process customer speech with AI
-    const demoCallService = require('../services/demoCallService');
-    const result = await demoCallService.processCustomerSpeech(callId, transcript, isInterimBool, audioFile);
+    // Simulate voice processing
+    const mockTranscript = generateMockTranscript(analysis);
+    const mockSentiment = generateMockSentiment(analysis);
+    const mockAiResponse = generateMockAiResponse(mockTranscript);
+
+    // Update demo call with new data
+    const transcriptEntry = {
+      speaker: 'customer',
+      text: mockTranscript,
+      timestamp: new Date().toISOString(),
+      sentiment: mockSentiment.overall,
+      confidence: analysis.confidence || 0.8
+    };
+
+    // Store transcript (simple string for now)
+    demoCall.transcript += `Customer: ${mockTranscript}\n`;
+    demoCall.sentiment = mockSentiment.overall;
+    demoCall.sentimentScore = mockSentiment.score;
+
+    demoCalls.set(callId, demoCall);
 
     res.json({
       success: true,
       data: {
-        callId,
-        customerTranscript: transcript,
-        aiResponse: result.aiResponse,
-        audioUrl: result.audioUrl,
-        sentiment: result.sentiment,
-        isProcessing: result.isProcessing,
-        transcriptId: result.transcriptId,
-        isInterim: result.isInterim || false,
-        hasAudioFile: !!audioFile
+        transcript: mockTranscript,
+        confidence: analysis.confidence || 0.8,
+        sentiment: mockSentiment.overall,
+        sentimentData: mockSentiment,
+        aiResponse: mockAiResponse
       }
     });
-
   } catch (error) {
-    logger.error(`Error processing speech for demo call: ${error.message}`);
+    console.error('Error processing voice input:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to process speech input'
+      error: 'Failed to process voice input',
+      details: error.message
     });
   }
 });
 
-// POST /api/demo-calls/:id/enable-voice - Enable voice interaction mode
-router.post('/:id/enable-voice', authenticateTokenOrDemo, async (req, res) => {
+// Get demo call details
+router.get('/demo/:callId', authenticateToken, async (req, res) => {
   try {
-    const { id: callId } = req.params;
+    const { callId } = req.params;
+    const userId = req.user.id;
 
-    // Get demo call session
-    const demoCall = demoCallSessions.get(callId);
+    const demoCall = demoCalls.get(callId);
     if (!demoCall) {
       return res.status(404).json({
         success: false,
@@ -454,82 +167,116 @@ router.post('/:id/enable-voice', authenticateTokenOrDemo, async (req, res) => {
       });
     }
 
-    // Verify user access
-    if (demoCall.userId !== req.user.userId) {
+    if (demoCall.userId !== userId) {
       return res.status(403).json({
         success: false,
-        error: 'Access denied'
+        error: 'Unauthorized to access this demo call'
       });
     }
 
-    // Enable voice interaction
-    const demoCallService = require('../services/demoCallService');
-    demoCallService.enableVoiceInteraction(callId);
-
-    logger.info(`Voice interaction enabled for demo call: ${callId}`);
-
     res.json({
       success: true,
-      data: {
-        callId,
-        voiceInteractionEnabled: true,
-        message: 'Voice interaction enabled successfully'
-      }
+      data: demoCall
     });
-
   } catch (error) {
-    logger.error(`Error enabling voice interaction for demo call: ${error.message}`);
+    console.error('Error fetching demo call:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to enable voice interaction'
+      error: 'Failed to fetch demo call',
+      details: error.message
     });
   }
 });
 
-// POST /api/demo-calls/:id/disable-voice - Disable voice interaction mode
-router.post('/:id/disable-voice', authenticateTokenOrDemo, async (req, res) => {
-  try {
-    const { id: callId } = req.params;
+// Helper functions for mock data generation
+function generateMockTranscript(analysis) {
+  const mockPhrases = [
+    "Hello, I need help with my account",
+    "Can you help me with billing questions?",
+    "I'm having trouble with my order",
+    "What are your business hours?",
+    "I'd like to speak to a manager",
+    "Thank you for your help",
+    "Can you explain this charge?",
+    "I need to update my information"
+  ];
 
-    // Get demo call session
-    const demoCall = demoCallSessions.get(callId);
-    if (!demoCall) {
-      return res.status(404).json({
-        success: false,
-        error: 'Demo call not found'
-      });
-    }
-
-    // Verify user access
-    if (demoCall.userId !== req.user.userId) {
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      });
-    }
-
-    // Disable voice interaction
-    const demoCallService = require('../services/demoCallService');
-    demoCallService.disableVoiceInteraction(callId);
-
-    logger.info(`Voice interaction disabled for demo call: ${callId}`);
-
-    res.json({
-      success: true,
-      data: {
-        callId,
-        voiceInteractionEnabled: false,
-        message: 'Voice interaction disabled successfully'
-      }
-    });
-
-  } catch (error) {
-    logger.error(`Error disabling voice interaction for demo call: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to disable voice interaction'
-    });
+  // Use emotion to influence phrase selection
+  let selectedPhrases = mockPhrases;
+  if (analysis.emotion === 'angry') {
+    selectedPhrases = [
+      "I'm very frustrated with this service",
+      "This is completely unacceptable",
+      "I want to speak to your manager now",
+      "Why is this so difficult?"
+    ];
+  } else if (analysis.emotion === 'happy') {
+    selectedPhrases = [
+      "Thank you so much for your help",
+      "This is exactly what I needed",
+      "You've been very helpful",
+      "I appreciate your assistance"
+    ];
   }
-});
+
+  return selectedPhrases[Math.floor(Math.random() * selectedPhrases.length)];
+}
+
+function generateMockSentiment(analysis) {
+  // Base sentiment on voice analysis emotion
+  let overall = 'neutral';
+  let score = 0.5;
+
+  switch (analysis.emotion) {
+    case 'happy':
+    case 'excited':
+      overall = 'positive';
+      score = 0.7 + Math.random() * 0.3;
+      break;
+    case 'angry':
+    case 'sad':
+      overall = 'negative';
+      score = Math.random() * 0.4;
+      break;
+    default:
+      overall = 'neutral';
+      score = 0.4 + Math.random() * 0.2;
+  }
+
+  return {
+    overall,
+    score,
+    emotions: {
+      joy: analysis.emotion === 'happy' ? 0.8 : 0.2,
+      anger: analysis.emotion === 'angry' ? 0.8 : 0.1,
+      fear: analysis.emotion === 'sad' ? 0.6 : 0.1,
+      sadness: analysis.emotion === 'sad' ? 0.7 : 0.1,
+      surprise: analysis.emotion === 'excited' ? 0.7 : 0.1
+    }
+  };
+}
+
+function generateMockAiResponse(transcript) {
+  const responses = {
+    'account': "I'd be happy to help you with your account. Let me look that up for you.",
+    'billing': "I can assist you with billing questions. What specific information do you need?",
+    'order': "Let me check on your order status. Can you provide your order number?",
+    'hours': "Our business hours are Monday through Friday, 9 AM to 6 PM EST.",
+    'manager': "I understand you'd like to speak with a manager. Let me connect you right away.",
+    'help': "Thank you for contacting us. How can I assist you today?",
+    'charge': "I can help explain any charges on your account. Let me review that for you.",
+    'update': "I can help you update your information. What would you like to change?"
+  };
+
+  // Simple keyword matching for response selection
+  const lowerTranscript = transcript.toLowerCase();
+  for (const [keyword, response] of Object.entries(responses)) {
+    if (lowerTranscript.includes(keyword)) {
+      return response;
+    }
+  }
+
+  return "I understand. Let me help you with that. Can you provide more details?";
+}
 
 module.exports = router;

@@ -1,6 +1,3 @@
-// VoxAssist Prisma Schema
-// PostgreSQL database schema for AI Voice Support Agent
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,58 +8,54 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  name         String
-  role         String   @default("user") // Only 'user' or 'agent' roles
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // Relations
+  id                Int                @id @default(autoincrement())
+  email             String             @unique
+  name              String
+  role              String             @default("user")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  isActive          Boolean            @default(true) @map("is_active")
+  password          String
+  auditLogs         AuditLog[]
+  calls             Call[]
+  notifications     Notification[]
+  scriptVersions    ScriptVersion[]
   userOrganizations UserOrganization[]
   sessions          UserSession[]
-  calls             Call[]
-  scriptVersions    ScriptVersion[]
-  auditLogs         AuditLog[]
-  notifications     Notification[]
 
   @@map("users")
 }
 
 model Organization {
-  id        Int      @id @default(autoincrement())
-  name      String
-  domain    String?
-  settings  Json?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  userOrganizations UserOrganization[]
+  id                Int                @id @default(autoincrement())
+  name              String
+  domain            String?
+  settings          Json?
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  aiConfigs         AiConfig?
   calls             Call[]
   campaigns         Campaign[]
-  scripts           Script[]
   contacts          Contact[]
-  knowledgeBase     KnowledgeBase[]
-  escalationRules   EscalationRule[]
   dailyAnalytics    DailyAnalytics[]
+  escalationRules   EscalationRule[]
+  knowledgeBase     KnowledgeBase[]
+  providerConfigs   ProviderConfig[]
+  scripts           Script[]
+  userOrganizations UserOrganization[]
+  voiceConfigs      VoiceConfig?
   voiceSettings     VoiceSettings[]
   widgets           Widget[]
-  providerConfigs   ProviderConfig[]
 
   @@map("organizations")
 }
 
 model UserOrganization {
-  userId         Int    @map("user_id")
-  organizationId Int    @map("organization_id")
-  role           String @default("member")
-
-  // Relations
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         Int          @map("user_id")
+  organizationId Int          @map("organization_id")
+  role           String       @default("member")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, organizationId])
   @@map("user_organizations")
@@ -76,41 +69,35 @@ model UserSession {
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_sessions")
 }
 
 model Call {
-  id             Int       @id @default(autoincrement())
-  callSid        String?   @unique @map("call_sid")
-  organizationId Int?      @map("organization_id")
-  userId         Int?      @map("user_id")
-  customerPhone  String    @map("customer_phone")
-  twilioPhone    String?   @map("twilio_phone")
-  status         String    @default("initiated")
-  duration       Int       @default(0)
-  startTime      DateTime  @default(now()) @map("start_time")
-  endTime        DateTime? @map("end_time")
-  recordingUrl   String?   @map("recording_url")
-  metadata       Json? // Store AI insights, transcripts, and call metadata
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
-
-  // Relations
-  organization     Organization?     @relation(fields: [organizationId], references: [id])
-  user             User?             @relation(fields: [userId], references: [id])
+  id               Int               @id @default(autoincrement())
+  callSid          String?           @unique @map("call_sid")
+  organizationId   Int?              @map("organization_id")
+  customerPhone    String            @map("customer_phone")
+  twilioPhone      String?           @map("twilio_phone")
+  status           String            @default("initiated")
+  duration         Int               @default(0)
+  startTime        DateTime          @default(now()) @map("start_time")
+  endTime          DateTime?         @map("end_time")
+  recordingUrl     String?           @map("recording_url")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  userId           Int?              @map("user_id")
+  metadata         Json?
+  campaignId       Int?              @map("campaign_id")
+  contactId        Int?              @map("contact_id")
+  callInteractions CallInteraction[]
   campaign         Campaign?         @relation(fields: [campaignId], references: [id])
   contact          Contact?          @relation(fields: [contactId], references: [id])
-  callInteractions CallInteraction[]
-  survey           Survey?
+  organization     Organization?     @relation(fields: [organizationId], references: [id])
+  user             User?             @relation(fields: [userId], references: [id])
   providerCalls    ProviderCall[]
-
-  // Additional fields for campaign support
-  campaignId Int? @map("campaign_id")
-  contactId  Int? @map("contact_id")
+  survey           Survey?
 
   @@index([organizationId])
   @@index([userId])
@@ -125,7 +112,7 @@ model CallInteraction {
   id             Int      @id @default(autoincrement())
   callId         Int      @map("call_id")
   sequenceNumber Int      @map("sequence_number")
-  speaker        String // 'customer' or 'ai'
+  speaker        String
   content        String
   audioUrl       String?  @map("audio_url")
   timestamp      DateTime @default(now())
@@ -133,9 +120,7 @@ model CallInteraction {
   intent         String?
   sentiment      String?
   sentimentScore Decimal? @map("sentiment_score") @db.Decimal(3, 2)
-
-  // Relations
-  call Call @relation(fields: [callId], references: [id], onDelete: Cascade)
+  call           Call     @relation(fields: [callId], references: [id], onDelete: Cascade)
 
   @@index([callId])
   @@index([timestamp])
@@ -143,32 +128,30 @@ model CallInteraction {
 }
 
 model Campaign {
-  id             Int       @id @default(autoincrement())
-  organizationId Int       @map("organization_id")
+  id             Int               @id @default(autoincrement())
+  organizationId Int               @map("organization_id")
   name           String
   description    String?
-  type           String    @default("outbound") // outbound, inbound
-  status         String    @default("draft") // draft, active, paused, completed, cancelled
-  scriptId       Int?      @map("script_id")
-  script         String?   @db.Text
-  scheduledStart DateTime? @map("scheduled_start")
-  scheduledEnd   DateTime? @map("scheduled_end")
-  startedAt      DateTime? @map("started_at")
-  pausedAt       DateTime? @map("paused_at")
-  resumedAt      DateTime? @map("resumed_at")
-  completedAt    DateTime? @map("completed_at")
-  settings       Json? // Campaign-specific settings
-  progress       Int       @default(0) // Percentage completion
-  successRate    Decimal   @default(0) @map("success_rate") @db.Decimal(5, 2)
-  createdBy      Int       @map("created_by")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
-
-  // Relations
-  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  scriptRef    Script?           @relation(fields: [scriptId], references: [id])
-  calls        Call[]
-  contacts     CampaignContact[]
+  type           String            @default("outbound")
+  status         String            @default("draft")
+  scriptId       Int?              @map("script_id")
+  script         String?
+  scheduledStart DateTime?         @map("scheduled_start")
+  scheduledEnd   DateTime?         @map("scheduled_end")
+  startedAt      DateTime?         @map("started_at")
+  pausedAt       DateTime?         @map("paused_at")
+  resumedAt      DateTime?         @map("resumed_at")
+  completedAt    DateTime?         @map("completed_at")
+  settings       Json?
+  progress       Int               @default(0)
+  successRate    Decimal           @default(0) @map("success_rate") @db.Decimal(5, 2)
+  createdBy      Int               @map("created_by")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+  calls          Call[]
+  contacts       CampaignContact[]
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  scriptRef      Script?           @relation(fields: [scriptId], references: [id])
 
   @@index([organizationId])
   @@index([scriptId])
@@ -178,27 +161,25 @@ model Campaign {
 }
 
 model Script {
-  id             Int       @id @default(autoincrement())
-  organizationId Int       @map("organization_id")
+  id             Int             @id @default(autoincrement())
+  organizationId Int             @map("organization_id")
   name           String
   description    String?
-  type           String    @default("conversation") // conversation, greeting, closing
-  content        String    @db.Text
-  category       String    @default("general")
-  tags           Json? // Array of tags
-  isActive       Boolean   @default(false) @map("is_active")
-  version        Int       @default(1)
-  activatedAt    DateTime? @map("activated_at")
-  deactivatedAt  DateTime? @map("deactivated_at")
-  createdBy      Int       @map("created_by")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
-
-  // Relations
-  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  versions     ScriptVersion[]
-  campaigns    Campaign[]
-  tests        ScriptTest[]
+  type           String          @default("conversation")
+  content        String
+  category       String          @default("general")
+  tags           Json?
+  isActive       Boolean         @default(false) @map("is_active")
+  version        Int             @default(1)
+  activatedAt    DateTime?       @map("activated_at")
+  deactivatedAt  DateTime?       @map("deactivated_at")
+  createdBy      Int             @map("created_by")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  campaigns      Campaign[]
+  tests          ScriptTest[]
+  versions       ScriptVersion[]
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([isActive])
@@ -207,18 +188,16 @@ model Script {
 }
 
 model ScriptVersion {
-  id           Int      @id @default(autoincrement())
-  scriptId     Int      @map("script_id")
-  version      Int
-  content      String   @db.Text
-  isActive     Boolean  @default(false) @map("is_active")
-  revertedFrom Int?     @map("reverted_from") // Version number this was reverted from
-  createdBy    Int      @map("created_by")
-  createdAt    DateTime @default(now()) @map("created_at")
-
-  // Relations
-  script        Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
-  createdByUser User   @relation(fields: [createdBy], references: [id])
+  id            Int      @id @default(autoincrement())
+  scriptId      Int      @map("script_id")
+  version       Int
+  content       String
+  isActive      Boolean  @default(false) @map("is_active")
+  revertedFrom  Int?     @map("reverted_from")
+  createdBy     Int      @map("created_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+  createdByUser User     @relation(fields: [createdBy], references: [id])
+  script        Script   @relation(fields: [scriptId], references: [id], onDelete: Cascade)
 
   @@unique([scriptId, version])
   @@index([scriptId])
@@ -228,15 +207,13 @@ model ScriptVersion {
 model ScriptTest {
   id             Int      @id @default(autoincrement())
   scriptId       Int      @map("script_id")
-  input          String   @db.Text
-  response       String   @db.Text
+  input          String
+  response       String
   confidence     Decimal  @db.Decimal(3, 2)
-  processingTime Int      @map("processing_time") // milliseconds
+  processingTime Int      @map("processing_time")
   testedBy       Int      @map("tested_by")
   createdAt      DateTime @default(now()) @map("created_at")
-
-  // Relations
-  script Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  script         Script   @relation(fields: [scriptId], references: [id], onDelete: Cascade)
 
   @@index([scriptId])
   @@index([createdAt])
@@ -244,19 +221,17 @@ model ScriptTest {
 }
 
 model Contact {
-  id             Int      @id @default(autoincrement())
-  organizationId Int      @map("organization_id")
+  id             Int               @id @default(autoincrement())
+  organizationId Int               @map("organization_id")
   name           String
   email          String?
   phone          String
-  metadata       Json? // Additional contact information
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  campaigns    CampaignContact[]
-  calls        Call[]
+  metadata       Json?
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+  calls          Call[]
+  campaigns      CampaignContact[]
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, phone])
   @@index([organizationId])
@@ -268,29 +243,25 @@ model CampaignContact {
   campaignId Int      @map("campaign_id")
   contactId  Int      @map("contact_id")
   addedAt    DateTime @default(now()) @map("added_at")
-
-  // Relations
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  contact  Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact    Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   @@id([campaignId, contactId])
   @@map("campaign_contacts")
 }
 
 model KnowledgeBase {
-  id             Int      @id @default(autoincrement())
-  organizationId Int?     @map("organization_id")
+  id             Int           @id @default(autoincrement())
+  organizationId Int?          @map("organization_id")
   category       String
   question       String
   answer         String
   keywords       Json?
-  priority       Int      @default(1)
-  active         Boolean  @default(true)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  organization Organization? @relation(fields: [organizationId], references: [id])
+  priority       Int           @default(1)
+  active         Boolean       @default(true)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId])
   @@index([category])
@@ -298,34 +269,30 @@ model KnowledgeBase {
 }
 
 model EscalationRule {
-  id             Int      @id @default(autoincrement())
-  organizationId Int?     @map("organization_id")
+  id             Int           @id @default(autoincrement())
+  organizationId Int?          @map("organization_id")
   name           String
   conditions     Json
   action         String
-  priority       Int      @default(1)
-  active         Boolean  @default(true)
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  // Relations
-  organization Organization? @relation(fields: [organizationId], references: [id])
+  priority       Int           @default(1)
+  active         Boolean       @default(true)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@map("escalation_rules")
 }
 
 model DailyAnalytics {
-  id             Int      @id @default(autoincrement())
-  organizationId Int?     @map("organization_id")
-  date           DateTime @db.Date
-  totalCalls     Int      @default(0) @map("total_calls")
-  resolvedCalls  Int      @default(0) @map("resolved_calls")
-  escalatedCalls Int      @default(0) @map("escalated_calls")
-  avgDuration    Decimal  @default(0) @map("avg_duration") @db.Decimal(8, 2)
-  avgSentiment   Decimal  @default(0) @map("avg_sentiment") @db.Decimal(3, 2)
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  // Relations
-  organization Organization? @relation(fields: [organizationId], references: [id])
+  id             Int           @id @default(autoincrement())
+  organizationId Int?          @map("organization_id")
+  date           DateTime      @db.Date
+  totalCalls     Int           @default(0) @map("total_calls")
+  resolvedCalls  Int           @default(0) @map("resolved_calls")
+  escalatedCalls Int           @default(0) @map("escalated_calls")
+  avgDuration    Decimal       @default(0) @map("avg_duration") @db.Decimal(8, 2)
+  avgSentiment   Decimal       @default(0) @map("avg_sentiment") @db.Decimal(3, 2)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, date], name: "unique_org_date")
   @@index([organizationId, date])
@@ -333,19 +300,17 @@ model DailyAnalytics {
 }
 
 model VoiceSettings {
-  id              Int      @id @default(autoincrement())
-  organizationId  Int?     @map("organization_id")
-  voiceId         String   @map("voice_id")
-  voiceName       String   @map("voice_name")
-  stability       Decimal  @default(0.5) @db.Decimal(3, 2)
-  similarityBoost Decimal  @default(0.5) @map("similarity_boost") @db.Decimal(3, 2)
-  style           Decimal  @default(0.0) @db.Decimal(3, 2)
-  useSpeakerBoost Boolean  @default(true) @map("use_speaker_boost")
-  active          Boolean  @default(true)
-  createdAt       DateTime @default(now()) @map("created_at")
-
-  // Relations
-  organization Organization? @relation(fields: [organizationId], references: [id])
+  id              Int           @id @default(autoincrement())
+  organizationId  Int?          @map("organization_id")
+  voiceId         String        @map("voice_id")
+  voiceName       String        @map("voice_name")
+  stability       Decimal       @default(0.5) @db.Decimal(3, 2)
+  similarityBoost Decimal       @default(0.5) @map("similarity_boost") @db.Decimal(3, 2)
+  style           Decimal       @default(0.0) @db.Decimal(3, 2)
+  useSpeakerBoost Boolean       @default(true) @map("use_speaker_boost")
+  active          Boolean       @default(true)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  organization    Organization? @relation(fields: [organizationId], references: [id])
 
   @@map("voice_settings")
 }
@@ -379,9 +344,7 @@ model AuditLog {
   ipAddress  String?  @map("ip_address")
   userAgent  String?  @map("user_agent")
   createdAt  DateTime @default(now()) @map("created_at")
-
-  // Relations
-  user User? @relation(fields: [userId], references: [id])
+  user       User?    @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([action])
@@ -396,9 +359,7 @@ model Survey {
   rating    Int
   comment   String?
   createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  call Call @relation(fields: [callId], references: [id], onDelete: Cascade)
+  call      Call     @relation(fields: [callId], references: [id], onDelete: Cascade)
 
   @@map("surveys")
 }
@@ -412,55 +373,49 @@ model Notification {
   createdAt DateTime @default(now()) @map("created_at")
   userId    Int?     @map("user_id")
   actionUrl String?  @map("action_url")
-
-  user User? @relation(fields: [userId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@map("notifications")
 }
 
-// Widget Configuration Models
 model Widget {
-  id             String   @id @default(uuid())
-  organizationId Int      @map("organization_id")
-  name           String
-  isActive       Boolean  @default(true) @map("is_active")
-  contextUrl     String?  @map("context_url")
-  appearance     Json // Colors, position, size, branding
-  behavior       Json // Auto-open, greeting message, language
-  permissions    Json // GDPR settings, data collection preferences
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  widgetSessions  WidgetSession[]
+  id              String           @id @default(uuid())
+  organizationId  Int              @map("organization_id")
+  name            String
+  isActive        Boolean          @default(true) @map("is_active")
+  contextUrl      String?          @map("context_url")
+  appearance      Json
+  behavior        Json
+  permissions     Json
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
   contextExtracts ContextExtract[]
+  widgetSessions  WidgetSession[]
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@map("widgets")
 }
 
 model WidgetSession {
-  id             String    @id @default(uuid())
-  widgetId       String    @map("widget_id")
-  sessionId      String    @unique @map("session_id")
-  visitorId      String?   @map("visitor_id")
-  ipAddress      String?   @map("ip_address")
-  userAgent      String?   @map("user_agent")
-  referrerUrl    String?   @map("referrer_url")
-  status         String    @default("active") // active, ended, escalated
-  startTime      DateTime  @default(now()) @map("start_time")
-  endTime        DateTime? @map("end_time")
-  duration       Int       @default(0) // in seconds
-  messageCount   Int       @default(0) @map("message_count")
-  sentiment      String?
-  sentimentScore Decimal?  @map("sentiment_score") @db.Decimal(3, 2)
-  metadata       Json? // Browser info, device type, etc.
-
-  // Relations
-  widget             Widget              @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  id                 String              @id @default(uuid())
+  widgetId           String              @map("widget_id")
+  sessionId          String              @unique @map("session_id")
+  visitorId          String?             @map("visitor_id")
+  ipAddress          String?             @map("ip_address")
+  userAgent          String?             @map("user_agent")
+  referrerUrl        String?             @map("referrer_url")
+  status             String              @default("active")
+  startTime          DateTime            @default(now()) @map("start_time")
+  endTime            DateTime?           @map("end_time")
+  duration           Int                 @default(0)
+  messageCount       Int                 @default(0) @map("message_count")
+  sentiment          String?
+  sentimentScore     Decimal?            @map("sentiment_score") @db.Decimal(3, 2)
+  metadata           Json?
   widgetInteractions WidgetInteraction[]
+  widget             Widget              @relation(fields: [widgetId], references: [id], onDelete: Cascade)
 
   @@index([widgetId])
   @@index([startTime])
@@ -468,21 +423,19 @@ model WidgetSession {
 }
 
 model WidgetInteraction {
-  id             Int      @id @default(autoincrement())
-  sessionId      String   @map("session_id")
-  sequenceNumber Int      @map("sequence_number")
-  speaker        String // 'visitor' or 'ai'
+  id             Int           @id @default(autoincrement())
+  sessionId      String        @map("session_id")
+  sequenceNumber Int           @map("sequence_number")
+  speaker        String
   content        String
-  audioUrl       String?  @map("audio_url")
-  timestamp      DateTime @default(now())
-  aiConfidence   Decimal? @map("ai_confidence") @db.Decimal(3, 2)
+  audioUrl       String?       @map("audio_url")
+  timestamp      DateTime      @default(now())
+  aiConfidence   Decimal?      @map("ai_confidence") @db.Decimal(3, 2)
   intent         String?
   sentiment      String?
-  sentimentScore Decimal? @map("sentiment_score") @db.Decimal(3, 2)
-  processingTime Int?     @map("processing_time") // milliseconds
-
-  // Relations
-  session WidgetSession @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
+  sentimentScore Decimal?      @map("sentiment_score") @db.Decimal(3, 2)
+  processingTime Int?          @map("processing_time")
+  session        WidgetSession @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
 
   @@index([sessionId])
   @@index([timestamp])
@@ -495,39 +448,66 @@ model ContextExtract {
   url         String
   title       String?
   description String?
-  content     String   @db.Text
+  content     String
   keywords    Json?
-  metadata    Json? // Page structure, forms, etc.
+  metadata    Json?
   extractedAt DateTime @default(now()) @map("extracted_at")
   isActive    Boolean  @default(true) @map("is_active")
-
-  // Relations
-  widget Widget @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  widget      Widget   @relation(fields: [widgetId], references: [id], onDelete: Cascade)
 
   @@unique([widgetId, url])
   @@index([widgetId])
   @@map("context_extracts")
 }
 
-// Provider Configuration Models
-model ProviderConfig {
-  id             String    @id @default(uuid())
-  organizationId Int       @map("organization_id")
-  name           String // Display name for the configuration
-  type           String // 'phone' or 'whatsapp'
-  provider       String // 'twilio', 'plivo', 'ringg', 'sarvam'
-  isActive       Boolean   @default(true) @map("is_active")
-  isPrimary      Boolean   @default(false) @map("is_primary")
-  credentials    Json // Encrypted API keys and secrets
-  settings       Json // Provider-specific settings
-  webhookUrl     String?   @map("webhook_url")
-  lastTested     DateTime? @map("last_tested")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+model AiConfig {
+  id                    Int          @id @default(autoincrement())
+  organizationId        Int          @unique @map("organization_id")
+  provider              String       @default("openai")
+  model                 String       @default("gpt-4")
+  temperature           Decimal      @default(0.7) @db.Decimal(3, 2)
+  maxTokens             Int          @default(1000) @map("max_tokens")
+  systemPrompt          String       @default("You are a helpful AI assistant for customer support.") @map("system_prompt")
+  enableFunctionCalling Boolean      @default(true) @map("enable_function_calling")
+  createdAt             DateTime     @default(now()) @map("created_at")
+  updatedAt             DateTime     @updatedAt @map("updated_at")
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  // Relations
-  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  calls        ProviderCall[]
+  @@map("ai_configs")
+}
+
+model VoiceConfig {
+  id             Int          @id @default(autoincrement())
+  organizationId Int          @unique @map("organization_id")
+  provider       String       @default("elevenlabs")
+  voiceId        String       @default("default") @map("voice_id")
+  speed          Decimal      @default(1.0) @db.Decimal(3, 2)
+  pitch          Decimal      @default(1.0) @db.Decimal(3, 2)
+  stability      Decimal      @default(0.5) @db.Decimal(3, 2)
+  clarity        Decimal      @default(0.75) @db.Decimal(3, 2)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("voice_configs")
+}
+
+model ProviderConfig {
+  id             String         @id @default(uuid())
+  organizationId Int            @map("organization_id")
+  name           String
+  type           String
+  provider       String
+  isActive       Boolean        @default(true) @map("is_active")
+  isPrimary      Boolean        @default(false) @map("is_primary")
+  credentials    Json
+  settings       Json
+  webhookUrl     String?        @map("webhook_url")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  lastTested     DateTime?      @map("last_tested")
+  calls          ProviderCall[]
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, type, isPrimary], name: "unique_primary_provider")
   @@index([organizationId])
@@ -536,27 +516,25 @@ model ProviderConfig {
 }
 
 model ProviderCall {
-  id               String    @id @default(uuid())
-  providerConfigId String    @map("provider_config_id")
-  callId           Int?      @map("call_id")
-  externalCallId   String    @map("external_call_id") // Provider's call ID
-  type             String // 'phone' or 'whatsapp'
-  status           String    @default("initiated")
-  fromNumber       String    @map("from_number")
-  toNumber         String    @map("to_number")
-  duration         Int       @default(0)
-  cost             Decimal?  @db.Decimal(10, 4)
-  currency         String?   @default("USD")
-  startTime        DateTime  @default(now()) @map("start_time")
-  endTime          DateTime? @map("end_time")
-  recordingUrl     String?   @map("recording_url")
-  errorCode        String?   @map("error_code")
-  errorMessage     String?   @map("error_message")
-  metadata         Json? // Provider-specific metadata
-
-  // Relations
-  providerConfig ProviderConfig @relation(fields: [providerConfigId], references: [id], onDelete: Cascade)
-  call           Call?          @relation(fields: [callId], references: [id])
+  id               String         @id @default(uuid())
+  providerConfigId String         @map("provider_config_id")
+  callId           Int?           @map("call_id")
+  externalCallId   String         @map("external_call_id")
+  type             String
+  status           String         @default("initiated")
+  fromNumber       String         @map("from_number")
+  toNumber         String         @map("to_number")
+  duration         Int            @default(0)
+  cost             Decimal?       @db.Decimal(10, 4)
+  currency         String?        @default("USD")
+  startTime        DateTime       @default(now()) @map("start_time")
+  endTime          DateTime?      @map("end_time")
+  recordingUrl     String?        @map("recording_url")
+  errorCode        String?        @map("error_code")
+  errorMessage     String?        @map("error_message")
+  metadata         Json?
+  call             Call?          @relation(fields: [callId], references: [id])
+  providerConfig   ProviderConfig @relation(fields: [providerConfigId], references: [id], onDelete: Cascade)
 
   @@index([providerConfigId])
   @@index([callId])

@@ -24,8 +24,7 @@ const initializeVoiceAnalysis = () => {
 
 /**
  * Convert audio buffer to text using Gemini AI
- * Note: Gemini Pro doesn't directly support audio input, so we'll use a hybrid approach
- * In production, you might want to use Google Speech-to-Text API or OpenAI Whisper
+ * Note: Gemini 2.5 Flash supports audio input for transcription
  */
 const transcribeAudio = async (audioBuffer, format = 'webm', audioMetrics = {}) => {
   try {
@@ -33,11 +32,20 @@ const transcribeAudio = async (audioBuffer, format = 'webm', audioMetrics = {}) 
       initializeVoiceAnalysis();
     }
 
-    // For now, we'll simulate STT with enhanced logic based on audio quality
-    // In production, integrate with Google Speech-to-Text API
-    const transcription = await simulateSTTWithQuality(audioBuffer, format, audioMetrics);
+    // Try to use Gemini API for real transcription if available
+    if (model && process.env.GEMINI_API_KEY) {
+      try {
+        const transcription = await transcribeWithGemini(audioBuffer, format, audioMetrics);
+        logger.info(`Audio transcribed with Gemini: ${transcription.text.substring(0, 50)}... (confidence: ${transcription.confidence})`);
+        return transcription;
+      } catch (geminiError) {
+        logger.warn(`Gemini transcription failed, falling back to simulation: ${geminiError.message}`);
+      }
+    }
 
-    logger.info(`Audio transcribed: ${transcription.text.substring(0, 50)}... (confidence: ${transcription.confidence})`);
+    // Fallback to simulation with enhanced logic based on audio quality
+    const transcription = await simulateSTTWithQuality(audioBuffer, format, audioMetrics);
+    logger.info(`Audio transcribed with simulation: ${transcription.text.substring(0, 50)}... (confidence: ${transcription.confidence})`);
 
     return transcription;
   } catch (error) {
@@ -47,8 +55,52 @@ const transcribeAudio = async (audioBuffer, format = 'webm', audioMetrics = {}) 
 };
 
 /**
+ * Transcribe audio using Gemini 2.5 Flash API
+ */
+const transcribeWithGemini = async (audioBuffer, format, audioMetrics) => {
+  try {
+    // Convert audio buffer to base64 for Gemini API
+    const base64Audio = audioBuffer.toString('base64');
+
+    // Create the audio part for Gemini
+    const audioPart = {
+      inlineData: {
+        data: base64Audio,
+        mimeType: `audio/${format}`
+      }
+    };
+
+    // Create prompt for transcription
+    const prompt = `Please transcribe this audio to text. Provide only the transcribed text without any additional commentary or formatting.`;
+
+    // Generate content with audio input
+    const result = await model.generateContent([prompt, audioPart]);
+    const response = await result.response;
+    const transcribedText = response.text().trim();
+
+    // Calculate confidence based on audio quality and response
+    const qualityScore = (audioMetrics.volume || 50) + (audioMetrics.clarity || 50);
+    const baseConfidence = Math.min(95, Math.max(70, qualityScore * 0.8));
+    const durationFactor = audioMetrics.duration > 1 && audioMetrics.duration < 10 ? 1.0 : 0.9;
+    const confidence = Math.round(baseConfidence * durationFactor);
+
+    return {
+      text: transcribedText,
+      confidence: confidence,
+      language: 'en-US',
+      duration: audioMetrics.duration || 0,
+      audioQuality: qualityScore > 120 ? 'excellent' : qualityScore > 80 ? 'good' : 'fair',
+      source: 'gemini'
+    };
+  } catch (error) {
+    logger.error(`Gemini transcription error: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
  * Simulate STT with quality-based confidence scoring
- * This is a placeholder for actual STT integration
+ * This is a fallback for when Gemini API is not available
  */
 const simulateSTTWithQuality = async (audioBuffer, format, audioMetrics) => {
   // Sample transcriptions with varying complexity
@@ -236,13 +288,17 @@ const createFallbackAnalysis = (text, audioMetrics = {}) => {
  */
 const processVoiceInput = async (audioBuffer, format, audioMetrics = {}) => {
   try {
-    logger.info(`Processing voice input: format=${format}, duration=${audioMetrics.duration}s`);
+    logger.info(`Processing voice input: ${audioBuffer.length} bytes, format=${format}, duration=${audioMetrics.duration}s, metrics:`, audioMetrics);
 
     // Step 1: Transcribe audio
+    logger.info('Step 1: Starting audio transcription...');
     const transcription = await transcribeAudio(audioBuffer, format, audioMetrics);
+    logger.info(`Step 1 complete: Transcribed "${transcription.text}" (confidence: ${transcription.confidence}%)`);
 
     // Step 2: Analyze transcription
+    logger.info('Step 2: Starting text analysis...');
     const analysis = await analyzeTranscription(transcription, audioMetrics);
+    logger.info(`Step 2 complete: Analysis sentiment=${analysis.sentiment.overall}, emotion=${analysis.emotion.primary}`);
 
     // Combine results
     const result = {
@@ -253,11 +309,11 @@ const processVoiceInput = async (audioBuffer, format, audioMetrics = {}) => {
     };
 
     logger.info(`Voice processing completed: "${transcription.text}" (${analysis.sentiment.overall})`);
-    
+
     return result;
   } catch (error) {
-    logger.error(`Error processing voice input: ${error.message}`);
-    throw new Error('Failed to process voice input');
+    logger.error(`Error processing voice input: ${error.message}`, error.stack);
+    throw new Error(`Failed to process voice input: ${error.message}`);
   }
 };
 

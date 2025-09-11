@@ -10,14 +10,53 @@ import {
   ArrowTrendingUpIcon
 } from '@heroicons/react/24/outline';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts';
-import { DEMO_WHATSAPP_ANALYTICS } from '@/demo/whatsapp';
+
 
 interface WhatsAppAnalyticsProps {
   isDemoMode?: boolean;
 }
 
 export default function WhatsAppAnalytics({ isDemoMode = false }: WhatsAppAnalyticsProps) {
-  const [analytics] = useState(DEMO_WHATSAPP_ANALYTICS);
+  const [analytics] = useState({
+    totalMessages: 1247,
+    deliveredMessages: 1198,
+    readMessages: 1089,
+    failedMessages: 49,
+    averageResponseTime: 142,
+    activeConversations: 23,
+    messagesByHour: [
+      { hour: '00:00', messages: 12 },
+      { hour: '01:00', messages: 8 },
+      { hour: '02:00', messages: 5 },
+      { hour: '03:00', messages: 3 },
+      { hour: '04:00', messages: 7 },
+      { hour: '05:00', messages: 15 },
+      { hour: '06:00', messages: 28 },
+      { hour: '07:00', messages: 45 },
+      { hour: '08:00', messages: 67 },
+      { hour: '09:00', messages: 89 },
+      { hour: '10:00', messages: 102 },
+      { hour: '11:00', messages: 95 },
+      { hour: '12:00', messages: 87 },
+      { hour: '13:00', messages: 76 },
+      { hour: '14:00', messages: 82 },
+      { hour: '15:00', messages: 94 },
+      { hour: '16:00', messages: 88 },
+      { hour: '17:00', messages: 79 },
+      { hour: '18:00', messages: 65 },
+      { hour: '19:00', messages: 52 },
+      { hour: '20:00', messages: 38 },
+      { hour: '21:00', messages: 29 },
+      { hour: '22:00', messages: 21 },
+      { hour: '23:00', messages: 16 }
+    ],
+    messageTypes: [
+      { name: 'Text', value: 856, color: '#10B981' },
+      { name: 'Media', value: 234, color: '#3B82F6' },
+      { name: 'Document', value: 89, color: '#8B5CF6' },
+      { name: 'Location', value: 68, color: '#F59E0B' }
+    ]
+  });
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('24h');
 
   const formatDuration = (seconds: number) => {

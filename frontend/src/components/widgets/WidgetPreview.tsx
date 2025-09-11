@@ -159,11 +159,13 @@ export default function WidgetPreview({ widget, className = '' }: WidgetPreviewP
           display: 'flex',
           flexDirection: 'column',
         }}
-        bodyStyle={{
-          padding: 0,
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
+        styles={{
+          body: {
+            padding: 0,
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+          }
         }}
       >
         {/* Header */}

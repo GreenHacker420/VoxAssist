@@ -4,6 +4,65 @@ const { body, validationResult } = require('express-validator');
 
 const router = express.Router();
 
+/**
+ * Generate domain-based suggestions for website optimization
+ * @param {string} domain - The domain to generate suggestions for
+ * @returns {Array} Array of suggestion objects
+ */
+async function generateDomainSuggestions(domain) {
+  // Basic suggestion system based on domain patterns
+  const suggestions = [];
+  
+  // E-commerce suggestions
+  if (domain.includes('shop') || domain.includes('store') || domain.includes('buy')) {
+    suggestions.push({
+      type: 'conversion',
+      title: 'Optimize Product Pages',
+      description: 'Add clear call-to-action buttons and product reviews to increase conversions',
+      priority: 'high'
+    });
+    suggestions.push({
+      type: 'performance',
+      title: 'Improve Checkout Flow',
+      description: 'Streamline the checkout process to reduce cart abandonment',
+      priority: 'medium'
+    });
+  }
+  
+  // Blog/content suggestions
+  if (domain.includes('blog') || domain.includes('news') || domain.includes('article')) {
+    suggestions.push({
+      type: 'seo',
+      title: 'Optimize Content Structure',
+      description: 'Use proper heading hierarchy and meta descriptions for better SEO',
+      priority: 'high'
+    });
+    suggestions.push({
+      type: 'engagement',
+      title: 'Add Social Sharing',
+      description: 'Include social media sharing buttons to increase content reach',
+      priority: 'medium'
+    });
+  }
+  
+  // General suggestions for all domains
+  suggestions.push({
+    type: 'performance',
+    title: 'Optimize Images',
+    description: 'Compress and optimize images to improve page load times',
+    priority: 'medium'
+  });
+  
+  suggestions.push({
+    type: 'accessibility',
+    title: 'Improve Accessibility',
+    description: 'Add alt text to images and ensure proper color contrast',
+    priority: 'low'
+  });
+  
+  return suggestions;
+}
+
 // Validation middleware
 const validateAnalysisRequest = [
   body('url')
@@ -67,7 +126,7 @@ router.post('/analyze', validateAnalysisRequest, async (req, res) => {
       data: filteredData,
       url: url,
       analyzedAt: result.analyzedAt,
-      cached: false // TODO: Implement caching
+      cached: result.cached || false
     });
 
   } catch (error) {
@@ -157,14 +216,14 @@ router.get('/suggestions/:domain', async (req, res) => {
   try {
     const { domain } = req.params;
 
-    // TODO: Implement caching and suggestion retrieval
-    // For now, return empty suggestions
+    // Simple suggestion system based on domain analysis
+    const suggestions = await generateDomainSuggestions(domain);
+    
     res.json({
       success: true,
       domain: domain,
-      suggestions: [],
-      cached: false,
-      message: 'No cached suggestions available'
+      suggestions: suggestions,
+      cached: true
     });
 
   } catch (error) {

@@ -30,7 +30,6 @@ import {
   EditOutlined,
   DeleteOutlined
 } from '@ant-design/icons';
-import { DEMO_WIDGETS, DemoWidget } from '@/demo/widgets';
 import { useAuth } from '@/contexts/AuthContext';
 import { WidgetsService, type WidgetDTO } from '@/services/widgets';
 import WidgetCreationWizard from './WidgetCreationWizard';
@@ -45,7 +44,7 @@ interface WidgetsDashboardProps {
 
 export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardProps = {}) {
   const router = useRouter();
-  const { user, isDemoMode } = useAuth();
+  const { user } = useAuth();
   const { message } = App.useApp();
   const [widgets, setWidgets] = useState<WidgetDTO[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,55 +53,14 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [editingWidget, setEditingWidget] = useState<WidgetDTO | null>(null);
 
-  // Convert demo widgets to WidgetDTO format
-  const convertDemoWidgets = (demoWidgets: DemoWidget[]): WidgetDTO[] => {
-    return demoWidgets.map(widget => ({
-      id: widget.id,
-      name: widget.name,
-      contextUrl: `https://example.com/${widget.id}`, // Demo URL
-      organizationId: 1,
-      isActive: widget.isActive,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      appearance: {
-        position: 'bottom-right',
-        primaryColor: '#3B82F6',
-        secondaryColor: '#1E40AF',
-        textColor: '#FFFFFF',
-        backgroundColor: '#FFFFFF',
-        borderRadius: '12px',
-        size: 'medium',
-        theme: 'light'
-      },
-      behavior: {
-        autoOpen: false,
-        autoOpenDelay: 5000,
-        greeting: 'Hi! How can I help you today?',
-        language: 'en',
-        enableVoice: true,
-        enableText: true,
-        enableFileUpload: true,
-        showBranding: true
-      },
-      permissions: {
-        collectPersonalData: false,
-        storeCookies: true,
-        recordAudio: false,
-        shareWithThirdParty: false,
-        allowedDomains: []
-      }
-    }));
-  };
 
-  // Load widgets (demo data or real API call)
+
+  // Load widgets from database
   useEffect(() => {
     const loadWidgets = async () => {
       setIsLoading(true);
       try {
-        if (isDemoMode) {
-          // Use demo data converted to WidgetDTO format
-          setWidgets(convertDemoWidgets(DEMO_WIDGETS));
-        } else if (user?.organizationId) {
+        if (user?.organizationId) {
           const response = await WidgetsService.list(user.organizationId);
           setWidgets(response);
         } else {
@@ -117,7 +75,7 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
     };
 
     loadWidgets();
-  }, [isDemoMode, user?.organizationId]);
+  }, [user?.organizationId]);
 
   // Handler functions
   const handleCreateWidget = () => {
@@ -162,16 +120,12 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
     if (!confirmed) return;
 
     try {
-      if (isDemoMode) {
-        // Demo mode - just remove from local state
-        setWidgets(prev => prev.filter(w => w.id !== widgetId));
-        message.success('Widget deleted successfully (demo mode)');
-      } else {
+       
         // Real mode - call API
         await WidgetsService.remove(widgetId);
         setWidgets(prev => prev.filter(w => w.id !== widgetId));
         message.success('Widget deleted successfully');
-      }
+      
     } catch (error) {
       console.error('Failed to delete widget:', error);
       message.error('Failed to delete widget');
@@ -216,7 +170,7 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
     ]
   });
 
-  if (!user?.organizationId && !isDemoMode) {
+  if (!user?.organizationId ) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4">
         <div className="text-center">
@@ -241,9 +195,6 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
             <div>
               <Title level={2} className="!mb-2 !text-gray-900">
                 Widget Management
-                {isDemoMode && (
-                  <Tag color="blue" className="ml-3">Demo Mode</Tag>
-                )}
               </Title>
               <Paragraph className="text-lg text-gray-600">
                 Create, manage, and deploy your communication widgets
@@ -287,7 +238,7 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
               <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                 <Statistic
                   title="Total Interactions"
-                  value={isDemoMode ? 2847 : 0}
+                  value={0}
                   prefix={<BarChartOutlined className="text-purple-500" />}
                   valueStyle={{ color: '#8B5CF6' }}
                 />
@@ -401,19 +352,13 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
                     <div className="flex items-center justify-between">
                       <Text className="text-sm text-gray-600">Position:</Text>
                       <Tag>
-                        {'appearance' in widget
-                          ? widget.appearance?.position
-                          : (widget as DemoWidget).configuration?.position
-                        }
+                        {widget.appearance?.position || 'bottom-right'}
                       </Tag>
                     </div>
                     <div className="flex items-center justify-between">
                       <Text className="text-sm text-gray-600">Theme:</Text>
                       <Tag>
-                        {'appearance' in widget
-                          ? widget.appearance?.theme
-                          : (widget as DemoWidget).configuration?.theme
-                        }
+                        {widget.appearance?.theme || 'light'}
                       </Tag>
                     </div>
                     <div className="flex items-center justify-between">

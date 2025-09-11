@@ -62,23 +62,24 @@ export default function AISettings({ onSave, onTest }: AISettingsProps) {
   });
 
   useEffect(() => {
-    // Load existing configuration
     loadAIConfig();
   }, []);
 
   const loadAIConfig = async () => {
     try {
-      // TODO: Implement API call to load AI configuration
-      // const response = await fetch('/settings/ai');
-      // const data = await response.json();
-      // setConfig(data);
-      // form.setFieldsValue(data);
+      const response = await fetch('/api/settings/ai', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
       
-      // For now, use default config
-      form.setFieldsValue(config);
+      if (response.ok) {
+        const data = await response.json();
+        setConfig(data);
+        form.setFieldsValue(data);
+      }
     } catch (error) {
       console.error('Failed to load AI configuration:', error);
-      message.error('Failed to load AI configuration');
     }
   };
 
@@ -88,12 +89,18 @@ export default function AISettings({ onSave, onTest }: AISettingsProps) {
       if (onSave) {
         await onSave(values);
       } else {
-        // TODO: Implement default save logic
-        // await fetch('/settings/ai', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(values)
-        // });
+        const response = await fetch('/api/settings/ai', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          },
+          body: JSON.stringify(values)
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to save AI configuration');
+        }
       }
       setConfig(values);
       message.success('AI settings saved successfully');
@@ -114,14 +121,21 @@ export default function AISettings({ onSave, onTest }: AISettingsProps) {
       if (onTest) {
         testResult = await onTest(values);
       } else {
-        // TODO: Implement default test logic
-        // const response = await fetch('/settings/ai/test', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(values)
-        // });
-        // testResult = response.ok;
-        testResult = true; // Mock success for now
+        const response = await fetch('/api/settings/ai/test', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          },
+          body: JSON.stringify(values)
+        });
+        
+        if (!response.ok) {
+          throw new Error('AI test failed');
+        }
+        
+        const result = await response.json();
+        testResult = result.success;
       }
       
       if (testResult) {

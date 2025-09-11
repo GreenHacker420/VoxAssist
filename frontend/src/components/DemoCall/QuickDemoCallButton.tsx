@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Modal, Typography, Space } from 'antd';
+import { useRouter } from 'next/navigation';
+import { Button, Modal, Space, Typography } from 'antd';
 import { PhoneOutlined, ExperimentOutlined } from '@ant-design/icons';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
 import DemoCallInterface from './DemoCallInterface';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface QuickDemoCallButtonProps {
   size?: 'small' | 'middle' | 'large';
@@ -22,14 +22,14 @@ export default function QuickDemoCallButton({
   block = false,
   className = ''
 }: QuickDemoCallButtonProps) {
-  const { isDemoMode } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [showDemoModal, setShowDemoModal] = useState(false);
 
   const handleQuickDemo = () => {
-    if (!isDemoMode) {
-      // Redirect to demo mode or login
-      router.push('/login?demo=true');
+    if (!user) {
+      // Redirect to login
+      router.push('/login');
       return;
     }
     
@@ -46,7 +46,7 @@ export default function QuickDemoCallButton({
         block={block}
         className={className}
       >
-        {isDemoMode ? 'Try Demo Call' : 'Demo VoxAssist'}
+        {user ? 'Try Demo Call' : 'Login for Demo'}
       </Button>
 
       <Modal
