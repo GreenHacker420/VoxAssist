@@ -3,18 +3,16 @@
 import { useState } from 'react';
 import {
   PhoneIcon,
-  CheckCircleIcon,
-  XCircleIcon,
+  ChatBubbleLeftRightIcon,
   ClockIcon,
-  ChartBarIcon,
-  ArrowTrendingUpIcon
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  ArrowTrendingUpIcon,
+  XCircleIcon
 } from '@heroicons/react/24/outline';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts';
 
-
-interface WhatsAppAnalyticsProps {}
-
-export default function WhatsAppAnalytics({}: WhatsAppAnalyticsProps = {}) {
+export default function WhatsAppAnalytics() {
   const [analytics] = useState({
     totalMessages: 1247,
     deliveredMessages: 1198,
