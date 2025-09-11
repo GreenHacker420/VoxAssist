@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
 import CallConfiguration from '@/components/CallConfiguration';
 import WhatsAppCalling from '@/components/WhatsAppCalling';
-import SelfDemoCall from '@/components/SelfDemoCall';
 import { ExclamationTriangleIcon, ArrowUpIcon, ArrowDownIcon, PhoneIcon, CheckCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { ResponsiveContainer, BarChart, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Line } from 'recharts';
 import { AnalyticsService } from '@/services/analytics';
@@ -154,27 +153,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Demo Components - Simplified Layout */}
-        <div className="space-y-6">
-          <SelfDemoCall />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <CallConfiguration
-              onStartCall={(config) => {
-                console.log('Starting call with config:', config);
-              }}
-              onCreateWidget={(config) => {
-                console.log('Creating widget with config:', config);
-              }}
-            />
-
-            <WhatsAppCalling
-              onCallInitiated={(phoneNumber: string) => {
-                console.log('WhatsApp call initiated to:', phoneNumber);
-              }}
-            />
-          </div>
-        </div>
 
         {/* Simplified Stats Cards */}
         <Row gutter={[24, 24]}>
@@ -218,10 +197,11 @@ export default function DashboardPage() {
         </Row>
 
         {/* Simplified Charts Section */}
-        <Row gutter={[24, 24]}>
+        
+        <Row gutter={[16, 16]}>
           <Col xs={24} lg={12}>
-            <Card title="Call Volume by Hour" className="h-full">
-              <div className="h-64">
+            <Card title="Call Volume by Hour" size="small">
+              <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={analytics?.hourlyDistribution || []}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -236,17 +216,17 @@ export default function DashboardPage() {
           </Col>
 
           <Col xs={24} lg={12}>
-            <Card title="Sentiment Trends" className="h-full">
-              <div className="h-64">
+            <Card title="Sentiment Trends" size="small">
+              <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={analytics?.sentimentTrends || []}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="date" />
                     <YAxis />
                     <Tooltip />
-                    <Line type="monotone" dataKey="positive" stroke="#10B981" strokeWidth={3} dot={{ r: 4 }} />
-                    <Line type="monotone" dataKey="neutral" stroke="#6B7280" strokeWidth={3} dot={{ r: 4 }} />
-                    <Line type="monotone" dataKey="negative" stroke="#EF4444" strokeWidth={3} dot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="positive" stroke="#10B981" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="neutral" stroke="#6B7280" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="negative" stroke="#EF4444" strokeWidth={2} dot={{ r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -255,18 +235,16 @@ export default function DashboardPage() {
         </Row>
 
         {/* Enhanced Recent Activity with Timeline */}
+        <div>
         <Card
-          title={
-            <div className="flex items-center">
-              <span>Recent Activity</span>
-            </div>
-          }
+          title="Recent Activity"
+          size="small"
           className="shadow-sm"
         >
           <Timeline
             items={[
               {
-                dot: <CheckCircleOutlined style={{ fontSize: '16px', color: '#10b981' }} />,
+                dot: <CheckCircleOutlined style={{ fontSize: '14px', color: '#10b981' }} />,
                 children: (
                   <div>
                     <div className="text-sm text-gray-900 font-medium">
@@ -280,7 +258,7 @@ export default function DashboardPage() {
                 color: 'green',
               },
               {
-                dot: <PhoneOutlined style={{ fontSize: '16px', color: '#3b82f6' }} />,
+                dot: <PhoneOutlined style={{ fontSize: '14px', color: '#3b82f6' }} />,
                 children: (
                   <div>
                     <div className="text-sm text-gray-900 font-medium">
@@ -294,7 +272,7 @@ export default function DashboardPage() {
                 color: 'blue',
               },
               {
-                dot: <ExclamationCircleOutlined style={{ fontSize: '16px', color: '#f59e0b' }} />,
+                dot: <ExclamationCircleOutlined style={{ fontSize: '14px', color: '#f59e0b' }} />,
                 children: (
                   <div>
                     <div className="text-sm text-gray-900 font-medium">
@@ -310,7 +288,7 @@ export default function DashboardPage() {
             ]}
           />
         </Card>
-
+        </div>
         {/* Enhanced Widgets Preview */}
         {user && (
           <div className="bg-white shadow rounded-lg p-6">
@@ -409,6 +387,26 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+
+
+        {/* Core Features */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <CallConfiguration
+            onStartCall={(config) => {
+              console.log('Starting call with config:', config);
+            }}
+            onCreateWidget={(config) => {
+              console.log('Creating widget with config:', config);
+            }}
+          />
+
+          <WhatsAppCalling
+            onCallInitiated={(phoneNumber: string) => {
+              console.log('WhatsApp call initiated to:', phoneNumber);
+            }}
+          />
+        </div>
       </div>
     </DashboardLayout>
   );

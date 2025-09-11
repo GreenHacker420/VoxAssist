@@ -12,11 +12,9 @@ import {
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts';
 
 
-interface WhatsAppAnalyticsProps {
-  isDemoMode?: boolean;
-}
+interface WhatsAppAnalyticsProps {}
 
-export default function WhatsAppAnalytics({ isDemoMode = false }: WhatsAppAnalyticsProps) {
+export default function WhatsAppAnalytics({}: WhatsAppAnalyticsProps = {}) {
   const [analytics] = useState({
     totalMessages: 1247,
     deliveredMessages: 1198,
@@ -121,11 +119,6 @@ export default function WhatsAppAnalytics({ isDemoMode = false }: WhatsAppAnalyt
           <h2 className="text-2xl font-bold text-gray-900">WhatsApp Calling Analytics</h2>
           <p className="text-gray-600 mt-1">
             Monitor your WhatsApp Business API calling performance
-            {isDemoMode && (
-              <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                Demo Data
-              </span>
-            )}
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -349,23 +342,6 @@ export default function WhatsAppAnalytics({ isDemoMode = false }: WhatsAppAnalyt
         </div>
       </div>
 
-      {/* Demo Information */}
-      {isDemoMode && (
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-6 border border-green-200">
-          <div className="flex items-start">
-            <ChartBarIcon className="h-6 w-6 text-green-500 mt-1" />
-            <div className="ml-3">
-              <h4 className="text-lg font-semibold text-green-900">WhatsApp Demo Analytics</h4>
-              <p className="text-green-700 mt-2">
-                This dashboard shows simulated WhatsApp Business API calling analytics. In production, 
-                VoxAssist provides real-time insights into your WhatsApp voice call performance, 
-                including delivery rates, call completion metrics, customer engagement analytics, 
-                and integration with your existing WhatsApp Business workflows.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

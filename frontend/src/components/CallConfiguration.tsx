@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Card, Radio, Select, Button, Space, Typography, Row, Col } from 'antd';
 import { PhoneOutlined, AppstoreOutlined } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
 
 const { Title } = Typography;
 
@@ -18,6 +19,7 @@ export interface CallConfig {
 }
 
 export default function CallConfiguration({ onStartCall, onCreateWidget }: CallConfigurationProps) {
+  const router = useRouter();
   const [config, setConfig] = useState<CallConfig>({
     callType: 'voice',
     provider: 'twilio',
@@ -96,14 +98,19 @@ export default function CallConfiguration({ onStartCall, onCreateWidget }: CallC
           <Button
             type="primary"
             icon={<PhoneOutlined />}
-            onClick={() => onStartCall?.(config)}
+            onClick={() => {
+              router.push('/calls');
+            }}
           >
             Start Call
           </Button>
           <Button
             icon={<AppstoreOutlined />}
-            onClick={() => onCreateWidget?.(config)}
+            onClick={() => {
+              router.push('/widgets');
+            }}
           >
+            
             Create Widget
           </Button>
         </Space>
