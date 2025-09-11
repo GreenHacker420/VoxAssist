@@ -83,11 +83,44 @@ app.use('/audio', express.static('public/audio'));
 
 // Health check
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
+  res.status(200).json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
     service: 'VoxAssist Backend'
   });
+});
+
+// Test audio generation endpoint
+app.post('/api/test-audio', async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ success: false, error: 'Text is required' });
+    }
+
+    const demoCallService = require('./services/demoCallService');
+    const audioResult = await demoCallService.generateAIAudio(text);
+
+    if (audioResult && audioResult.audioData) {
+      res.json({
+        success: true,
+        audioData: audioResult.audioData,
+        contentType: audioResult.contentType,
+        size: audioResult.audioData.length
+      });
+    } else {
+      res.json({
+        success: false,
+        error: 'Failed to generate audio'
+      });
+    }
+  } catch (error) {
+    console.error('Test audio generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
 // Routes with audit middleware

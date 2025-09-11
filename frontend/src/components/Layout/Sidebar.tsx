@@ -25,7 +25,7 @@ const navigation = [
   { key: 'contacts', name: 'Contacts', href: '/contacts', icon: <TeamOutlined /> },
   { key: 'scripts', name: 'Scripts', href: '/scripts', icon: <FileTextOutlined /> },
   { key: 'analytics', name: 'Analytics', href: '/analytics', icon: <BarChartOutlined /> },
-  { key: 'webhooks', name: 'Webhooks', href: '/webhooks', icon: <LinkOutlined /> },
+  // { key: 'webhooks', name: 'Webhooks', href: '/webhooks', icon: <LinkOutlined /> },
   { key: 'settings', name: 'Settings', href: '/settings', icon: <SettingOutlined /> },
   { key: 'providers', name: 'Providers', href: '/settings/providers', icon: <PhoneOutlined /> },
 ];

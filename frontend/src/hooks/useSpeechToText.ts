@@ -78,7 +78,8 @@ export function useSpeechToText(options: SpeechRecognitionOptions = {}) {
       (globalThis as { SpeechRecognition?: new () => unknown; webkitSpeechRecognition?: new () => unknown }).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      console.warn('Web Speech API not supported, will use fallback mode');
+      const context = voiceErrorHandler.createErrorContext('useSpeechToText', 'initialize');
+      voiceErrorHandler.handleError('SPEECH_RECOGNITION_NOT_SUPPORTED', context);
       fallbackModeRef.current = true;
       return null;
     }
@@ -161,9 +162,22 @@ export function useSpeechToText(options: SpeechRecognitionOptions = {}) {
 
     recognition.onerror = (event: { error: string }) => {
       console.error('Speech recognition error:', event.error);
-      const errorMessage = `Speech recognition error: ${event.error}`;
-      setError(errorMessage);
-      options.onError?.(errorMessage);
+      const context = voiceErrorHandler.createErrorContext('useSpeechToText', 'recognition', { error: event.error });
+      
+      // Map Web Speech API errors to our error codes
+      let errorCode = 'SPEECH_RECOGNITION_FAILED';
+      if (event.error === 'no-speech') {
+        errorCode = 'SPEECH_NO_MATCH';
+      } else if (event.error === 'not-allowed') {
+        errorCode = 'MICROPHONE_ACCESS_DENIED';
+      }
+      
+      voiceErrorHandler.handleError(errorCode, context, {
+        onError: (error) => {
+          setError(error.message);
+          options.onError?.(error.message);
+        }
+      });
       
       // If error is due to no speech, try to restart
       if (event.error === 'no-speech' && options.continuous) {
@@ -216,9 +230,19 @@ export function useSpeechToText(options: SpeechRecognitionOptions = {}) {
 
     } catch (error) {
       console.error('Failed to start fallback recording:', error);
-      const errorMessage = 'Failed to access microphone';
-      setError(errorMessage);
-      options.onError?.(errorMessage);
+      const context = voiceErrorHandler.createErrorContext('useSpeechToText', 'fallbackRecording', { error });
+      
+      let errorCode = 'MICROPHONE_NOT_FOUND';
+      if (error instanceof Error && error.name === 'NotAllowedError') {
+        errorCode = 'MICROPHONE_ACCESS_DENIED';
+      }
+      
+      voiceErrorHandler.handleError(errorCode, context, {
+        onError: (voiceError) => {
+          setError(voiceError.message);
+          options.onError?.(voiceError.message);
+        }
+      });
     }
   }, [options]);
 
@@ -268,9 +292,14 @@ export function useSpeechToText(options: SpeechRecognitionOptions = {}) {
       }
     } catch (error) {
       console.error('Failed to process fallback audio:', error);
-      const errorMessage = 'Failed to transcribe audio';
-      setError(errorMessage);
-      options.onError?.(errorMessage);
+      const context = voiceErrorHandler.createErrorContext('useSpeechToText', 'processFallbackAudio', { error });
+      
+      voiceErrorHandler.handleError('AI_SERVICE_UNAVAILABLE', context, {
+        onError: (voiceError) => {
+          setError(voiceError.message);
+          options.onError?.(voiceError.message);
+        }
+      });
     }
   }, [options]);
 
@@ -299,9 +328,14 @@ export function useSpeechToText(options: SpeechRecognitionOptions = {}) {
       recognitionRef.current.start();
     } catch (error) {
       console.error('Failed to start speech recognition:', error);
-      const errorMessage = 'Failed to start speech recognition';
-      setError(errorMessage);
-      options.onError?.(errorMessage);
+      const context = voiceErrorHandler.createErrorContext('useSpeechToText', 'startListening', { error });
+      
+      voiceErrorHandler.handleError('SPEECH_RECOGNITION_FAILED', context, {
+        onError: (voiceError) => {
+          setError(voiceError.message);
+          options.onError?.(voiceError.message);
+        }
+      });
       
       // Fallback to manual recording
       fallbackModeRef.current = true;

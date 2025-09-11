@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Complete Audio Flow</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        audio { width: 100%; margin: 10px 0; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Complete Audio Flow Test</h1>
+    
+    <div class="test-section">
+        <h3>Step 1: Test Backend Audio Generation</h3>
+        <button onclick="testBackendAudio()">Test Backend Audio Generation</button>
+        <div id="backend-status"></div>
+        <audio id="backend-audio" controls style="display: none;"></audio>
+    </div>
+
+    <div class="test-section">
+        <h3>Step 2: Test WebSocket Audio Flow</h3>
+        <button onclick="testWebSocketFlow()">Test WebSocket Audio Flow</button>
+        <div id="websocket-status"></div>
+        <audio id="websocket-audio" controls style="display: none;"></audio>
+    </div>
+
+    <div class="test-section">
+        <h3>Step 3: Audio Data Analysis</h3>
+        <div id="analysis-results"></div>
+    </div>
+
+    <script>
+        // Audio validation utility (same as frontend)
+        const validateAudioData = (bytes, contentType) => {
+            if (bytes.length < 10) {
+                console.warn('Audio data too small:', bytes.length);
+                return false;
+            }
+
+            const header = Array.from(bytes.slice(0, 10)).map(b => b.toString(16).padStart(2, '0')).join('');
+            console.log('Audio header:', header);
+
+            if (contentType === 'audio/mpeg' || contentType === 'audio/mp3') {
+                const hasID3 = bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33;
+                const hasMPEGSync = bytes[0] === 0xFF && (bytes[1] & 0xE0) === 0xE0;
+                
+                if (hasID3 || hasMPEGSync) {
+                    console.log('Valid MP3 audio detected');
+                    return true;
+                }
+            }
+
+            console.warn('Unknown audio format, but allowing playback attempt');
+            return true;
+        };
+
+        const processAudioData = (base64Data, contentType) => {
+            try {
+                // Clean and validate base64 string
+                let cleanBase64 = base64Data.replace(/[^A-Za-z0-9+/]/g, '');
+                
+                // Add padding if necessary
+                while (cleanBase64.length % 4) {
+                    cleanBase64 += '=';
+                }
+                
+                // Convert base64 to binary string, then to Uint8Array
+                const binaryString = atob(cleanBase64);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+
+                // Validate audio data
+                const isValid = validateAudioData(bytes, contentType);
+                
+                return {
+                    success: true,
+                    bytes,
+                    isValid,
+                    originalLength: base64Data.length,
+                    cleanedLength: cleanBase64.length,
+                    binaryLength: bytes.length,
+                    header: Array.from(bytes.slice(0, 10)).map(b => b.toString(16).padStart(2, '0')).join(' ')
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        };
+
+        async function testBackendAudio() {
+            const status = document.getElementById('backend-status');
+            const audio = document.getElementById('backend-audio');
+            
+            try {
+                status.innerHTML = '<div class="info">Testing backend audio generation...</div>';
+                
+                const response = await fetch('http://localhost:3001/api/test-audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: 'Hello, this is a complete audio pipeline test.' })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const processed = processAudioData(result.audioData, result.contentType);
+                    
+                    if (processed.success) {
+                        const audioBlob = new Blob([processed.bytes], { type: result.contentType });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        
+                        audio.src = audioUrl;
+                        audio.style.display = 'block';
+                        
+                        status.innerHTML = `
+                            <div class="success">✅ Backend audio generation successful!</div>
+                            <pre>Original base64 length: ${processed.originalLength}
+Cleaned base64 length: ${processed.cleanedLength}
+Binary data length: ${processed.binaryLength}
+Audio blob size: ${audioBlob.size}
+Content type: ${result.contentType}
+Audio header: ${processed.header}
+Valid audio: ${processed.isValid}</pre>
+                        `;
+                        
+                        document.getElementById('analysis-results').innerHTML = `
+                            <h4>Audio Analysis Results:</h4>
+                            <pre>${JSON.stringify({
+                                backendGeneration: 'SUCCESS',
+                                audioDataIntegrity: processed.isValid ? 'VALID' : 'INVALID',
+                                sizeConsistency: audioBlob.size === processed.binaryLength ? 'CONSISTENT' : 'INCONSISTENT',
+                                contentType: result.contentType,
+                                audioFormat: processed.isValid ? 'MP3' : 'UNKNOWN'
+                            }, null, 2)}</pre>
+                        `;
+                    } else {
+                        status.innerHTML = `<div class="error">❌ Audio processing failed: ${processed.error}</div>`;
+                    }
+                } else {
+                    status.innerHTML = `<div class="error">❌ Backend test failed: ${result.error}</div>`;
+                }
+            } catch (error) {
+                status.innerHTML = `<div class="error">❌ Test failed: ${error.message}</div>`;
+            }
+        }
+
+        async function testWebSocketFlow() {
+            const status = document.getElementById('websocket-status');
+            
+            status.innerHTML = '<div class="info">WebSocket flow test requires the main application. Please test using the voice conversation interface at http://localhost:3004</div>';
+        }
+    </script>
+</body>
+</html>

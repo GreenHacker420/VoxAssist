@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Audio Playback</title>
+</head>
+<body>
+    <h1>Test Audio Playback</h1>
+    <button id="testBtn">Test Audio from Backend</button>
+    <div id="status"></div>
+    <audio id="audioPlayer" controls style="display: block; margin: 20px 0;"></audio>
+
+    <script>
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const status = document.getElementById('status');
+            const audioPlayer = document.getElementById('audioPlayer');
+            
+            try {
+                status.textContent = 'Generating audio...';
+                
+                // Test the backend audio generation directly
+                const response = await fetch('http://localhost:3001/api/test-audio', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: 'Hello, this is a test of the audio generation system.'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('Audio generation result:', result);
+                
+                if (result.success && result.audioData) {
+                    status.textContent = 'Converting audio data...';
+                    
+                    // Clean and validate base64 string
+                    let cleanBase64 = result.audioData.replace(/[^A-Za-z0-9+/]/g, '');
+                    
+                    // Add padding if necessary
+                    while (cleanBase64.length % 4) {
+                        cleanBase64 += '=';
+                    }
+                    
+                    // Convert base64 to binary string, then to Uint8Array
+                    const binaryString = atob(cleanBase64);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    
+                    const audioBlob = new Blob([bytes], { type: result.contentType || 'audio/mpeg' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    
+                    console.log('Audio blob created:', { size: audioBlob.size, type: audioBlob.type });
+                    
+                    // Set the audio source and play
+                    audioPlayer.src = audioUrl;
+                    audioPlayer.style.display = 'block';
+                    
+                    status.textContent = 'Playing audio...';
+                    
+                    audioPlayer.onended = () => {
+                        status.textContent = 'Audio playback completed!';
+                        URL.revokeObjectURL(audioUrl);
+                    };
+                    
+                    audioPlayer.onerror = (e) => {
+                        console.error('Audio playback error:', e);
+                        status.textContent = 'Audio playback failed!';
+                        URL.revokeObjectURL(audioUrl);
+                    };
+                    
+                    await audioPlayer.play();
+                    
+                } else {
+                    status.textContent = 'No audio data received';
+                }
+                
+            } catch (error) {
+                console.error('Test failed:', error);
+                status.textContent = `Test failed: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>

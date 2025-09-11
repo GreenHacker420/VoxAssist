@@ -10,6 +10,7 @@ import {
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
+import { voiceErrorHandler } from '@/services/voiceErrorHandler';
 
 interface AudioPlaybackProps {
   audioUrl?: string;
@@ -95,7 +96,17 @@ export default function AudioPlayback({
       setError(errorMessage);
       setIsLoading(false);
       setIsPlaying(false);
-      onError?.(errorMessage);
+      
+      // Use voice error handler for comprehensive error handling
+      const context = voiceErrorHandler.createErrorContext('AudioPlayback', 'audioError', { 
+        audioUrl, 
+        error: e 
+      });
+      voiceErrorHandler.handleError('TTS_SERVICE_FAILED', context, {
+        onError: (voiceError) => {
+          onError?.(voiceError.message);
+        }
+      });
     };
 
     // Add event listeners
@@ -125,8 +136,19 @@ export default function AudioPlayback({
         await audioRef.current.play();
       } catch (error) {
         console.error('Error playing audio:', error);
-        setError('Failed to play audio');
-        onError?.('Failed to play audio');
+        const errorMessage = 'Failed to play audio';
+        setError(errorMessage);
+        
+        // Use voice error handler for comprehensive error handling
+        const context = voiceErrorHandler.createErrorContext('AudioPlayback', 'playAudio', { 
+          audioUrl, 
+          error 
+        });
+        voiceErrorHandler.handleError('TTS_SERVICE_FAILED', context, {
+          onError: (voiceError) => {
+            onError?.(voiceError.message);
+          }
+        });
       }
     }
   };

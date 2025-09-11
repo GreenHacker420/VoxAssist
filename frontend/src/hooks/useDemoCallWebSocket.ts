@@ -77,7 +77,7 @@ interface VoiceAnalysisData {
 }
 
 interface UseDemoCallWebSocketOptions {
-  onAudioResponse?: (audioUrl: string, transcriptId?: string) => void;
+  onAudioResponse?: (audioData: string, transcriptId?: string, contentType?: string) => void;
   onAudioStream?: (audioData: string, transcriptId?: string, metadata?: { speaker?: string; messageId?: string }) => void;
   onVoiceTranscribed?: (transcript: string) => void;
   onVoiceAnalysis?: (analysis: VoiceAnalysisData) => void;
@@ -296,25 +296,30 @@ export function useDemoCallWebSocket(options: UseDemoCallWebSocketOptions = {}):
         break;
 
       case 'audio_response':
-        console.log('Audio response received:', { hasText: !!data.text, hasAudio: !!data.audioData });
+        console.log('Audio response received:', {
+          hasText: !!data.text,
+          hasAudio: !!data.audioData,
+          audioDataLength: data.audioData ? data.audioData.length : 0,
+          contentType: data.contentType,
+          transcriptId: data.transcriptId
+        });
         // Handle AI audio response from demo call service
         if (data.audioData && typeof data.audioData === 'string') {
-          // Convert base64 audio data to blob URL for playback
-          try {
-            const audioBlob = new Blob([
-              Uint8Array.from(atob(data.audioData), c => c.charCodeAt(0))
-            ], { type: (data.contentType as string) || 'audio/mp3' });
-            const audioUrl = URL.createObjectURL(audioBlob);
+          console.log('Received audio response with base64 data, length:', data.audioData.length);
+          console.log('Content type:', data.contentType);
 
-            if (onAudioResponse) {
-              onAudioResponse(audioUrl, (data.transcriptId as string) || '');
-            }
-          } catch (error) {
-            console.error('Failed to process audio response:', error);
+          if (onAudioResponse) {
+            // Pass raw base64 data and content type to the handler
+            // The handler will be responsible for creating the audio blob
+            console.log('Calling onAudioResponse with base64 data');
+            onAudioResponse(data.audioData, (data.transcriptId as string) || '', (data.contentType as string) || 'audio/mpeg');
+          } else {
+            console.warn('onAudioResponse callback not available');
           }
         } else if (data.text && onAudioResponse) {
           // Text-only response, let the handler decide what to do
-          onAudioResponse('', (data.transcriptId as string) || '');
+          console.log('Text-only response received, no audio data');
+          onAudioResponse('', (data.transcriptId as string) || '', 'text/plain');
         }
         break;
 

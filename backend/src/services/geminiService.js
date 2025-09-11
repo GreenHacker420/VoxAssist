@@ -14,7 +14,7 @@ const initializeGemini = () => {
   }
   
   genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   
   logger.info('Gemini AI service initialized');
 };

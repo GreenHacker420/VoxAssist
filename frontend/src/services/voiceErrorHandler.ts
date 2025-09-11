@@ -17,6 +17,7 @@ export interface ErrorRecoveryOptions {
   fallbackMode?: boolean;
   notifyUser?: boolean;
   logError?: boolean;
+  onError?: (error: VoiceError) => void;
 }
 
 export interface VoiceError {
@@ -170,6 +171,11 @@ export class VoiceErrorHandler {
 
     // Notify error callbacks
     this.notifyErrorCallbacks(error);
+    
+    // Call custom error callback if provided
+    if (options.onError) {
+      options.onError(error);
+    }
 
     // Attempt recovery if error is recoverable
     if (config.recoverable) {

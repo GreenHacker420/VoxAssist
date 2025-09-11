@@ -30,6 +30,43 @@ import { useSpeechToText } from '@/hooks/useSpeechToText';
 import { useVoiceActivityDetection } from '@/hooks/useVoiceActivityDetection';
 import { useDemoCallWebSocket } from '@/hooks/useDemoCallWebSocket';
 
+// Audio validation utility
+const validateAudioData = (bytes: Uint8Array, contentType: string): boolean => {
+  if (bytes.length < 10) {
+    console.warn('Audio data too small:', bytes.length);
+    return false;
+  }
+
+  // Check for common audio file signatures
+  const header = Array.from(bytes.slice(0, 10)).map(b => b.toString(16).padStart(2, '0')).join('');
+  console.log('Audio header:', header);
+
+  if (contentType === 'audio/mpeg' || contentType === 'audio/mp3') {
+    // Check for MP3 signatures
+    // ID3 tag: starts with "ID3" (49 44 33)
+    // MPEG frame sync: FF FB, FF FA, FF F3, FF F2
+    const hasID3 = bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33;
+    const hasMPEGSync = bytes[0] === 0xFF && (bytes[1] & 0xE0) === 0xE0;
+
+    if (hasID3 || hasMPEGSync) {
+      console.log('Valid MP3 audio detected');
+      return true;
+    }
+  }
+
+  if (contentType === 'audio/wav') {
+    // WAV signature: "RIFF" (52 49 46 46)
+    const hasRIFF = bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46;
+    if (hasRIFF) {
+      console.log('Valid WAV audio detected');
+      return true;
+    }
+  }
+
+  console.warn('Unknown audio format, but allowing playback attempt');
+  return true; // Allow unknown formats to attempt playback
+};
+
 // Audio level visualization component (unused - keeping for potential future use)
 // const AudioLevelIndicator = ({ level, isActive }: { level: number; isActive: boolean }) => (
 //   <div className="flex items-center space-x-1">
@@ -227,28 +264,113 @@ export default function RealTimeVoiceInterface({
 
   const playAudioResponse = useCallback(async (audioData: string, contentType: string) => {
     try {
+      console.log('Starting audio playback process:', {
+        audioDataLength: audioData.length,
+        contentType
+      });
+
       updateState({ isSpeaking: true });
 
-      // Convert base64 to audio blob
-      const audioBlob = new Blob([
-        Uint8Array.from(atob(audioData), c => c.charCodeAt(0))
-      ], { type: contentType });
+      // Validate input parameters
+      if (!audioData || audioData.length === 0) {
+        throw new Error('Audio data is empty or undefined');
+      }
 
+      if (!contentType || !contentType.startsWith('audio/')) {
+        throw new Error(`Invalid content type: ${contentType}`);
+      }
+
+      // Clean and validate base64 string
+      let cleanBase64 = audioData.replace(/[^A-Za-z0-9+/]/g, '');
+
+      // Add padding if necessary
+      while (cleanBase64.length % 4) {
+        cleanBase64 += '=';
+      }
+
+      console.log('Base64 validation:', {
+        originalLength: audioData.length,
+        cleanedLength: cleanBase64.length,
+        expectedBinarySize: Math.floor(cleanBase64.length * 3 / 4)
+      });
+
+      // Convert base64 to binary string, then to Uint8Array
+      const binaryString = atob(cleanBase64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // Validate audio data by checking for common audio file headers
+      const isValidAudio = validateAudioData(bytes, contentType);
+      if (!isValidAudio) {
+        throw new Error('Audio data validation failed - invalid audio format');
+      }
+
+      const audioBlob = new Blob([bytes], { type: contentType });
       const audioUrl = URL.createObjectURL(audioBlob);
+      console.log('Created audio blob:', {
+        size: audioBlob.size,
+        type: audioBlob.type,
+        url: audioUrl,
+        expectedSize: bytes.length,
+        sizeMatch: audioBlob.size === bytes.length
+      });
+
       const audio = new Audio(audioUrl);
 
+      audio.onloadstart = () => {
+        console.log('Audio loading started');
+      };
+
+      audio.oncanplay = () => {
+        console.log('Audio can play');
+      };
+
       audio.onended = () => {
+        console.log('Audio playback ended');
         updateState({ isSpeaking: false });
         URL.revokeObjectURL(audioUrl);
       };
 
-      audio.onerror = () => {
+      audio.onerror = (e) => {
+        const errorDetails = {
+          error: e,
+          audioError: audio.error,
+          networkState: audio.networkState,
+          readyState: audio.readyState,
+          currentSrc: audio.currentSrc
+        };
+        console.error('Audio playback error:', errorDetails);
+
+        let errorMessage = 'Failed to play audio response';
+        if (audio.error) {
+          switch (audio.error.code) {
+            case MediaError.MEDIA_ERR_ABORTED:
+              errorMessage = 'Audio playback was aborted';
+              break;
+            case MediaError.MEDIA_ERR_NETWORK:
+              errorMessage = 'Network error during audio playback';
+              break;
+            case MediaError.MEDIA_ERR_DECODE:
+              errorMessage = 'Audio decoding error - invalid audio format';
+              break;
+            case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+              errorMessage = 'Audio format not supported by browser';
+              break;
+            default:
+              errorMessage = `Audio error (code ${audio.error.code}): ${audio.error.message}`;
+          }
+        }
+
         updateState({ isSpeaking: false });
         URL.revokeObjectURL(audioUrl);
-        onError?.('Failed to play audio response');
+        onError?.(errorMessage);
       };
 
+      console.log('Starting audio playback...');
       await audio.play();
+      console.log('Audio play() called successfully');
     } catch (error) {
       console.error('Failed to play audio response:', error);
       updateState({ isSpeaking: false });
@@ -262,10 +384,17 @@ export default function RealTimeVoiceInterface({
     console.log('Voice transcribed:', data);
   }, []);
 
-  const handleAudioResponse = useCallback((audioUrl: string, transcriptId?: string) => {
+  const handleAudioResponse = useCallback((audioData: string, transcriptId?: string, contentType?: string) => {
     // Handle AI audio response
-    if (audioUrl) {
-      playAudioResponse(audioUrl, 'audio/mp3');
+    if (audioData && contentType && contentType !== 'text/plain') {
+      console.log('Received audio data for playback:', {
+        dataLength: audioData.length,
+        contentType,
+        transcriptId
+      });
+      playAudioResponse(audioData, contentType);
+    } else {
+      console.log('No audio data to play or text-only response');
     }
 
     updateState({ isProcessing: false });

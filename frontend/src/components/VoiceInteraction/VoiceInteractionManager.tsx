@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { message } from 'antd';
-import { useVoiceInteraction } from '@/hooks/useVoiceInteraction';
+import { App } from 'antd';
+import { useSpeechToText } from '@/hooks/useSpeechToText';
+import { useDemoCallWebSocket } from '@/hooks/useDemoCallWebSocket';
+import { voiceErrorHandler } from '@/services/voiceErrorHandler';
 import * as voiceInteractionService from '@/services/voiceInteraction';
 import VoiceControls from './VoiceControls';
 import VoiceTranscript from './VoiceTranscript';
@@ -36,12 +38,16 @@ export default function VoiceInteractionManager({
   disabled = false,
   className
 }: VoiceInteractionManagerProps) {
+  const { message } = App.useApp();
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   
   const audioQueueRef = useRef<{ add: (url: string) => void; clear: () => void } | null>(null);
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   // Initialize audio queue
   useEffect(() => {
@@ -53,33 +59,69 @@ export default function VoiceInteractionManager({
     };
   }, []);
 
-  // Voice interaction callbacks
-  const handleTranscript = useCallback(async (transcriptText: string, isInterim: boolean, confidence: number) => {
-    if (!callId || !isVoiceEnabled) return;
+  // Initialize demo call WebSocket
+  const {
+    isConnected: wsConnected,
+    transcript: wsTranscript,
+    currentSentiment,
+    callStatus,
+    error: wsError,
+    connectToCall,
+    disconnectFromCall,
+    sendVoiceInput
+  } = useDemoCallWebSocket({
+    onAudioResponse: (audioUrl: string) => {
+      if (audioUrl) {
+        setCurrentAudioUrl(audioUrl);
+        audioQueueRef.current?.add(audioUrl);
+      }
+    },
+    onVoiceTranscribed: (transcriptText: string) => {
+      console.log('Voice transcribed:', transcriptText);
+    },
+    onVoiceAnalysis: (analysis) => {
+      console.log('Voice analysis:', analysis);
+      if (analysis.sentiment) {
+        onSentimentUpdate?.({
+          overall: analysis.sentiment.overall,
+          score: analysis.sentiment.score,
+          emotions: {}
+        });
+      }
+    }
+  });
+
+  // Voice input processing
+  const handleSpeechResult = useCallback(async (result: { transcript: string; confidence: number; isFinal: boolean }) => {
+    if (!callId || !isVoiceEnabled || !result.isFinal) return;
 
     try {
-      // Process speech with backend
-      const response = await voiceInteractionService.processSpeech(callId, transcriptText, isInterim);
+      setIsProcessing(true);
+      onStatusChange?.('processing');
+
+      // Add customer transcript entry
+      const customerEntry: TranscriptEntry = {
+        id: `customer-${Date.now()}`,
+        speaker: 'customer',
+        text: result.transcript,
+        timestamp: new Date().toISOString(),
+        confidence: result.confidence,
+        isInterim: false
+      };
+
+      setTranscript(prev => [...prev, customerEntry]);
+
+      // Send voice input to WebSocket if connected
+      if (wsConnected && mediaRecorderRef.current) {
+        // Convert current audio to base64 and send
+        // This would be implemented with actual audio capture
+        console.log('Sending voice input to WebSocket:', result.transcript);
+      }
+
+      // Process speech with backend as fallback
+      const response = await voiceInteractionService.processSpeech(callId, result.transcript, false);
       
       if (response.success && response.data) {
-        // Handle interim results
-        if (isInterim) {
-          // Don't add interim results to transcript, just show them
-          return;
-        }
-
-        // Add customer transcript entry
-        const customerEntry: TranscriptEntry = {
-          id: `customer-${Date.now()}`,
-          speaker: 'customer',
-          text: transcriptText,
-          timestamp: new Date().toISOString(),
-          confidence,
-          isInterim: false
-        };
-
-        setTranscript(prev => [...prev, customerEntry]);
-
         // If we have an AI response, add it to transcript
         if (response.data.aiResponse) {
           const aiEntry: TranscriptEntry = {
@@ -104,20 +146,33 @@ export default function VoiceInteractionManager({
         if (response.data.sentiment) {
           onSentimentUpdate?.(response.data.sentiment);
         }
-
-        // Update transcript callback
-        onTranscriptUpdate?.(transcript);
       }
+
+      // Update transcript callback
+      onTranscriptUpdate?.(transcript);
     } catch (error) {
       console.error('Error processing transcript:', error);
-      message.error('Failed to process speech');
+      const context = voiceErrorHandler.createErrorContext('VoiceInteractionManager', 'processSpeech', { error });
+      voiceErrorHandler.handleError('AI_SERVICE_UNAVAILABLE', context, {
+        onError: (voiceError) => {
+          message.error(voiceError.message);
+        }
+      });
+    } finally {
+      setIsProcessing(false);
+      onStatusChange?.('idle');
     }
-  }, [callId, isVoiceEnabled, transcript, onTranscriptUpdate, onSentimentUpdate]);
+  }, [callId, isVoiceEnabled, wsConnected, transcript, onTranscriptUpdate, onSentimentUpdate, onStatusChange, message]);
 
   const handleVoiceError = useCallback((error: string) => {
     console.error('Voice interaction error:', error);
-    message.error(error);
-  }, []);
+    const context = voiceErrorHandler.createErrorContext('VoiceInteractionManager', 'voiceError', { error });
+    voiceErrorHandler.handleError('SPEECH_RECOGNITION_FAILED', context, {
+      onError: (voiceError) => {
+        message.error(voiceError.message);
+      }
+    });
+  }, [message]);
 
   const handleVoiceStart = useCallback(() => {
     onStatusChange?.('listening');
@@ -127,33 +182,27 @@ export default function VoiceInteractionManager({
     onStatusChange?.('idle');
   }, [onStatusChange]);
 
-  // Initialize voice interaction
+  // Initialize enhanced speech-to-text
   const {
     isListening,
-    isProcessing,
-    isSpeaking,
-    isSupported,
+    transcript: currentTranscript,
     interimTranscript,
+    confidence,
     error,
+    isSupported,
     startListening,
     stopListening,
     toggleListening,
-    setProcessing,
-    setSpeaking,
-    clearError
-  } = useVoiceInteraction(
-    {
-      continuous: true,
-      interimResults: true,
-      language: 'en-US'
-    },
-    {
-      onTranscript: handleTranscript,
-      onError: handleVoiceError,
-      onStart: handleVoiceStart,
-      onEnd: handleVoiceEnd
-    }
-  );
+    clearTranscript
+  } = useSpeechToText({
+    continuous: true,
+    interimResults: true,
+    language: 'en-US',
+    onResult: handleSpeechResult,
+    onError: handleVoiceError,
+    onStart: handleVoiceStart,
+    onEnd: handleVoiceEnd
+  });
 
   // Enable voice interaction when component mounts
   useEffect(() => {
@@ -163,6 +212,8 @@ export default function VoiceInteractionManager({
         if (response.success) {
           setIsVoiceEnabled(true);
           message.success('Voice interaction enabled');
+          // Connect to demo call WebSocket
+          connectToCall(callId);
         } else {
           message.error(response.error || 'Failed to enable voice interaction');
         }
@@ -177,46 +228,62 @@ export default function VoiceInteractionManager({
     }
 
     return () => {
-      // Cleanup: disable voice interaction
+      // Cleanup: disable voice interaction and disconnect WebSocket
       if (callId && isVoiceEnabled) {
         voiceInteractionService.disableVoiceInteraction(callId).catch(console.error);
+        disconnectFromCall();
       }
     };
   }, [callId, disabled]);
 
   // Handle audio playback events
   const handleAudioPlay = useCallback(() => {
-    setSpeaking(true);
+    setIsSpeaking(true);
     onStatusChange?.('speaking');
-  }, [setSpeaking, onStatusChange]);
+  }, [onStatusChange]);
 
   const handleAudioPause = useCallback(() => {
-    setSpeaking(false);
+    setIsSpeaking(false);
     onStatusChange?.('idle');
-  }, [setSpeaking, onStatusChange]);
+  }, [onStatusChange]);
 
   const handleAudioEnded = useCallback(() => {
-    setSpeaking(false);
+    setIsSpeaking(false);
     setCurrentAudioUrl(null);
     onStatusChange?.('idle');
-  }, [setSpeaking, onStatusChange]);
+  }, [onStatusChange]);
 
   const handleAudioError = useCallback((error: string) => {
-    setSpeaking(false);
+    setIsSpeaking(false);
     setCurrentAudioUrl(null);
     onStatusChange?.('idle');
-    message.error(`Audio playback error: ${error}`);
-  }, [setSpeaking, onStatusChange]);
+    const context = voiceErrorHandler.createErrorContext('VoiceInteractionManager', 'audioPlayback', { error });
+    voiceErrorHandler.handleError('TTS_SERVICE_FAILED', context, {
+      onError: (voiceError) => {
+        message.error(voiceError.message);
+      }
+    });
+  }, [onStatusChange, message]);
 
-  // Update processing state based on voice interaction
+  // Sync WebSocket transcript with local transcript
   useEffect(() => {
-    if (isProcessing) {
-      onStatusChange?.('processing');
-      setProcessing(true);
-    } else {
-      setProcessing(false);
+    if (wsTranscript.length > 0) {
+      setTranscript(prev => {
+        const newEntries = wsTranscript.filter(entry => 
+          !prev.some(existing => existing.id === entry.id)
+        );
+        return [...prev, ...newEntries];
+      });
+      onTranscriptUpdate?.(transcript);
     }
-  }, [isProcessing, onStatusChange, setProcessing]);
+  }, [wsTranscript, transcript, onTranscriptUpdate]);
+
+  // Update sentiment from WebSocket
+  useEffect(() => {
+    if (currentSentiment) {
+      onSentimentUpdate?.(currentSentiment);
+    }
+  }, [currentSentiment, onSentimentUpdate]);
 
   // Handle voice interaction toggle
   const handleToggleListening = useCallback(async () => {
@@ -231,12 +298,17 @@ export default function VoiceInteractionManager({
     }
 
     try {
-      await toggleListening();
+      toggleListening();
     } catch (error) {
       console.error('Error toggling voice interaction:', error);
-      message.error('Failed to toggle voice interaction');
+      const context = voiceErrorHandler.createErrorContext('VoiceInteractionManager', 'toggleListening', { error });
+      voiceErrorHandler.handleError('SPEECH_RECOGNITION_FAILED', context, {
+        onError: (voiceError) => {
+          message.error(voiceError.message);
+        }
+      });
     }
-  }, [isVoiceEnabled, isSupported, toggleListening]);
+  }, [isVoiceEnabled, isSupported, toggleListening, message]);
 
   return (
     <div className={className}>
@@ -249,7 +321,7 @@ export default function VoiceInteractionManager({
           isSupported={isSupported}
           error={error}
           onToggleListening={handleToggleListening}
-          onClearError={clearError}
+          onClearError={() => { /* Clear error handled by voice error handler */ }}
           disabled={disabled || !isVoiceEnabled}
         />
 

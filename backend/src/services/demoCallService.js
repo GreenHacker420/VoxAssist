@@ -60,19 +60,32 @@ class DemoCallService {
     if (this.wsConnections.has(callId)) {
       const connections = this.wsConnections.get(callId);
       const messageStr = JSON.stringify(message);
-      
+
+      // Log message details for debugging
+      logger.info(`Broadcasting message to ${connections.size} connections for call ${callId}:`, {
+        type: message.type,
+        hasText: !!message.text,
+        hasAudioData: !!message.audioData,
+        audioDataLength: message.audioData ? message.audioData.length : 0,
+        messageSize: messageStr.length
+      });
+
       connections.forEach(ws => {
         if (ws.readyState === 1) { // WebSocket.OPEN
           try {
             ws.send(messageStr);
+            logger.debug(`Message sent successfully to WebSocket for call ${callId}`);
           } catch (error) {
             logger.error(`Failed to send message to WebSocket: ${error.message}`);
             connections.delete(ws);
           }
         } else {
+          logger.warn(`WebSocket not open for call ${callId}, removing connection`);
           connections.delete(ws);
         }
       });
+    } else {
+      logger.warn(`No WebSocket connections found for call ${callId}`);
     }
   }
 
@@ -312,7 +325,7 @@ class DemoCallService {
       if (audioResponse && audioResponse.audioData) {
         return {
           audioData: audioResponse.audioData.toString('base64'),
-          contentType: audioResponse.contentType || 'audio/mp3'
+          contentType: audioResponse.contentType || 'audio/mpeg'
         };
       }
 
