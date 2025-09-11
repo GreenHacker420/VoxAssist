@@ -49,7 +49,7 @@ services:
       - key: TWILIO_PHONE_NUMBER
         sync: false
       - key: WEBHOOK_BASE_URL
-        value: https://voxassist-backend.onrender.com
+        value: https://voxassist.onrender.com
 
   # Redis Cache
   - type: redis

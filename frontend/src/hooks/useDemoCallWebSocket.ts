@@ -116,7 +116,7 @@ export function useDemoCallWebSocket(options: UseDemoCallWebSocketOptions = {}):
     try {
       // Connect to WebSocket server
       const wsUrl = process.env.NODE_ENV === 'production'
-        ? 'wss://voxassist-backend.onrender.com/ws'
+        ? 'wss://voxassist.onrender.com/ws'
         : 'ws://localhost:3001/ws';
 
       console.log('Connecting to WebSocket:', wsUrl);
