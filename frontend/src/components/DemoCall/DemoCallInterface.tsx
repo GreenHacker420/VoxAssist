@@ -180,7 +180,7 @@ export default function DemoCallInterface() {
 
     try {
       // Process voice input
-      const result = await CallsService.processVoiceInput(callId, audioBlob, analysis);
+      const result = await CallsService.processVoiceInput(callId, audioBlob, analysis as unknown as Record<string, unknown>);
       
       if (result.transcript) {
         // Add customer message to transcript
@@ -188,7 +188,7 @@ export default function DemoCallInterface() {
           speaker: 'customer',
           text: result.transcript,
           timestamp: new Date().toISOString(),
-          sentiment: result.sentiment || 'neutral',
+          sentiment: (result.sentiment as 'positive' | 'negative' | 'neutral') || 'neutral',
           confidence: result.confidence || 0.8
         };
         
@@ -197,7 +197,7 @@ export default function DemoCallInterface() {
 
         // Update sentiment
         if (result.sentimentData) {
-          setCurrentSentiment(result.sentimentData);
+          setCurrentSentiment(result.sentimentData as unknown as SentimentData);
         }
 
         // Add AI response if available

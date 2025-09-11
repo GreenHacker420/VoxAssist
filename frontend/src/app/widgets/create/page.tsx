@@ -8,7 +8,7 @@ import { WidgetDTO } from '@/services/widgets';
 
 export default function CreateWidgetPage() {
   const router = useRouter();
-  const { user, isDemoMode } = useAuth();
+  const { user } = useAuth();
   const [open, setOpen] = useState(true);
 
   const handleSuccess = (widget: WidgetDTO) => {
@@ -21,8 +21,8 @@ export default function CreateWidgetPage() {
     router.back();
   };
 
-  // Ensure user has organizationId or is in demo mode
-  if (!user?.organizationId && !isDemoMode) {
+  // Ensure user has organizationId
+  if (!user?.organizationId) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4">
         <div className="text-center">

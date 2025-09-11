@@ -19,7 +19,7 @@ export default function UserNavbar({
   subtitle, 
   actions 
 }: UserNavbarProps) {
-  const { user, logout, isDemoMode, disableDemoMode } = useAuth();
+  const { user, logout } = useAuth();
 
   const userNavigation = [
     { name: 'Your Profile', href: '/profile' },
@@ -49,21 +49,7 @@ export default function UserNavbar({
 
         <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
           <div className="relative flex flex-1">
-            {/* Demo Mode Indicator */}
-            {isDemoMode && (
-              <div className="flex items-center">
-                <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
-                  Demo Mode
-                  <button
-                    onClick={disableDemoMode}
-                    className="ml-2 text-blue-600 hover:text-blue-800 text-xs underline"
-                  >
-                    Exit
-                  </button>
-                </div>
-              </div>
-            )}
+
           </div>
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             <button

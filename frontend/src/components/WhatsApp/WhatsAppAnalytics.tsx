@@ -24,6 +24,10 @@ export default function WhatsAppAnalytics({ isDemoMode = false }: WhatsAppAnalyt
     failedMessages: 49,
     averageResponseTime: 142,
     activeConversations: 23,
+    totalCalls: 247,
+    successfulCalls: 233,
+    failedCalls: 14,
+    averageCallDuration: 185,
     messagesByHour: [
       { hour: '00:00', messages: 12 },
       { hour: '01:00', messages: 8 },
@@ -55,6 +59,38 @@ export default function WhatsAppAnalytics({ isDemoMode = false }: WhatsAppAnalyt
       { name: 'Media', value: 234, color: '#3B82F6' },
       { name: 'Document', value: 89, color: '#8B5CF6' },
       { name: 'Location', value: 68, color: '#F59E0B' }
+    ],
+    callsByHour: [
+      { hour: '00:00', calls: 3 },
+      { hour: '01:00', calls: 2 },
+      { hour: '02:00', calls: 1 },
+      { hour: '03:00', calls: 1 },
+      { hour: '04:00', calls: 2 },
+      { hour: '05:00', calls: 4 },
+      { hour: '06:00', calls: 8 },
+      { hour: '07:00', calls: 12 },
+      { hour: '08:00', calls: 18 },
+      { hour: '09:00', calls: 25 },
+      { hour: '10:00', calls: 28 },
+      { hour: '11:00', calls: 24 },
+      { hour: '12:00', calls: 22 },
+      { hour: '13:00', calls: 20 },
+      { hour: '14:00', calls: 23 },
+      { hour: '15:00', calls: 26 },
+      { hour: '16:00', calls: 21 },
+      { hour: '17:00', calls: 19 },
+      { hour: '18:00', calls: 16 },
+      { hour: '19:00', calls: 13 },
+      { hour: '20:00', calls: 10 },
+      { hour: '21:00', calls: 8 },
+      { hour: '22:00', calls: 5 },
+      { hour: '23:00', calls: 4 }
+    ],
+    callOutcomes: [
+      { outcome: 'Resolved', count: 186, percentage: 75.3 },
+      { outcome: 'Escalated', count: 33, percentage: 13.4 },
+      { outcome: 'Callback Requested', count: 14, percentage: 5.7 },
+      { outcome: 'Failed', count: 14, percentage: 5.7 }
     ]
   });
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('24h');

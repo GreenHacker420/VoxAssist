@@ -171,7 +171,7 @@ export default function WidgetCreationWizard({
   onSuccess,
   editWidget
 }: WidgetCreationWizardProps) {
-  const { user, isDemoMode } = useAuth();
+  const { user } = useAuth();
   const { message } = App.useApp();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -339,7 +339,7 @@ export default function WidgetCreationWizard({
   };
 
   const handleSubmit = async () => {
-    if (!user?.organizationId && !isDemoMode) {
+    if (!user?.organizationId ) {
       toast.error('Organization ID is required. Please ensure you are properly authenticated.');
       return;
     }

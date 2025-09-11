@@ -26,6 +26,7 @@ export interface ProviderConfig {
   updatedAt?: string;
 }
 
+
 export interface ConnectionTestResult {
   connected: boolean;
   details?: {
@@ -54,7 +55,7 @@ export class ProvidersService {
    */
   static async getConfigs(): Promise<ProviderConfig[]> {
     const response = await apiClient.get<ProviderConfig[]>('/providers/configs');
-    return response.data;
+    return response.data || [];
   }
 
   /**
@@ -62,6 +63,9 @@ export class ProvidersService {
    */
   static async createConfig(config: Omit<ProviderConfig, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProviderConfig> {
     const response = await apiClient.post<ProviderConfig>('/providers/configs', config);
+    if (!response.data) {
+      throw new Error('Failed to create provider config');
+    }
     return response.data;
   }
 
@@ -70,6 +74,9 @@ export class ProvidersService {
    */
   static async updateConfig(id: string, config: Partial<ProviderConfig>): Promise<ProviderConfig> {
     const response = await apiClient.put<ProviderConfig>(`/providers/configs/${id}`, config);
+    if (!response.data) {
+      throw new Error('Failed to update provider config');
+    }
     return response.data;
   }
 
@@ -85,6 +92,9 @@ export class ProvidersService {
    */
   static async testConnection(configId: string): Promise<ConnectionTestResult> {
     const response = await apiClient.post<ConnectionTestResult>(`/providers/configs/${configId}/test`);
+    if (!response.data) {
+      throw new Error('Failed to test connection');
+    }
     return response.data;
   }
 
@@ -93,7 +103,7 @@ export class ProvidersService {
    */
   static async getProviderStatuses(): Promise<ProviderStatus[]> {
     const response = await apiClient.get<ProviderStatus[]>('/providers/status');
-    return response.data;
+    return response.data || [];
   }
 
   /**
@@ -101,7 +111,7 @@ export class ProvidersService {
    */
   static async getActiveProvider(type: 'phone' | 'whatsapp' = 'phone'): Promise<ProviderConfig | null> {
     const response = await apiClient.get<ProviderConfig | null>(`/providers/active?type=${type}`);
-    return response.data;
+    return response.data ?? null;
   }
 
   /**
@@ -116,6 +126,9 @@ export class ProvidersService {
    */
   static async toggleProviderStatus(configId: string, isActive: boolean): Promise<ProviderConfig> {
     const response = await apiClient.patch<ProviderConfig>(`/providers/configs/${configId}/status`, { isActive });
+    if (!response.data) {
+      throw new Error('Failed to toggle provider status');
+    }
     return response.data;
   }
 
@@ -124,6 +137,9 @@ export class ProvidersService {
    */
   static async getConfig(id: string): Promise<ProviderConfig> {
     const response = await apiClient.get<ProviderConfig>(`/providers/configs/${id}`);
+    if (!response.data) {
+      throw new Error('Failed to get provider config');
+    }
     return response.data;
   }
 
@@ -135,6 +151,9 @@ export class ProvidersService {
       provider,
       credentials
     });
+    if (!response.data) {
+      throw new Error('Failed to validate credentials');
+    }
     return response.data;
   }
 }

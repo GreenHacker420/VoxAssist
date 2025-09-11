@@ -34,7 +34,7 @@ export default function EnhancedCallControls({
   isMuted: initialMuted = false,
   isOnHold: initialHold = false,
 }: EnhancedCallControlsProps) {
-  const { isDemoMode } = useAuth();
+  const { user } = useAuth();
   const [isMuted, setIsMuted] = useState(initialMuted);
   const [isOnHold, setIsOnHold] = useState(initialHold);
   const [isRecording, setIsRecording] = useState(initialRecording);
@@ -48,37 +48,22 @@ export default function EnhancedCallControls({
 
   const handleMute = () => {
     setIsMuted(!isMuted);
-    if (isDemoMode) {
-      // Demo mode feedback
-      console.log(`Demo: ${!isMuted ? 'Muted' : 'Unmuted'} microphone`);
-    }
   };
 
   const handleHold = () => {
     setIsOnHold(!isOnHold);
-    if (isDemoMode) {
-      console.log(`Demo: ${!isOnHold ? 'Put call on hold' : 'Resumed call'}`);
-    }
   };
 
   const handleRecord = () => {
     setIsRecording(!isRecording);
-    if (isDemoMode) {
-      console.log(`Demo: ${!isRecording ? 'Started' : 'Stopped'} recording`);
-    }
   };
 
   const handleTransfer = () => {
-    if (isDemoMode) {
-      console.log('Demo: Initiating call transfer');
-    }
+    // Transfer functionality would be implemented here
   };
 
   const handleHangup = () => {
     onCallEnd();
-    if (isDemoMode) {
-      console.log('Demo: Call ended');
-    }
   };
 
   const getStatusColor = () => {
@@ -133,9 +118,7 @@ export default function EnhancedCallControls({
                 </span>
               }
             />
-            {isDemoMode && (
-              <Badge count="DEMO" style={{ backgroundColor: '#1890ff' }} />
-            )}
+
           </div>
           
           <div className="flex items-center space-x-4">
@@ -299,14 +282,7 @@ export default function EnhancedCallControls({
             </Row>
           </Card>
 
-          {isDemoMode && (
-            <Card size="small" title="Demo Mode">
-              <p className="text-sm text-gray-600">
-                This is a demonstration of the call controls interface. 
-                All actions are simulated and no actual calls are being made.
-              </p>
-            </Card>
-          )}
+
         </Space>
       </Drawer>
     </>

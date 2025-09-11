@@ -82,7 +82,14 @@ export class CallsService {
     });
 
     if (response.success && response.data) {
-      return response.data;
+      const data = response.data as Record<string, unknown>;
+      return {
+        transcript: (data.transcript as string) || '',
+        confidence: (data.confidence as number) || 0,
+        sentiment: (data.sentiment as string) || 'neutral',
+        sentimentData: (data.sentimentData as Record<string, unknown>) || {},
+        aiResponse: (data.aiResponse as string) || ''
+      };
     }
 
     throw new Error(response.error || 'Failed to process voice input');
@@ -136,3 +143,4 @@ export class CallsService {
 
 
 }
+

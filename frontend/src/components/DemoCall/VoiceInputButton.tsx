@@ -175,7 +175,8 @@ export default function VoiceInputButton({
 
   return (
     <Button
-      type={isRecording ? "danger" : "primary"}
+      type="primary"
+      danger={isRecording}
       size="large"
       icon={isRecording ? <AudioOutlined className="animate-pulse" /> : <AudioMutedOutlined />}
       onClick={handleClick}

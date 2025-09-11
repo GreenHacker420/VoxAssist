@@ -9,7 +9,7 @@ export default function WhatsAppAnalyticsPage() {
 
   return (
     <DashboardLayout>
-      <WhatsAppAnalytics isDemoMode={isDemoMode} />
+      <WhatsAppAnalytics />
     </DashboardLayout>
   );
 }

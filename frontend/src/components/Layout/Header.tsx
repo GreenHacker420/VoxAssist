@@ -11,7 +11,7 @@ interface HeaderProps {
 }
 
 export default function Header({ setSidebarOpen }: HeaderProps) {
-  const { user, logout, isDemoMode, disableDemoMode } = useAuth();
+  const { user, logout } = useAuth();
 
   const userNavigation = [
     { name: 'Your Profile', href: '/profile' },
@@ -35,21 +35,7 @@ export default function Header({ setSidebarOpen }: HeaderProps) {
 
       <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
         <div className="relative flex flex-1">
-          {/* Demo Mode Indicator */}
-          {isDemoMode && (
-            <div className="flex items-center">
-              <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></div>
-                Demo Mode
-                <button
-                  onClick={disableDemoMode}
-                  className="ml-2 text-green-600 hover:text-green-800 text-xs underline"
-                >
-                  Exit
-                </button>
-              </div>
-            </div>
-          )}
+
         </div>
         <div className="flex items-center gap-x-4 lg:gap-x-6">
           <button

@@ -21,7 +21,7 @@ export default function SelfDemoCall() {
   const [callStatus, setCallStatus] = useState<string>('');
   const [demoCallId, setDemoCallId] = useState<string>('');
   const router = useRouter();
-  const { isDemoMode } = useAuth();
+  const { user } = useAuth();
 
   const demoSteps = [
     {
@@ -70,18 +70,13 @@ export default function SelfDemoCall() {
   }, [demoCallId, router]);
 
   const handleStartSelfDemo = async () => {
-    if (!isDemoMode) {
-      message.error('Self-demo call is only available in demo mode');
-      return;
-    }
-
     setIsInitiating(true);
     setCurrentStep(0);
     setCallStatus('ringing');
 
     try {
       // Step 1: Initialize call
-      const call = await CallsService.initiateSelfDemoCall();
+      const call = await CallsService.startDemoCall();
       setDemoCallId(call.id);
       message.success('Self-demo call initiated!');
       setCurrentStep(1);
@@ -108,18 +103,7 @@ export default function SelfDemoCall() {
     }
   };
 
-  if (!isDemoMode) {
-    return (
-      <Card>
-        <Alert
-          message="Demo Mode Required"
-          description="Self-demo calling is only available in demo mode. Please enable demo mode to try this feature."
-          type="warning"
-          showIcon
-        />
-      </Card>
-    );
-  }
+
 
   return (
     <Card>
