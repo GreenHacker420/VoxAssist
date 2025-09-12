@@ -217,12 +217,14 @@ const securityLogger = (req, res, next) => {
   next();
 };
 
-// CORS configuration for production
+// CORS configuration for production - Allow all origins
 const corsOptions = {
-  origin: true,
-  credentials: true,
+  origin: '*',
+  credentials: false, // Must be false when origin is '*'
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-signature', 'x-timestamp', 'x-demo-mode']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-signature', 'x-timestamp', 'x-demo-mode'],
+  preflightContinue: false,
+  optionsSuccessStatus: 200
 };
 
 // Input sanitization middleware
