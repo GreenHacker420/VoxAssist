@@ -423,12 +423,32 @@ export default function RealTimeVoiceInterface({
     isConnected,
     connectToCall,
     disconnectFromCall,
-    sendVoiceInput
+    sendVoiceInput,
+    transcript: wsTranscript
   } = useDemoCallWebSocket({
     onVoiceTranscribed: handleVoiceTranscribed,
     onAudioResponse: handleAudioResponse,
     onVoiceAnalysis: handleVoiceAnalysis
   });
+
+  // Sync WebSocket transcript with local messages
+  useEffect(() => {
+    if (wsTranscript && wsTranscript.length > 0) {
+      const newMessages = wsTranscript.map(entry => ({
+        speaker: entry.speaker as 'user' | 'ai',
+        text: entry.text || '',
+        timestamp: new Date(entry.timestamp),
+        confidence: entry.confidence || 1.0,
+        id: entry.id
+      }));
+
+      // Update messages state with new transcript entries
+      setState(prev => ({
+        ...prev,
+        messages: newMessages
+      }));
+    }
+  }, [wsTranscript]);
 
   // Initialize voice services
   useEffect(() => {

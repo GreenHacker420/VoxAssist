@@ -5,6 +5,7 @@ interface TranscriptEntry {
   id: string;
   speaker: 'customer' | 'ai' | 'agent';
   text: string;
+  content?: string;
   timestamp: string;
   confidence?: number;
   sentiment?: 'positive' | 'negative' | 'neutral';
@@ -293,6 +294,17 @@ export function useDemoCallWebSocket(options: UseDemoCallWebSocketOptions = {}):
       case 'voice_interaction_status':
         console.log('Voice interaction status update:', data.status);
         // Voice interaction status is handled by the VoiceInteractionManager
+        break;
+
+      case 'text_response':
+        console.log('Text response received (ultra-fast):', {
+          hasText: !!data.text,
+          transcriptId: data.transcriptId
+        });
+        // Handle immediate text response for ultra-fast conversation
+        if (typeof data.text === 'string' && onVoiceTranscribed) {
+          onVoiceTranscribed(data.text);
+        }
         break;
 
       case 'audio_response':

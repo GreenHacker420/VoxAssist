@@ -22,10 +22,10 @@ const initializeGemini = () => {
   model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash",
     generationConfig: {
-      temperature: 0.7,
-      topK: 40,
-      topP: 0.95,
-      maxOutputTokens: 150, // Limit response length for speed
+      temperature: 0.2, // Lower for faster, more focused responses
+      topK: 10, // Reduced for ultra-fast generation
+      topP: 0.7, // Reduced for speed
+      maxOutputTokens: 30, // Ultra-short for real-time conversation
       candidateCount: 1
     }
   });
@@ -176,15 +176,14 @@ const generateIntelligentFallback = (query, context) => {
  * Build prompt for Gemini AI
  */
 const buildPrompt = (query, context) => {
-  // Optimized prompt for speed - much more concise
+  // Ultra-fast conversational prompt - no artificial constraints
   const recentHistory = context.conversationHistory ?
-    context.conversationHistory.slice(-2).map(h => `${h.speaker}: ${h.text || h.content || h.message}`).join('\n') : '';
+    context.conversationHistory.slice(-1).map(h => `${h.speaker}: ${h.text || h.content || h.message}`).join('\n') : '';
 
-  const systemPrompt = `You are VoxAssist AI support. Be helpful, concise, and professional. Respond naturally to the user's specific question or comment.
+  const systemPrompt = `You are a helpful AI assistant. Respond naturally and conversationally to whatever the user says. Be brief but engaging.
 
-${recentHistory ? `Recent conversation:\n${recentHistory}\n` : ''}User: ${query}
-
-AI Response (be specific and contextual, max 2 sentences):`;
+${recentHistory ? `${recentHistory}\n` : ''}User: ${query}
+AI:`;
 
   return systemPrompt;
 };

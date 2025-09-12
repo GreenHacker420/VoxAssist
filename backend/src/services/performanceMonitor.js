@@ -77,8 +77,8 @@ class PerformanceMonitor {
     logger.info(`🎯 Complete conversation cycle for call ${callId}:`, {
       totalTime: metrics.totalResponseTime,
       breakdown,
-      target: '< 2000ms',
-      status: metrics.totalResponseTime < 2000 ? '✅ FAST' : '⚠️ SLOW'
+      target: '< 200ms',
+      status: metrics.totalResponseTime < 200 ? '✅ ULTRA-FAST' : metrics.totalResponseTime < 500 ? '⚡ FAST' : '⚠️ SLOW'
     });
 
     // Update global stats
@@ -88,7 +88,7 @@ class PerformanceMonitor {
       callId,
       totalTime: metrics.totalResponseTime,
       breakdown,
-      isOptimal: metrics.totalResponseTime < 2000
+      isOptimal: metrics.totalResponseTime < 200
     };
   }
 
@@ -163,8 +163,8 @@ class PerformanceMonitor {
       summary: {
         totalRequests: this.globalStats.totalRequests,
         averageResponseTime: this.globalStats.averageResponseTime,
-        target: 2000,
-        performance: this.globalStats.averageResponseTime < 2000 ? 'OPTIMAL' : 'NEEDS_OPTIMIZATION'
+        target: 200,
+        performance: this.globalStats.averageResponseTime < 200 ? 'ULTRA-FAST' : this.globalStats.averageResponseTime < 500 ? 'FAST' : 'NEEDS_OPTIMIZATION'
       },
       bottlenecks: [],
       recommendations: []
