@@ -32,6 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             try {
               const userData = JSON.parse(cachedUserData);
               setUser(userData);
+              setIsLoading(false); // Set loading false after setting user data
 
               // Verify the cached data is still valid by making a background request
               AuthService.getProfile()
@@ -41,21 +42,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 })
                 .catch(error => {
                   console.warn('Failed to refresh user data:', error);
-                  // Keep using cached data if refresh fails
+                  // If refresh fails and we have no valid cached data, clear auth
+                  if (!userData?.organizationId) {
+                    AuthService.logout();
+                    setUser(null);
+                  }
                 });
             } catch (parseError) {
               console.warn('Failed to parse cached user data:', parseError);
               // Fall back to fresh API call
-              const userData = await AuthService.getProfile();
-              setUser(userData);
-              localStorage.setItem('voxassist_user_data', JSON.stringify(userData));
+              try {
+                const userData = await AuthService.getProfile();
+                setUser(userData);
+                localStorage.setItem('voxassist_user_data', JSON.stringify(userData));
+              } catch (apiError) {
+                console.error('Failed to fetch fresh user data:', apiError);
+                AuthService.logout();
+                setUser(null);
+              }
             }
           } else {
             // No cached data, make fresh API call
-            const userData = await AuthService.getProfile();
-            setUser(userData);
-            localStorage.setItem('voxassist_user_data', JSON.stringify(userData));
+            try {
+              const userData = await AuthService.getProfile();
+              setUser(userData);
+              localStorage.setItem('voxassist_user_data', JSON.stringify(userData));
+            } catch (apiError) {
+              console.error('Failed to fetch user data:', apiError);
+              AuthService.logout();
+              setUser(null);
+            }
           }
+        } else {
+          // No token found, user is not authenticated
+          setUser(null);
         }
       } catch (error) {
         // Enhanced error logging with detailed information
@@ -73,7 +93,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Clear any potentially corrupted auth state
         AuthService.logout();
+        setUser(null);
       } finally {
+        // Only set loading false if we haven't already done so with cached data
         setIsLoading(false);
       }
     };

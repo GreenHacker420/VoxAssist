@@ -71,20 +71,30 @@ body:has(.landing-animated-bg)::before {
   display: none;
 }
 
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Prevent scroll on html/body */
+}
+
 body {
   background: linear-gradient(135deg, #fafbfc 0%, #f0f9ff 100%);
   color: var(--foreground);
-  /* Inter is loaded via next/font in layout.tsx */
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: 400;
   line-height: 1.6;
-  min-height: 100vh;
+}
+
+#__next {
+  height: 100%;
+  overflow: auto; /* Allow scrolling within the app */
   position: relative;
-  overflow-x: hidden;
+  isolation: isolate; /* New stacking context for the pseudo-element */
 }
 
 /* Floating background elements */
-body::before {
+#__next::before {
   content: '';
   position: fixed;
   top: -50%;

@@ -44,7 +44,7 @@ interface WidgetsDashboardProps {
 
 export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardProps = {}) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const { message } = App.useApp();
   const [widgets, setWidgets] = useState<WidgetDTO[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -170,7 +170,17 @@ export default function WidgetsDashboard({ onCreateWidget }: WidgetsDashboardPro
     ]
   });
 
-  if (!user?.organizationId ) {
+  // Show loading while auth is initializing OR while user data is being loaded
+  if (isAuthLoading || (!user && typeof window !== 'undefined' && localStorage.getItem('voxassist_auth_token'))) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  // Only show auth required if we're sure there's no valid session
+  if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4">
         <div className="text-center">

@@ -42,35 +42,20 @@ async function main() {
     logger.info('Organizations created');
 
     // Create users with correct demo credentials
-    const adminPassword = await bcrypt.hash('admin123', 10);
-    const userPassword = await bcrypt.hash('user123', 10);
+    const testPassword = await bcrypt.hash('TestPassword123!', 10);
 
-    const adminUser = await prisma.user.upsert({
-      where: { email: 'admin@voxassist.com' },
-      update: {
-        password: adminPassword,
-        name: 'Admin User',
-        role: 'admin'
-      },
-      create: {
-        email: 'admin@voxassist.com',
-        password: adminPassword,
-        name: 'Admin User',
-        role: 'admin'
-      }
-    });
 
-    const demoUser = await prisma.user.upsert({
-      where: { email: 'user@voxassist.com' },
+    const testUser = await prisma.user.upsert({
+      where: { email: 'test@example.com' },
       update: {
-        password: userPassword,
-        name: 'Demo User',
+        password: testPassword,
+        name: 'Test User',
         role: 'user'
       },
       create: {
-        email: 'user@voxassist.com',
-        password: userPassword,
-        name: 'Demo User',
+        email: 'test@example.com',
+        password: testPassword,
+        name: 'Test User',
         role: 'user'
       }
     });
@@ -103,6 +88,21 @@ async function main() {
       update: {},
       create: {
         userId: demoUser.id,
+        organizationId: demoOrg.id,
+        role: 'member'
+      }
+    });
+
+    await prisma.userOrganization.upsert({
+      where: {
+        userId_organizationId: {
+          userId: testUser.id,
+          organizationId: demoOrg.id
+        }
+      },
+      update: {},
+      create: {
+        userId: testUser.id,
         organizationId: demoOrg.id,
         role: 'member'
       }
