@@ -113,11 +113,37 @@ const processCustomerQuery = async (query, context = {}) => {
 const generateIntelligentFallback = (query, context) => {
   const lowerQuery = query.toLowerCase();
 
-  // Greeting responses
-  if (lowerQuery.includes('hello') || lowerQuery.includes('hi') || lowerQuery.includes('how are you')) {
+  // DPMS/Technical questions
+  if (lowerQuery.includes('dpms') || lowerQuery.includes('display power management')) {
     return {
-      response: "Hello! I'm doing well, thank you for asking. How can I help you today?",
+      response: "DPMS (Display Power Management Signaling) is a technology that allows monitors to enter power-saving modes. It has states like On, Standby, Suspend, and Off. What specific aspect of DPMS would you like to know more about?",
+      intent: 'technical_info',
+      confidence: 0.9,
+      shouldEscalate: false
+    };
+  }
+
+  // Greeting responses - avoid repetitive responses
+  if (lowerQuery.includes('hello') || lowerQuery.includes('hi') || lowerQuery.includes('how are you')) {
+    const greetings = [
+      "Hello! What can I help you with today?",
+      "Hi there! How may I assist you?",
+      "Good day! What would you like to know?",
+      "Hello! I'm here to help. What's your question?"
+    ];
+    return {
+      response: greetings[Math.floor(Math.random() * greetings.length)],
       intent: 'greeting',
+      confidence: 0.9,
+      shouldEscalate: false
+    };
+  }
+
+  // Knowledge requests
+  if (lowerQuery.includes('what can you do') || lowerQuery.includes('what do you know')) {
+    return {
+      response: "I can help you with various topics including technical questions, general information, troubleshooting, and more. What specific topic are you interested in learning about?",
+      intent: 'capability_inquiry',
       confidence: 0.9,
       shouldEscalate: false
     };
@@ -163,9 +189,16 @@ const generateIntelligentFallback = (query, context) => {
     };
   }
 
-  // Default fallback
+  // Default fallback - avoid the repetitive response
+  const fallbacks = [
+    "What specific topic would you like help with?",
+    "I'm here to assist you. What's your question?",
+    "How can I help you today?",
+    "What information are you looking for?"
+  ];
+  
   return {
-    response: "I understand you need assistance. Could you please provide more details about how I can help you today?",
+    response: fallbacks[Math.floor(Math.random() * fallbacks.length)],
     intent: 'general',
     confidence: 0.7,
     shouldEscalate: false
@@ -176,14 +209,19 @@ const generateIntelligentFallback = (query, context) => {
  * Build prompt for Gemini AI
  */
 const buildPrompt = (query, context) => {
-  // Ultra-fast conversational prompt - no artificial constraints
+  // Build conversation history properly - exclude AI responses to avoid loops
   const recentHistory = context.conversationHistory ?
-    context.conversationHistory.slice(-1).map(h => `${h.speaker}: ${h.text || h.content || h.message}`).join('\n') : '';
+    context.conversationHistory
+      .filter(h => h.speaker === 'user' || h.speaker === 'customer') // Only include user messages
+      .slice(-3) // Last 3 user messages for context
+      .map(h => `User: ${h.text || h.content || h.message}`)
+      .join('\n') : '';
 
-  const systemPrompt = `You are a helpful AI assistant. Respond naturally and conversationally to whatever the user says. Be brief but engaging.
+  const systemPrompt = `You are VoxAssist, a helpful AI customer support assistant. Respond naturally and conversationally to the user's current question. Always provide fresh, relevant responses based on what the user is asking right now.
 
-${recentHistory ? `${recentHistory}\n` : ''}User: ${query}
-AI:`;
+${recentHistory ? `Previous context:\n${recentHistory}\n\n` : ''}Current user question: ${query}
+
+Respond helpfully to their current question:`;
 
   return systemPrompt;
 };

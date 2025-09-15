@@ -446,11 +446,18 @@ export default function RealTimeVoiceInterface({
         id: entry.id
       }));
 
-      // Update messages state with new transcript entries
-      setState(prev => ({
-        ...prev,
-        messages: newMessages
-      }));
+      // Merge WebSocket messages with existing local messages instead of replacing
+      setState(prev => {
+        const existingIds = new Set(prev.messages.map(msg => msg.id));
+        const uniqueNewMessages = newMessages.filter(msg => !existingIds.has(msg.id));
+        
+        return {
+          ...prev,
+          messages: [...prev.messages, ...uniqueNewMessages].sort((a, b) => 
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          )
+        };
+      });
     }
   }, [wsTranscript]);
 

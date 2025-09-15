@@ -188,14 +188,19 @@ class RealTimeAIService {
    */
   async generateAIResponse(conversation, userMessage) {
     try {
-      // Build context for AI
+      // Build context for AI - only include user messages to avoid loops
+      const userOnlyHistory = conversation.context.conversationHistory
+        .filter(entry => entry.speaker === 'user' || entry.speaker === 'customer')
+        .slice(-4); // Last 4 user messages for context
+
       const context = {
-        conversationHistory: conversation.context.conversationHistory.slice(-6), // Last 6 messages
+        conversationHistory: userOnlyHistory,
         conversationPhase: conversation.state.conversationPhase,
         userIntent: conversation.state.userIntent,
         callMetadata: conversation.context.callMetadata,
         userProfile: conversation.context.userProfile,
-        escalationRequested: conversation.state.escalationRequested
+        escalationRequested: conversation.state.escalationRequested,
+        currentUserMessage: userMessage // Explicitly pass current message
       };
 
       // Generate response using Gemini
