@@ -154,6 +154,7 @@ export default function DashboardPage() {
         )}
 
         {/* Voice Demo Section */}
+        <div>
         <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -170,14 +171,14 @@ export default function DashboardPage() {
             <div className="flex space-x-3">
               <Button
                 size="large"
-                onClick={() => router.push('/demo')}
+                onClick={() => router.push('/calls')}
               >
                 Quick Demo
               </Button>
               <Button
                 type="primary"
                 size="large"
-                onClick={() => router.push('/demo/voice-call')}
+                onClick={() => router.push('/calls')}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 Voice Demo
@@ -185,6 +186,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </Card>
+        </div>
 
         {/* Simplified Stats Cards */}
         <Row gutter={[24, 24]}>

@@ -25,7 +25,7 @@ export default function DemoCallInterface() {
   const { user } = useAuth();
   const [callId, setCallId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
-  const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [isVoiceMode, setIsVoiceMode] = useState(true);
 
   // Initialize demo call
   useEffect(() => {
@@ -84,13 +84,6 @@ export default function DemoCallInterface() {
                 </div>
               </div>
               <Space>
-                <Button
-                  type={!isVoiceMode ? 'primary' : 'default'}
-                  size="small"
-                  onClick={() => setIsVoiceMode(false)}
-                >
-                  Basic Demo
-                </Button>
                 <Button
                   type={isVoiceMode ? 'primary' : 'default'}
                   size="small"

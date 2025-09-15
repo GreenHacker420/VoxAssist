@@ -217,6 +217,7 @@ export default function CallsPage() {
         )}
 
         {/* Demo Call Section */}
+        <div>
         <Card className="shadow-sm mb-6">
           <div className="p-6">
             <div className="flex items-center gap-3 mb-4">
@@ -231,6 +232,7 @@ export default function CallsPage() {
             <DemoCallInterface />
           </div>
         </Card>
+        </div>
 
         {/* Enhanced Calls Table */}
         <Card className="shadow-sm">
