@@ -1,6 +1,9 @@
 const logger = require('../utils/logger');
-const db = require('../database/connection');
+const { getPrisma } = require('../database/connection');
 const geminiService = require('./geminiService');
+
+// Get Prisma client instance
+const db = getPrisma();
 
 /**
  * Call Quality Monitoring Service - Functional Version

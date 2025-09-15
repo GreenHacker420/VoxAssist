@@ -166,6 +166,11 @@ export default function CallsPage() {
     }
   };
 
+  // Fetch calls when component mounts
+  useEffect(() => {
+    refreshCalls();
+  }, []);
+
   if (isLoading) {
     return (
       <DashboardLayout>

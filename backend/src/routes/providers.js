@@ -462,18 +462,46 @@ router.post('/:id/set-primary', asyncHandler(async (req, res) => {
  * GET /providers/configs - Alias for frontend compatibility
  */
 router.get('/configs', asyncHandler(async (req, res) => {
-  // Redirect to main providers endpoint
-  req.url = '/';
-  return router.handle(req, res);
+  // Get all providers
+  const providers = await prisma.provider.findMany({
+    where: {
+      organizationId: req.user?.organizationId || 1
+    },
+    include: {
+      configurations: true
+    }
+  });
+
+  res.json({
+    success: true,
+    data: providers
+  });
 }));
 
 /**
  * POST /providers/configs - Alias for frontend compatibility
  */
 router.post('/configs', asyncHandler(async (req, res) => {
-  // Redirect to main providers endpoint
-  req.url = '/';
-  return router.handle(req, res);
+  const { name, type, configurations } = req.body;
+  
+  const provider = await prisma.provider.create({
+    data: {
+      name,
+      type,
+      organizationId: req.user?.organizationId || 1,
+      configurations: {
+        create: configurations || []
+      }
+    },
+    include: {
+      configurations: true
+    }
+  });
+
+  res.json({
+    success: true,
+    data: provider
+  });
 }));
 
 /**
