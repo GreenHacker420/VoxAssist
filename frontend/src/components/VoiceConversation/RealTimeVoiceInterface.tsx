@@ -142,7 +142,7 @@ export default function RealTimeVoiceInterface({
     showInterimResults: true
   });
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const currentMessageId = useRef<string>('');
 
@@ -259,7 +259,10 @@ export default function RealTimeVoiceInterface({
   }, []);
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+    }
   }, []);
 
   const playAudioResponse = useCallback(async (audioData: string, contentType: string) => {
@@ -754,7 +757,10 @@ export default function RealTimeVoiceInterface({
 
       {/* Conversation Messages */}
       {showTranscript && (
-        <div className="conversation-messages max-h-96 overflow-y-auto border rounded p-4 bg-gray-50">
+        <div
+          className="conversation-messages max-h-96 overflow-y-auto border rounded p-4 bg-gray-50"
+          ref={messagesContainerRef}
+        >
           {state.messages.length === 0 ? (
             <div className="text-center text-gray-500 py-8">
               <SoundOutlined className="text-4xl mb-2" />
@@ -806,7 +812,7 @@ export default function RealTimeVoiceInterface({
               </div>
             ))
           )}
-          <div ref={messagesEndRef} />
+          {/* end sentinel removed; we now scroll the container directly */}
         </div>
       )}
 

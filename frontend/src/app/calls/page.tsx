@@ -38,9 +38,6 @@ export default function CallsPage() {
   const [activeCallForControls, setActiveCallForControls] = useState<Call | null>(null);
   const [showCallControls, setShowCallControls] = useState(false);
 
-  useEffect(() => {
-    refreshCalls();
-  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {

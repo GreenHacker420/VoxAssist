@@ -296,53 +296,100 @@ const generateQualityReport = async (organizationId, startDate, endDate) => {
       recommendations: []
     };
 
-    // Get quality metrics from database
-    const audioQuery = `
-      SELECT 
-        AVG(overall_score) as avg_audio_quality,
-        AVG(clarity) as avg_clarity,
-        AVG(volume) as avg_volume,
-        AVG(background_noise) as avg_noise,
-        COUNT(*) as total_calls
-      FROM call_audio_quality 
-      WHERE organization_id = ? AND created_at BETWEEN ? AND ?
-    `;
+    // Get audio quality metrics using Prisma aggregation
+    const audioMetrics = await db.callAudioQuality.aggregate({
+      where: {
+        organizationId: organizationId,
+        createdAt: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      _avg: {
+        overallScore: true,
+        clarity: true,
+        volume: true,
+        backgroundNoise: true
+      },
+      _count: {
+        id: true
+      }
+    });
     
-    const audioResult = await db.query(audioQuery, [organizationId, startDate, endDate]);
-    report.audioQuality = audioResult[0] || {};
+    report.audioQuality = {
+      avg_audio_quality: audioMetrics._avg.overallScore,
+      avg_clarity: audioMetrics._avg.clarity,
+      avg_volume: audioMetrics._avg.volume,
+      avg_noise: audioMetrics._avg.backgroundNoise,
+      total_calls: audioMetrics._count.id
+    };
 
-    const conversationQuery = `
-      SELECT 
-        AVG(overall_score) as avg_conversation_quality,
-        AVG(coherence) as avg_coherence,
-        AVG(relevance) as avg_relevance,
-        AVG(completeness) as avg_completeness,
-        AVG(efficiency) as avg_efficiency,
-        COUNT(*) as total_conversations
-      FROM call_conversation_quality 
-      WHERE organization_id = ? AND created_at BETWEEN ? AND ?
-    `;
+    // Get conversation quality metrics using Prisma aggregation
+    const conversationMetrics = await db.callConversationQuality.aggregate({
+      where: {
+        organizationId: organizationId,
+        createdAt: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      _avg: {
+        overallScore: true,
+        coherence: true,
+        relevance: true,
+        completeness: true,
+        efficiency: true
+      },
+      _count: {
+        id: true
+      }
+    });
     
-    const conversationResult = await db.query(conversationQuery, [organizationId, startDate, endDate]);
-    report.conversationQuality = conversationResult[0] || {};
+    report.conversationQuality = {
+      avg_conversation_quality: conversationMetrics._avg.overallScore,
+      avg_coherence: conversationMetrics._avg.coherence,
+      avg_relevance: conversationMetrics._avg.relevance,
+      avg_completeness: conversationMetrics._avg.completeness,
+      avg_efficiency: conversationMetrics._avg.efficiency,
+      total_conversations: conversationMetrics._count.id
+    };
 
-    const accuracyQuery = `
-      SELECT 
-        AVG(overall_accuracy) as avg_response_accuracy,
-        AVG(response_relevance) as avg_relevance,
-        AVG(factual_accuracy) as avg_factual_accuracy,
-        AVG(helpfulness) as avg_helpfulness,
-        query_type,
-        COUNT(*) as count
-      FROM call_response_accuracy 
-      WHERE organization_id = ? AND created_at BETWEEN ? AND ?
-      GROUP BY query_type
-    `;
-    
-    const accuracyResult = await db.query(accuracyQuery, [organizationId, startDate, endDate]);
+    // Get response accuracy metrics using Prisma aggregation
+    const accuracyMetrics = await db.callResponseAccuracy.groupBy({
+      by: ['queryType'],
+      where: {
+        organizationId: organizationId,
+        createdAt: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      _avg: {
+        overallAccuracy: true,
+        responseRelevance: true,
+        factualAccuracy: true,
+        helpfulness: true
+      },
+      _count: {
+        id: true
+      }
+    });
+
+    // Calculate overall accuracy across all query types
+    const overallAccuracy = accuracyMetrics.length > 0 
+      ? accuracyMetrics.reduce((acc, row) => acc + (row._avg.overallAccuracy || 0), 0) / accuracyMetrics.length
+      : 0;
+
     report.responseAccuracy = {
-      overall: accuracyResult.reduce((acc, row) => acc + row.avg_response_accuracy, 0) / accuracyResult.length || 0,
-      byType: accuracyResult
+      overall: overallAccuracy,
+      byType: accuracyMetrics.map(row => ({
+        query_type: row.queryType,
+        avg_response_accuracy: row._avg.overallAccuracy,
+        avg_relevance: row._avg.responseRelevance,
+        avg_factual_accuracy: row._avg.factualAccuracy,
+        avg_helpfulness: row._avg.helpfulness,
+        count: row._count.id
+      }))
     };
 
     // Generate recommendations
@@ -427,10 +474,16 @@ const handleQualityAlert = async (type, callId, metrics) => {
     logger.warn('Quality alert generated:', alert);
 
     // Save alert to database
-    await db.query(
-      'INSERT INTO quality_alerts (type, call_id, severity, message, metrics, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-      [alert.type, alert.callId, alert.severity, alert.message, JSON.stringify(alert.metrics), alert.timestamp]
-    );
+    await db.qualityAlert.create({
+      data: {
+        type: alert.type,
+        callId: alert.callId,
+        severity: alert.severity,
+        message: alert.message,
+        metrics: JSON.stringify(alert.metrics),
+        createdAt: alert.timestamp
+      }
+    });
 
     // Send notification if configured
     if (process.env.QUALITY_ALERT_WEBHOOK) {
@@ -450,33 +503,88 @@ const analyzeRecentCalls = async () => {
   try {
     if (!monitoringActive) return;
 
-    // Get recent calls that haven't been analyzed
-    const recentCallsQuery = `
-      SELECT id, transcript, ai_responses, customer_satisfaction
-      FROM calls
-      WHERE created_at >= NOW() - INTERVAL '10 minutes'
-      AND quality_analyzed = FALSE
-      LIMIT 50
-    `;
+    // Get recent calls from the last 10 minutes that don't have conversation quality records
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
     
-    const recentCalls = await db.query(recentCallsQuery, []);
+    const recentCalls = await db.call.findMany({
+      where: {
+        createdAt: {
+          gte: tenMinutesAgo
+        },
+        // Use NOT EXISTS equivalent - calls that don't have conversation quality records
+        callInteractions: {
+          some: {}
+        }
+      },
+      select: {
+        id: true,
+        _count: {
+          select: {
+            callInteractions: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 50
+    });
 
-    for (const call of recentCalls) {
+    // Filter out calls that already have conversation quality analysis
+    const existingAnalysis = await db.callConversationQuality.findMany({
+      where: {
+        callId: {
+          in: recentCalls.map(call => call.id)
+        }
+      },
+      select: {
+        callId: true
+      }
+    });
+
+    const analyzedCallIds = new Set(existingAnalysis.map(analysis => analysis.callId));
+    const unanalyzedCalls = recentCalls.filter(call => !analyzedCallIds.has(call.id));
+
+    for (const call of unanalyzedCalls) {
       try {
-        // Analyze conversation quality
-        if (call.transcript && call.ai_responses) {
-          await analyzeConversationQuality(call.id, call.transcript, call.ai_responses);
+        // Fetch interactions for the call using Prisma
+        const interactions = await db.callInteraction.findMany({
+          where: {
+            callId: call.id
+          },
+          select: {
+            speaker: true,
+            content: true,
+            timestamp: true
+          },
+          orderBy: [
+            { sequenceNumber: 'asc' },
+            { timestamp: 'asc' }
+          ]
+        });
+
+        if (!interactions || interactions.length === 0) {
+          continue;
         }
 
-        // Mark as analyzed
-        await db.query('UPDATE calls SET quality_analyzed = TRUE WHERE id = ?', [call.id]);
-        
+        // Build a readable transcript and a list of AI responses
+        const transcript = interactions
+          .map((it) => `${(it.speaker || '').toUpperCase()}: ${it.content || ''}`)
+          .join('\n');
+
+        const aiResponses = interactions
+          .filter((it) => (it.speaker || '').toLowerCase() === 'ai')
+          .map((it) => it.content || '');
+
+        // Analyze conversation quality
+        await analyzeConversationQuality(call.id, transcript, aiResponses);
+
       } catch (callError) {
         logger.error(`Error analyzing call ${call.id}:`, callError);
       }
     }
 
-    logger.debug(`Analyzed ${recentCalls.length} recent calls for quality`);
+    logger.debug(`Analyzed ${unanalyzedCalls.length} recent calls for quality`);
   } catch (error) {
     logger.error('Error in periodic quality analysis:', error);
   }
@@ -487,20 +595,17 @@ const analyzeRecentCalls = async () => {
  */
 const saveAudioQualityMetrics = async (metrics) => {
   try {
-    await db.query(
-      `INSERT INTO call_audio_quality 
-       (call_id, clarity, volume, background_noise, signal_to_noise, overall_score, created_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        metrics.callId,
-        metrics.clarity,
-        metrics.volume,
-        metrics.backgroundNoise,
-        metrics.signalToNoise,
-        metrics.overallScore,
-        metrics.timestamp
-      ]
-    );
+    await db.callAudioQuality.create({
+      data: {
+        callId: metrics.callId,
+        clarity: metrics.clarity,
+        volume: metrics.volume,
+        backgroundNoise: metrics.backgroundNoise,
+        signalToNoise: metrics.signalToNoise,
+        overallScore: metrics.overallScore,
+        createdAt: metrics.timestamp
+      }
+    });
   } catch (error) {
     logger.error('Error saving audio quality metrics:', error);
   }
@@ -511,21 +616,18 @@ const saveAudioQualityMetrics = async (metrics) => {
  */
 const saveConversationQualityMetrics = async (metrics) => {
   try {
-    await db.query(
-      `INSERT INTO call_conversation_quality 
-       (call_id, coherence, relevance, completeness, efficiency, overall_score, issues, created_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        metrics.callId,
-        metrics.coherence,
-        metrics.relevance,
-        metrics.completeness,
-        metrics.efficiency,
-        metrics.overallScore,
-        JSON.stringify(metrics.issues),
-        metrics.timestamp
-      ]
-    );
+    await db.callConversationQuality.create({
+      data: {
+        callId: metrics.callId,
+        coherence: metrics.coherence,
+        relevance: metrics.relevance,
+        completeness: metrics.completeness,
+        efficiency: metrics.efficiency,
+        overallScore: metrics.overallScore,
+        issues: JSON.stringify(metrics.issues),
+        createdAt: metrics.timestamp
+      }
+    });
   } catch (error) {
     logger.error('Error saving conversation quality metrics:', error);
   }
@@ -536,20 +638,17 @@ const saveConversationQualityMetrics = async (metrics) => {
  */
 const saveResponseAccuracyMetrics = async (metrics) => {
   try {
-    await db.query(
-      `INSERT INTO call_response_accuracy 
-       (call_id, query_type, response_relevance, factual_accuracy, helpfulness, overall_accuracy, created_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        metrics.callId,
-        metrics.queryType,
-        metrics.responseRelevance,
-        metrics.factualAccuracy,
-        metrics.helpfulness,
-        metrics.overallAccuracy,
-        metrics.timestamp
-      ]
-    );
+    await db.callResponseAccuracy.create({
+      data: {
+        callId: metrics.callId,
+        queryType: metrics.queryType,
+        responseRelevance: metrics.responseRelevance,
+        factualAccuracy: metrics.factualAccuracy,
+        helpfulness: metrics.helpfulness,
+        overallAccuracy: metrics.overallAccuracy,
+        createdAt: metrics.timestamp
+      }
+    });
   } catch (error) {
     logger.error('Error saving response accuracy metrics:', error);
   }
