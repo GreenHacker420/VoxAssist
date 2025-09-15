@@ -22,10 +22,10 @@ const initializeGemini = () => {
   model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash",
     generationConfig: {
-      temperature: 0.2, // Lower for faster, more focused responses
-      topK: 10, // Reduced for ultra-fast generation
-      topP: 0.7, // Reduced for speed
-      maxOutputTokens: 30, // Ultra-short for real-time conversation
+      temperature: 0.3, // Balanced for natural conversation
+      topK: 20, // Better variety in responses
+      topP: 0.8, // More natural language flow
+      maxOutputTokens: 150, // Sufficient for complete responses
       candidateCount: 1
     }
   });
@@ -112,93 +112,60 @@ const processCustomerQuery = async (query, context = {}) => {
  */
 const generateIntelligentFallback = (query, context) => {
   const lowerQuery = query.toLowerCase();
-
-  // DPMS/Technical questions
-  if (lowerQuery.includes('dpms') || lowerQuery.includes('display power management')) {
+  
+  // Handle calculus questions specifically
+  if (lowerQuery.includes('calculus')) {
     return {
-      response: "DPMS (Display Power Management Signaling) is a technology that allows monitors to enter power-saving modes. It has states like On, Standby, Suspend, and Off. What specific aspect of DPMS would you like to know more about?",
-      intent: 'technical_info',
+      response: 'Calculus is a branch of mathematics focused on rates of change (derivatives) and accumulation of quantities (integrals). It includes differential calculus (finding slopes and rates) and integral calculus (finding areas and volumes). What specific calculus topic would you like to explore?',
+      intent: 'math',
       confidence: 0.9,
       shouldEscalate: false
     };
   }
-
-  // Greeting responses - avoid repetitive responses
-  if (lowerQuery.includes('hello') || lowerQuery.includes('hi') || lowerQuery.includes('how are you')) {
-    const greetings = [
-      "Hello! What can I help you with today?",
-      "Hi there! How may I assist you?",
-      "Good day! What would you like to know?",
-      "Hello! I'm here to help. What's your question?"
-    ];
+  
+  // Handle DPMS queries
+  if (lowerQuery.includes('dpms') || lowerQuery.includes('display power')) {
     return {
-      response: greetings[Math.floor(Math.random() * greetings.length)],
-      intent: 'greeting',
+      response: 'DPMS (Display Power Management Signaling) is a technology that allows monitors to enter power-saving modes with states like On, Standby, Suspend, and Off to reduce power consumption.',
+      intent: 'technical',
       confidence: 0.9,
       shouldEscalate: false
     };
   }
-
-  // Knowledge requests
-  if (lowerQuery.includes('what can you do') || lowerQuery.includes('what do you know')) {
+  
+  // Handle capability questions
+  if (lowerQuery.includes('what can you do') || lowerQuery.includes('what are you doing')) {
     return {
-      response: "I can help you with various topics including technical questions, general information, troubleshooting, and more. What specific topic are you interested in learning about?",
+      response: 'I can help explain concepts, answer questions, provide information on various topics, and assist with learning. I\'m currently ready to help with whatever you\'d like to know about.',
       intent: 'capability_inquiry',
       confidence: 0.9,
       shouldEscalate: false
     };
   }
-
-  // Billing related
-  if (lowerQuery.includes('bill') || lowerQuery.includes('payment') || lowerQuery.includes('charge')) {
+  
+  // Handle greetings - respond once appropriately
+  if (lowerQuery.includes('hello') || lowerQuery.includes('hi') || lowerQuery.includes('good morning')) {
     return {
-      response: "I'd be happy to help you with your billing questions. What specific billing issue can I assist you with?",
-      intent: 'billing',
-      confidence: 0.85,
+      response: 'Hello! I\'m here to help. What would you like to learn about or discuss?',
+      intent: 'greeting',
+      confidence: 0.9,
       shouldEscalate: false
     };
   }
-
-  // Technical issues
-  if (lowerQuery.includes('not working') || lowerQuery.includes('broken') || lowerQuery.includes('error')) {
+  
+  // Handle incomplete questions
+  if (lowerQuery.includes('i want to know about') && lowerQuery.length < 25) {
     return {
-      response: "I understand you're experiencing a technical issue. Can you tell me more about what's happening so I can help troubleshoot?",
-      intent: 'technical',
-      confidence: 0.85,
-      shouldEscalate: false
-    };
-  }
-
-  // Account related
-  if (lowerQuery.includes('account') || lowerQuery.includes('password') || lowerQuery.includes('login')) {
-    return {
-      response: "I can help you with your account. What specific account-related assistance do you need?",
-      intent: 'account',
-      confidence: 0.85,
-      shouldEscalate: false
-    };
-  }
-
-  // Business hours
-  if (lowerQuery.includes('hours') || lowerQuery.includes('open') || lowerQuery.includes('available')) {
-    return {
-      response: "Our support team is available 24/7 to assist you. Is there something specific I can help you with right now?",
+      response: 'What specific topic would you like to learn about? I\'m ready to help explain it.',
       intent: 'general',
       confidence: 0.8,
       shouldEscalate: false
     };
   }
-
-  // Default fallback - avoid the repetitive response
-  const fallbacks = [
-    "What specific topic would you like help with?",
-    "I'm here to assist you. What's your question?",
-    "How can I help you today?",
-    "What information are you looking for?"
-  ];
   
+  // Default response
   return {
-    response: fallbacks[Math.floor(Math.random() * fallbacks.length)],
+    response: 'I\'m here to help! Could you please be more specific about what you\'d like to know?',
     intent: 'general',
     confidence: 0.7,
     shouldEscalate: false
@@ -209,19 +176,18 @@ const generateIntelligentFallback = (query, context) => {
  * Build prompt for Gemini AI
  */
 const buildPrompt = (query, context) => {
-  // Build conversation history properly - exclude AI responses to avoid loops
   const recentHistory = context.conversationHistory ?
     context.conversationHistory
-      .filter(h => h.speaker === 'user' || h.speaker === 'customer') // Only include user messages
-      .slice(-3) // Last 3 user messages for context
+      .filter(h => h.speaker === 'user' || h.speaker === 'customer')
+      .slice(-2) // Reduced to last 2 exchanges to prevent confusion
       .map(h => `User: ${h.text || h.content || h.message}`)
       .join('\n') : '';
 
-  const systemPrompt = `You are VoxAssist, a helpful AI customer support assistant. Respond naturally and conversationally to the user's current question. Always provide fresh, relevant responses based on what the user is asking right now.
+  const systemPrompt = `You are VoxAssist, a helpful AI assistant. Respond directly and specifically to the user's current question. Do not repeat greetings or ask generic questions.
 
-${recentHistory ? `Previous context:\n${recentHistory}\n\n` : ''}Current user question: ${query}
+${recentHistory ? `Recent context:\n${recentHistory}\n\n` : ''}Current question: "${query}"
 
-Respond helpfully to their current question:`;
+Provide a direct, helpful response to this specific question. If it's about calculus, explain the concept. If it's a greeting, respond appropriately once. Be conversational but focused.`;
 
   return systemPrompt;
 };
