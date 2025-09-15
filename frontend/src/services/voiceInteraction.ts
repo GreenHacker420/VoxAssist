@@ -102,6 +102,22 @@ export const disableVoiceInteraction = async (callId: string): Promise<VoiceCont
 };
 
 /**
+ * Reset conversation context for a demo call
+ */
+export const resetConversationContext = async (callId: string): Promise<VoiceControlResponse> => {
+  try {
+    const response = await apiClient.post(`/demo-calls/${callId}/reset-context`);
+    return response.data;
+  } catch (error: unknown) {
+    console.error('Error resetting conversation context:', error);
+    return {
+      success: false,
+      error: (error as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to reset conversation context'
+    };
+  }
+};
+
+/**
  * Play audio response
  */
 export const playAudioResponse = async (audioUrl: string): Promise<HTMLAudioElement> => {

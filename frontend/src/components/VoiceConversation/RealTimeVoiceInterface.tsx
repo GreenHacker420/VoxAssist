@@ -27,6 +27,7 @@ import {
   PlayCircleOutlined
 } from '@ant-design/icons';
 import { useSpeechToText } from '@/hooks/useSpeechToText';
+import * as voiceInteractionService from '@/services/voiceInteraction';
 import { useVoiceActivityDetection } from '@/hooks/useVoiceActivityDetection';
 import { useDemoCallWebSocket } from '@/hooks/useDemoCallWebSocket';
 
@@ -490,8 +491,41 @@ export default function RealTimeVoiceInterface({
 
   // These handlers are now managed by the hooks
 
+  const resetConversation = useCallback(async () => {
+    // Reset all state to initial values
+    setState({
+      status: 'idle',
+      isListening: false,
+      isSpeaking: false,
+      isProcessing: false,
+      voiceActivity: false,
+      currentTranscript: '',
+      messages: []
+    });
+    
+    // Clear any ongoing audio
+    setAudioLevel(0);
+    currentMessageId.current = '';
+    
+    // Ensure cleanup is called
+    cleanup();
+
+    // Reset backend conversation context if callId exists
+    if (callId) {
+      try {
+        await voiceInteractionService.resetConversationContext(callId);
+        console.log('Backend conversation context reset successfully');
+      } catch (error) {
+        console.error('Failed to reset backend conversation context:', error);
+      }
+    }
+  }, [cleanup, callId]);
+
   const startConversation = useCallback(async () => {
     try {
+      // Reset conversation state first to clear any previous context
+      resetConversation();
+      
       updateState({ status: 'connecting' });
 
       // Connect to WebSocket
@@ -523,7 +557,7 @@ export default function RealTimeVoiceInterface({
       onError?.('Failed to start voice conversation');
       updateState({ status: 'idle' });
     }
-  }, [callId, connectToCall, startVAD, startSTT, onError, updateState, addMessage]);
+  }, [callId, connectToCall, startVAD, startSTT, onError, updateState, addMessage, resetConversation]);
 
   const stopConversation = useCallback(() => {
     cleanup();
@@ -605,14 +639,14 @@ export default function RealTimeVoiceInterface({
 
         {showControls && (
           <Space>
-            {(state.status === 'idle' || state.status === 'connecting') && (
+            {(state.status === 'idle' || state.status === 'connecting' || state.status === 'ended') && (
               <Button
                 type="primary"
                 icon={<PhoneOutlined />}
                 onClick={startConversation}
                 loading={state.status === 'connecting'}
               >
-                Start Conversation
+                {state.status === 'ended' ? 'Start New Conversation' : 'Start Conversation'}
               </Button>
             )}
 
@@ -632,6 +666,15 @@ export default function RealTimeVoiceInterface({
                   End
                 </Button>
               </>
+            )}
+
+            {state.status === 'ended' && (
+              <Button
+                icon={<StopOutlined />}
+                onClick={resetConversation}
+              >
+                Clear Conversation
+              </Button>
             )}
 
             {state.status === 'paused' && (

@@ -279,6 +279,20 @@ class RealTimeAIService {
   }
 
   /**
+   * Reset conversation context - clears all history and starts fresh
+   */
+  resetConversationContext(callId, options = {}) {
+    // End existing conversation if it exists
+    this.endConversation(callId);
+    
+    // Initialize a completely new conversation
+    const newConversation = this.initializeConversation(callId, options);
+    
+    logger.info(`Reset conversation context for call ${callId}`);
+    return newConversation;
+  }
+
+  /**
    * Reset conversation timeout
    */
   resetConversationTimeout(callId) {

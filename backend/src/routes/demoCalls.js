@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
+const realTimeAIService = require('../services/realTimeAIService');
 
 // Demo call storage (in-memory for simplicity)
 const demoCalls = new Map();
@@ -183,6 +184,212 @@ router.get('/demo/:callId', authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch demo call',
+      details: error.message
+    });
+  }
+});
+
+// Reset conversation context for demo call
+router.post('/:callId/reset-context', authenticateToken, async (req, res) => {
+  try {
+    const { callId } = req.params;
+    const userId = req.user.id;
+
+    const demoCall = demoCalls.get(callId);
+    if (!demoCall) {
+      return res.status(404).json({
+        success: false,
+        error: 'Demo call not found'
+      });
+    }
+
+    if (demoCall.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Unauthorized to access this demo call'
+      });
+    }
+
+    // Reset conversation context in AI service
+    realTimeAIService.resetConversationContext(callId);
+
+    // Reset demo call transcript and context
+    demoCall.transcript = '';
+    demoCall.sentiment = 'neutral';
+    demoCall.sentimentScore = 0.5;
+    demoCall.aiInsights = 'Fresh conversation started';
+
+    demoCalls.set(callId, demoCall);
+
+    res.json({
+      success: true,
+      data: {
+        callId,
+        voiceInteractionEnabled: true,
+        message: 'Conversation context reset successfully'
+      }
+    });
+  } catch (error) {
+    console.error('Error resetting conversation context:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reset conversation context',
+      details: error.message
+    });
+  }
+});
+
+// Enable voice interaction for demo call
+router.post('/:callId/enable-voice', authenticateToken, async (req, res) => {
+  try {
+    const { callId } = req.params;
+    const userId = req.user.id;
+
+    const demoCall = demoCalls.get(callId);
+    if (!demoCall) {
+      return res.status(404).json({
+        success: false,
+        error: 'Demo call not found'
+      });
+    }
+
+    if (demoCall.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Unauthorized to access this demo call'
+      });
+    }
+
+    // Initialize conversation in AI service
+    realTimeAIService.initializeConversation(callId, {
+      userProfile: { userId },
+      callMetadata: { callType: 'demo', callId }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        callId,
+        voiceInteractionEnabled: true,
+        message: 'Voice interaction enabled successfully'
+      }
+    });
+  } catch (error) {
+    console.error('Error enabling voice interaction:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to enable voice interaction',
+      details: error.message
+    });
+  }
+});
+
+// Disable voice interaction for demo call
+router.post('/:callId/disable-voice', authenticateToken, async (req, res) => {
+  try {
+    const { callId } = req.params;
+    const userId = req.user.id;
+
+    const demoCall = demoCalls.get(callId);
+    if (!demoCall) {
+      return res.status(404).json({
+        success: false,
+        error: 'Demo call not found'
+      });
+    }
+
+    if (demoCall.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Unauthorized to access this demo call'
+      });
+    }
+
+    // End conversation in AI service
+    realTimeAIService.endConversation(callId);
+
+    res.json({
+      success: true,
+      data: {
+        callId,
+        voiceInteractionEnabled: false,
+        message: 'Voice interaction disabled successfully'
+      }
+    });
+  } catch (error) {
+    console.error('Error disabling voice interaction:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to disable voice interaction',
+      details: error.message
+    });
+  }
+});
+
+// Process speech for demo call
+router.post('/:callId/speech', authenticateToken, async (req, res) => {
+  try {
+    const { callId } = req.params;
+    const { transcript, isInterim = false } = req.body;
+    const userId = req.user.id;
+
+    const demoCall = demoCalls.get(callId);
+    if (!demoCall) {
+      return res.status(404).json({
+        success: false,
+        error: 'Demo call not found'
+      });
+    }
+
+    if (demoCall.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Unauthorized to access this demo call'
+      });
+    }
+
+    if (!transcript || isInterim) {
+      return res.json({
+        success: true,
+        data: {
+          callId,
+          customerTranscript: transcript || '',
+          isProcessing: false,
+          isInterim: true
+        }
+      });
+    }
+
+    // Process with AI service
+    const aiResponse = await realTimeAIService.processUserInput(callId, transcript, {
+      confidence: 0.9,
+      metadata: { source: 'demo_call' }
+    });
+
+    // Update demo call transcript
+    demoCall.transcript += `Customer: ${transcript}\nAI: ${aiResponse.response}\n`;
+    demoCalls.set(callId, demoCall);
+
+    res.json({
+      success: true,
+      data: {
+        callId,
+        customerTranscript: transcript,
+        aiResponse: aiResponse.response,
+        sentiment: {
+          overall: aiResponse.conversationPhase === 'greeting' ? 'positive' : 'neutral',
+          score: aiResponse.confidence,
+          emotions: {}
+        },
+        isProcessing: false,
+        transcriptId: `transcript-${Date.now()}`
+      }
+    });
+  } catch (error) {
+    console.error('Error processing speech:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process speech',
       details: error.message
     });
   }
