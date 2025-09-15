@@ -1,4 +1,4 @@
-import { apiClient } from './api';
+import apiClient from '@/lib/api';
 
 export interface VoiceInteractionResponse {
   success: boolean;
@@ -45,21 +45,11 @@ export const processSpeech = async (
   audioData?: Blob
 ): Promise<VoiceInteractionResponse> => {
   try {
-    const formData = new FormData();
-    formData.append('transcript', transcript);
-    formData.append('isInterim', isInterim.toString());
-
-    if (audioData) {
-      formData.append('audioData', audioData, 'speech.wav');
-    }
-
-    const response = await apiClient.post(`/demo-calls/${callId}/speech`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+    const response = await apiClient.post<VoiceInteractionResponse>(`/demo-calls/${callId}/speech`, {
+      transcript,
+      audioData
     });
-
-    return response.data;
+    return response.data || response as VoiceInteractionResponse;
   } catch (error: unknown) {
     console.error('Error processing speech:', error);
     return {
@@ -74,8 +64,8 @@ export const processSpeech = async (
  */
 export const enableVoiceInteraction = async (callId: string): Promise<VoiceControlResponse> => {
   try {
-    const response = await apiClient.post(`/demo-calls/${callId}/enable-voice`);
-    return response.data;
+    const response = await apiClient.post<VoiceControlResponse>(`/demo-calls/${callId}/enable-voice`);
+    return response.data || response as VoiceControlResponse;
   } catch (error: unknown) {
     console.error('Error enabling voice interaction:', error);
     return {
@@ -90,8 +80,8 @@ export const enableVoiceInteraction = async (callId: string): Promise<VoiceContr
  */
 export const disableVoiceInteraction = async (callId: string): Promise<VoiceControlResponse> => {
   try {
-    const response = await apiClient.post(`/demo-calls/${callId}/disable-voice`);
-    return response.data;
+    const response = await apiClient.post<VoiceControlResponse>(`/demo-calls/${callId}/disable-voice`);
+    return response.data || response as VoiceControlResponse;
   } catch (error: unknown) {
     console.error('Error disabling voice interaction:', error);
     return {
@@ -106,8 +96,8 @@ export const disableVoiceInteraction = async (callId: string): Promise<VoiceCont
  */
 export const resetConversationContext = async (callId: string): Promise<VoiceControlResponse> => {
   try {
-    const response = await apiClient.post(`/demo-calls/${callId}/reset-context`);
-    return response.data;
+    const response = await apiClient.post<VoiceControlResponse>(`/demo-calls/${callId}/reset-context`);
+    return response.data || response as VoiceControlResponse;
   } catch (error: unknown) {
     console.error('Error resetting conversation context:', error);
     return {
