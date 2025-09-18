@@ -80,6 +80,12 @@ app.use('/static', express.static('src/public'));
 
 // Serve audio files for voice interaction
 app.use('/audio', express.static('public/audio'));
+app.use("/", (req, res) => {
+  res.json({
+    success: true,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Health check
 app.get('/health', (req, res) => {
